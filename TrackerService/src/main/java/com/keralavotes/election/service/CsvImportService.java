@@ -11,7 +11,9 @@ import com.keralavotes.election.repository.BoothVotesRepository;
 import com.keralavotes.election.repository.CandidateRepository;
 import com.keralavotes.election.repository.LoksabhaConstituencyRepository;
 import com.keralavotes.election.repository.PollingStationRepository;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +23,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CsvImportService {
@@ -57,7 +60,7 @@ public class CsvImportService {
                 String districtCode = rec.get("district_code");
                 String districtName = rec.get("district_name");
 
-                String acCode = rec.get("ac_code");
+                Integer acCode = Integer.parseInt(rec.get("ac_code"));
                 String acName = rec.get("ac_name");
 
                 String psNumberRaw = rec.get("ps_number_raw");
@@ -96,11 +99,11 @@ public class CsvImportService {
 
                 // ======= 3. CHECK FOR DUPLICATE POLLING STATION =======
                 Optional<PollingStation> existing =
-                        psRepo.findByAcIdAndPsNumberAndPsSuffix(ac.getId(), psNumber, normalizedSuffix);
+                        psRepo.findByAcCodeAndPsNumberAndPsSuffix(acCode, psNumber, normalizedSuffix);
 
                 if (existing.isPresent()) {
                     skipped++;
-                    System.out.println("Skipping duplicate PS: AC " + acCode + " PS " + psNumber + normalizedSuffix);
+                    log.info("Skipping duplicate PS: AC {} PS {} {}",acCode, psNumber, normalizedSuffix);
                     continue;
                 }
 
@@ -138,7 +141,7 @@ public class CsvImportService {
                     .parse(in);
 
             for (CSVRecord rec : parser) {
-                String acCode = rec.get("ac");
+                Integer acCode = Integer.parseInt(rec.get("ac"));
                 Integer psNumber = Integer.valueOf(rec.get("ps_number"));
                 String psSuffix = rec.get("ps_suffix");
                 String lsCode = rec.get("ls");
@@ -146,27 +149,25 @@ public class CsvImportService {
                 Integer year = Integer.valueOf(rec.get("year"));
                 Integer votes = Integer.valueOf(rec.get("votes"));
 
-                PollingStation ps = psRepo
-                        .findByAc_AcCodeAndPsNumberAndPsSuffix(acCode, psNumber,
-                                (psSuffix == null || psSuffix.isBlank()) ? null : psSuffix);
+                Optional<PollingStation> optionalPollingStation = psRepo
+                        .findByAc_AcCodeAndPsNumberAndPsSuffix(acCode, psNumber, psSuffix);
 
-                if (ps == null) {
-                    // log & skip
-                    continue;
-                }
+                optionalPollingStation.ifPresentOrElse(pollingStation -> {
+                    Optional<Candidate> optionalCandidate = candidateRepo
+                            .findByNameAndLs_LsCodeAndElectionYear(candidateName, lsCode, year);
 
-                Optional<Candidate> optionalCandidate = candidateRepo
-                        .findByNameAndLs_LsCodeAndElectionYear(candidateName, lsCode, year);
+                    optionalCandidate.ifPresent(candidate -> {
+                        BoothVotes bv = BoothVotes.builder()
+                                .pollingStation(pollingStation)
+                                .candidate(candidate)
+                                .votes(votes)
+                                .year(year)
+                                .build();
 
-                optionalCandidate.ifPresent(candidate -> {
-                    BoothVotes bv = BoothVotes.builder()
-                            .pollingStation(ps)
-                            .candidate(candidate)
-                            .votes(votes)
-                            .year(year)
-                            .build();
-
-                    bvRepo.save(bv);
+                        bvRepo.save(bv);
+                    });
+                }, () -> {
+                    log.info("Skipping votes: Unknown PS {} - {}", acCode, psNumber);
                 });
             }
         }
@@ -185,7 +186,7 @@ public class CsvImportService {
 
         for (CSVRecord row : parser) {
 
-            String acCode = row.get("ac");
+            Integer acCode = Integer.parseInt(row.get("ac"));
             String lsCode = row.get("ls");
 
             Integer psNumber = Integer.valueOf(row.get("ps_number"));
@@ -196,24 +197,22 @@ public class CsvImportService {
             Integer rejected = Integer.valueOf(row.get("rejected"));
             Integer nota = Integer.valueOf(row.get("nota"));
 
-            PollingStation ps = psRepo
-                    .findByAc_AcCodeAndPsNumberAndPsSuffix(acCode, psNumber,
-                            psSuffix.isBlank() ? null : psSuffix);
+            Optional<PollingStation> optionalPollingStation = psRepo
+                    .findByAc_AcCodeAndPsNumberAndPsSuffix(acCode, psNumber, psSuffix);
 
-            if (ps == null) {
-                System.out.println("Skipping totals: Unknown PS " + acCode + "-" + psNumber);
-                continue;
-            }
+            optionalPollingStation.ifPresentOrElse(pollingStation -> {
+                BoothTotals bt = BoothTotals.builder()
+                        .pollingStation(pollingStation)
+                        .totalValid(totalValid)
+                        .rejected(rejected)
+                        .nota(nota)
+                        .year(year)
+                        .build();
 
-            BoothTotals bt = BoothTotals.builder()
-                    .pollingStation(ps)
-                    .totalValid(totalValid)
-                    .rejected(rejected)
-                    .nota(nota)
-                    .year(year)
-                    .build();
-
-            boothTotalsRepo.save(bt);
+                boothTotalsRepo.save(bt);
+            }, () -> {
+                log.info("Skipping totals: Unknown PS {} - {}", acCode, psNumber);
+            });
         }
     }
 

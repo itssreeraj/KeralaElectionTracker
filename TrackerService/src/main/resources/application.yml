@@ -28,3 +28,10 @@ spring:
       allowed-methods: "*"
       allowed-headers: "*"
       allow-credentials: true
+
+  logging:
+    level:
+      root: INFO
+      com.keralavotes: DEBUG
+    file:
+      name: logs/keralavotes.log

@@ -21,11 +21,8 @@ import lombok.Setter;
 @Builder
 public class LoksabhaConstituency {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true)
-    private String lsCode;
+    @Column(name = "ls_code")
+    private Integer lsCode;
 
     @Column(nullable = false)
     private String name;

@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface AssemblyConstituencyRepository extends JpaRepository<AssemblyConstituency, Long> {
-    Optional<AssemblyConstituency> findByAcCode(String acCode);
+    Optional<AssemblyConstituency> findByAcCode(int acCode);
 }

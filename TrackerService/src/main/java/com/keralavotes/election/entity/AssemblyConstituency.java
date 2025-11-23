@@ -18,22 +18,20 @@ import lombok.Setter;
 @Table(name = "assembly_constituency")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class AssemblyConstituency {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true)
-    private String acCode;
+    @Id
+    @Column(name = "ac_code")
+    private Integer acCode;
 
     @Column(nullable = false)
     private String name;
 
     // District relationship
     @ManyToOne(optional = true)
-    @JoinColumn(name = "district_id")
+    @JoinColumn(name = "district_code")
     private District district;
 
     // LS is NULL until admin maps AC -> LS
     @ManyToOne()
-    @JoinColumn(name = "ls_id")
+    @JoinColumn(name = "ls_code")
     private LoksabhaConstituency ls;
 }

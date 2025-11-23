@@ -13,11 +13,8 @@ import lombok.*;
 public class District {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true)
-    private int districtCode;
+    @Column(name = "district_code")
+    private Integer districtCode;
 
     @Column(nullable = false)
     private String name;
