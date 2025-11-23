@@ -1,125 +1,158 @@
 "use client";
 
 import React, { useState } from "react";
-import { uploadCsv } from "../../../lib/api";
 
 export default function CsvUploadPage() {
-  const [lsCode, setLsCode] = useState("");
-  const [boothFile, setBoothFile] = useState<File | null>(null);
-  const [form20File, setForm20File] = useState<File | null>(null);
-  const [totalsFile, setTotalsFile] = useState<File | null>(null);
-  const [msg, setMsg] = useState("");
+  const [logMessages, setLogMessages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleUpload = async (type: "booth" | "form20" | "totals") => {
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+
+  const log = (msg: string) => {
+    setLogMessages((prev) => [...prev, msg]);
+  };
+
+  const uploadFile = async (endpoint: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+
+    setLoading(true);
+    log(`Uploading ${file.name} → ${endpoint}`);
+
     try {
-      if (type === "booth") {
-        if (!lsCode || !boothFile) {
-          return setMsg("Please select LS Code and Booth CSV");
-        }
+      const res = await fetch(`${backend}${endpoint}`, {
+        method: "POST",
+        body: form,
+      });
 
-        const response = await uploadCsv("/import/booths", boothFile, {
-          lsCode,
-        });
-        setMsg(response);
-      }
+      const text = await res.text();
+      if (!res.ok) throw new Error(text);
 
-      if (type === "form20") {
-        if (!form20File) return setMsg("Select Form20 CSV");
-
-        const response = await uploadCsv("/import/form20", form20File);
-        setMsg(response);
-      }
-
-      if (type === "totals") {
-        if (!totalsFile) return setMsg("Select Form20 Totals CSV");
-
-        const response = await uploadCsv(
-          "/import/form20-totals",
-          totalsFile
-        );
-        setMsg(response);
-      }
-    } catch (error: any) {
-      setMsg("Error: " + error.message);
+      log(`✔ Success: ${text}`);
+    } catch (err: any) {
+      log(`❌ Error: ${err.message}`);
     }
+
+    setLoading(false);
   };
 
   return (
-    <div style={{ padding: "24px", maxWidth: "700px" }}>
-      <h1>Admin CSV Import</h1>
+    <div style={{ padding: "32px", maxWidth: "700px" }}>
+      <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>
+        Admin CSV Import
+      </h1>
 
-      {/* Booths */}
-      <section style={{ marginBottom: "32px" }}>
-        <h2>Booths CSV</h2>
-        <input
-          type="text"
-          placeholder="LS Code (e.g. 01)"
-          value={lsCode}
-          onChange={(e) => setLsCode(e.target.value)}
+      {/* CSV Upload Section */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          rowGap: "18px",
+          marginBottom: "32px",
+        }}
+      >
+        {/* Booth CSV */}
+        <CsvUploadBlock
+          title="Booth List CSV"
+          onUpload={(file) => uploadFile("/import/booths", file)}
         />
 
-        <div style={{ marginTop: "12px" }}>
-          <input
-            type="file"
-            onChange={(e) =>
-              setBoothFile(e.target.files?.[0] || null)
-            }
-          />
-          <button
-            style={{ marginLeft: "12px" }}
-            onClick={() => handleUpload("booth")}
-          >
-            Upload Booths
-          </button>
-        </div>
-      </section>
-
-      {/* Form 20 */}
-      <section style={{ marginBottom: "32px" }}>
-        <h2>Form 20 CSV</h2>
-        <input
-          type="file"
-          onChange={(e) =>
-            setForm20File(e.target.files?.[0] || null)
-          }
+        {/* Form 20 Candidate Votes */}
+        <CsvUploadBlock
+          title="Form 20 - Candidate Votes CSV"
+          onUpload={(file) => uploadFile("/import/form20", file)}
         />
-        <button
-          style={{ marginLeft: "12px" }}
-          onClick={() => handleUpload("form20")}
-        >
-          Upload Form 20
-        </button>
-      </section>
 
-      {/* Totals */}
-      <section>
-        <h2>Form 20 Totals CSV</h2>
-        <input
-          type="file"
-          onChange={(e) =>
-            setTotalsFile(e.target.files?.[0] || null)
-          }
+        {/* Form 20 Totals */}
+        <CsvUploadBlock
+          title="Form 20 Totals CSV"
+          onUpload={(file) => uploadFile("/import/form20-totals", file)}
         />
-        <button
-          style={{ marginLeft: "12px" }}
-          onClick={() => handleUpload("totals")}
-        >
-          Upload Totals
-        </button>
-      </section>
 
-      {/* Message */}
-      {msg && (
-        <p
-          style={{
-            marginTop: "24px",
-            padding: "10px",
-            background: "#eee",
-          }}
-        >
-          {msg}
-        </p>
+        {/* Polling Stations CSV */}
+        <CsvUploadBlock
+          title="Polling Station CSV"
+          onUpload={(file) => uploadFile("/import/polling-stations", file)}
+        />
+      </div>
+
+      {/* Logs */}
+      <div
+        style={{
+          background: "#111",
+          color: "#0f0",
+          padding: "16px",
+          minHeight: "180px",
+          maxHeight: "400px",
+          overflowY: "auto",
+          borderRadius: "6px",
+          fontFamily: "monospace",
+          border: "1px solid #333",
+        }}
+      >
+        {logMessages.length === 0 ? (
+          <span style={{ opacity: 0.5 }}>No logs yet…</span>
+        ) : (
+          logMessages.map((line, idx) => (
+            <div key={idx} style={{ marginBottom: "4px" }}>
+              {line}
+            </div>
+          ))
+        )}
+      </div>
+
+      {loading && (
+        <p style={{ marginTop: "12px", color: "orange" }}>Uploading…</p>
       )}
+    </div>
+  );
+}
+
+/* ------------------------
+   Reusable Upload Block
+------------------------- */
+
+function CsvUploadBlock({
+  title,
+  onUpload,
+}: {
+  title: string;
+  onUpload: (file: File) => void;
+}) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  return (
+    <div
+      style={{
+        padding: "16px",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+      }}
+    >
+      <h3 style={{ marginBottom: "8px" }}>{title}</h3>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <input
+          type="file"
+          accept=".csv"
+          onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+        />
+
+        <button
+          style={{
+            padding: "8px 16px",
+            background: "#0070f3",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+          onClick={() => selectedFile && onUpload(selectedFile)}
+          disabled={!selectedFile}
+        >
+          Upload
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,56 @@
+# Build Artifacts
+/target/
+/build/
+*.jar
+*.war
+*.ear
+*.zip
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle Wrapper
+.gradle/
+TrackerService/.gradle/
+TrackerService/build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+*.iml
+
+# IDE-specific files
+.idea/
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Environment Variables / Configuration
+.env
+application*.properties.example
+application*.yml.example
+
+# Dependency Caches
+/node_modules/
+/bower_components/
+
+# Temporary Files
+*.tmp
+*.swp
+*~
+.#*
+
+# Test Reports
+/test-reports/
+/coverage/
+
+# OS-specific files
+.DS_Store
+Thumbs.db

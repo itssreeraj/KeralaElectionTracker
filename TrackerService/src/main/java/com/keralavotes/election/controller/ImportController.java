@@ -16,10 +16,9 @@ public class ImportController {
 
     @PostMapping("/booths")
     public ResponseEntity<?> importBooths(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("lsCode") String lsCode) {
+            @RequestParam("file") MultipartFile file) {
         try {
-            csvImportService.importBoothsCsv(file, lsCode);
+            csvImportService.importBoothsCsv(file);
             return ResponseEntity.ok("Booths imported");
         } catch (Exception e) {
             e.printStackTrace();

@@ -26,7 +26,7 @@ public class PollingStation {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "ls_id", nullable = false)
+    @JoinColumn(name = "ls_id", nullable = true)
     private LoksabhaConstituency ls;
 
     @ManyToOne @JoinColumn(name = "ac_id", nullable = false)

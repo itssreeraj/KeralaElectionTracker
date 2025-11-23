@@ -27,7 +27,13 @@ public class AssemblyConstituency {
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "ls_id", nullable = false)
+    // District relationship
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "district_id")
+    private District district;
+
+    // LS is NULL until admin maps AC -> LS
+    @ManyToOne()
+    @JoinColumn(name = "ls_id")
     private LoksabhaConstituency ls;
 }

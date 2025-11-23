@@ -5,7 +5,6 @@ import com.keralavotes.election.repository.*;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.BoothVotes;
 import com.keralavotes.election.entity.Candidate;
-import com.keralavotes.election.entity.LoksabhaConstituency;
 import com.keralavotes.election.entity.PollingStation;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.repository.BoothVotesRepository;
@@ -16,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -31,43 +31,98 @@ public class CsvImportService {
     private final CandidateRepository candidateRepo;
     private final BoothVotesRepository bvRepo;
     private final BoothTotalsRepository boothTotalsRepo;
+    private final DistrictRepository districtRepo;
 
-    // ----------------------------------------
-    // Import booth list parsed from PDF
-    // ----------------------------------------
-    public void importBoothsCsv(MultipartFile file, String lsCode) throws Exception {
-        LoksabhaConstituency ls = lsRepo.findByLsCode(lsCode)
-                .orElseThrow(() -> new IllegalArgumentException("LS not found: " + lsCode));
+    /* ===========================================================
+       BOOTH IMPORT WITH AUTO-CREATE + DUPLICATE SKIP
+       =========================================================== */
+    @Transactional
+    public String importBoothsCsv(MultipartFile file) throws Exception {
+
+        int inserted = 0;
+        int skipped = 0;
 
         try (var in = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)) {
+
             CSVFormat format = CSVFormat.DEFAULT
                     .withFirstRecordAsHeader()
                     .withIgnoreEmptyLines(true)
                     .withTrim(true);
+
             CSVParser parser = new CSVParser(in, format);
 
             for (CSVRecord rec : parser) {
-                String acCode = rec.get("ac");
+
+                // ======= READ CSV FIELDS (from your parser) =======
+                String districtCode = rec.get("district_code");
+                String districtName = rec.get("district_name");
+
+                String acCode = rec.get("ac_code");
+                String acName = rec.get("ac_name");
+
                 String psNumberRaw = rec.get("ps_number_raw");
                 Integer psNumber = Integer.valueOf(rec.get("ps_number"));
                 String psSuffix = rec.get("ps_suffix");
                 String name = rec.get("polling_station_name");
 
-                AssemblyConstituency ac = acRepo.findByAcCode(acCode)
-                        .orElseThrow(() -> new IllegalArgumentException("AC not found: " + acCode));
 
+                // ======= 1. AUTO-CREATE DISTRICT =======
+                District district = districtRepo.findByDistrictCode(districtCode)
+                        .orElseGet(() -> {
+                            District d = District.builder()
+                                    .districtCode(Integer.parseInt(districtCode))
+                                    .name(districtName)
+                                    .build();
+                            return districtRepo.save(d);
+                        });
+
+
+                // ======= 2. AUTO-CREATE ASSEMBLY CONSTITUENCY =======
+                AssemblyConstituency ac = acRepo.findByAcCode(acCode)
+                        .orElseGet(() -> {
+                            AssemblyConstituency a = AssemblyConstituency.builder()
+                                    .acCode(acCode)
+                                    .name(acName)
+                                    .district(district)
+                                    .ls(null) // LS mapping done later via admin UI
+                                    .build();
+                            return acRepo.save(a);
+                        });
+
+
+                // Normalize suffix (empty = null)
+                String normalizedSuffix = (psSuffix == null || psSuffix.isBlank()) ? "" : psSuffix;
+
+
+                // ======= 3. CHECK FOR DUPLICATE POLLING STATION =======
+                Optional<PollingStation> existing =
+                        psRepo.findByAcIdAndPsNumberAndPsSuffix(ac.getId(), psNumber, normalizedSuffix);
+
+                if (existing.isPresent()) {
+                    skipped++;
+                    System.out.println("Skipping duplicate PS: AC " + acCode + " PS " + psNumber + normalizedSuffix);
+                    continue;
+                }
+
+
+                // ======= 4. INSERT POLLING STATION (ls = null) =======
                 PollingStation ps = PollingStation.builder()
-                        .ls(ls)
                         .ac(ac)
+                        .ls(null)                    // will be populated later
                         .psNumber(psNumber)
-                        .psSuffix(psSuffix == null || psSuffix.isBlank() ? null : psSuffix)
+                        .psSuffix(normalizedSuffix)
                         .psNumberRaw(psNumberRaw)
                         .name(name)
+                        .localbody(null)
+                        .ward(null)
                         .build();
 
                 psRepo.save(ps);
+                inserted++;
             }
         }
+
+        return "Booths inserted = " + inserted + ", Skipped duplicates = " + skipped;
     }
 
     // ----------------------------------------
