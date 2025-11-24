@@ -24,6 +24,7 @@ public class Party {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Column(name = "short_name")
     private String shortName;
 
     @ManyToOne

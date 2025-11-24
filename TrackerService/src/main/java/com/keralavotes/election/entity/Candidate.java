@@ -35,7 +35,7 @@ public class Candidate {
     @JoinColumn(name = "party_id")
     private Party party;
 
-    @ManyToOne @JoinColumn(name = "ls_id")
+    @ManyToOne @JoinColumn(name = "ls_code")
     private LoksabhaConstituency ls;
 
     @Column(name = "election_year", nullable = false)

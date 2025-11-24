@@ -11,7 +11,6 @@ import com.keralavotes.election.repository.BoothVotesRepository;
 import com.keralavotes.election.repository.CandidateRepository;
 import com.keralavotes.election.repository.LoksabhaConstituencyRepository;
 import com.keralavotes.election.repository.PollingStationRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.*;
@@ -56,7 +55,7 @@ public class CsvImportService {
 
             for (CSVRecord rec : parser) {
 
-                // ======= READ CSV FIELDS (from your parser) =======
+                // ======= READ CSV FIELDS =======
                 String districtCode = rec.get("district_code");
                 String districtName = rec.get("district_name");
 
@@ -99,7 +98,7 @@ public class CsvImportService {
 
                 // ======= 3. CHECK FOR DUPLICATE POLLING STATION =======
                 Optional<PollingStation> existing =
-                        psRepo.findByAcCodeAndPsNumberAndPsSuffix(acCode, psNumber, normalizedSuffix);
+                        psRepo.findByAc_AcCodeAndPsNumberAndPsSuffix(acCode, psNumber, normalizedSuffix);
 
                 if (existing.isPresent()) {
                     skipped++;

@@ -18,9 +18,13 @@ import lombok.Setter;
 @Entity
 @Table(
     name = "polling_station",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"ac_id", "ps_number", "ps_suffix"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"ac_code", "ps_number", "ps_suffix"})
 )
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PollingStation {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,7 +33,8 @@ public class PollingStation {
     @JoinColumn(name = "ls_code", referencedColumnName = "ls_code")
     private LoksabhaConstituency ls;
 
-    @ManyToOne @JoinColumn(name = "ac_code", referencedColumnName = "acCode", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "ac_code", referencedColumnName = "ac_code", nullable = false)
     private AssemblyConstituency ac;
 
     @Column(nullable = false)

@@ -9,7 +9,4 @@ public interface PollingStationRepository extends JpaRepository<PollingStation, 
     Optional<PollingStation> findByAc_AcCodeAndPsNumberAndPsSuffix(
             Integer acCode, Integer psNumber, String psSuffix
     );
-    Optional<PollingStation> findByAcCodeAndPsNumberAndPsSuffix(
-            Integer acCode, Integer psNumber, String psSuffix
-    );
 }

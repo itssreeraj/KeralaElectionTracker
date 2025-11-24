@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,7 +25,10 @@ public class Localbody {
     private String name;
 
     @Column(nullable = false)
-    private String type; // corporation / municipality / block / gp
+    private String type;
 
-    // district mapping omitted here, can add later
+    // District relationship
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "district_code")
+    private District district;
 }
