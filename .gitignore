@@ -1,3 +1,18 @@
+# Gradle build cache
+TrackerService/.gradle/
+
+# IntelliJ project metadata
+TrackerService/.idea/gradle.xml
+TrackerService/.idea/
+
+# Build output
+TrackerService/build/
+TrackerService/out/
+
+# Logs
+TrackerService/logs/
+TrackerService/*.log
+
 # Build Artifacts
 /target/
 /build/

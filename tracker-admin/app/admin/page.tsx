@@ -232,11 +232,20 @@ function LocalbodyTab() {
   const [type, setType] = useState("gramapanchayat");
 
   const [assemblies, setAssemblies] = useState<any[]>([]);
+  const [boothFilter, setBoothFilter] = useState("");
+
   const [acFilter, setAcFilter] = useState("");
   const [selectedAc, setSelectedAc] = useState("");
 
   const [booths, setBooths] = useState<any[]>([]);
   const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
+
+  const filteredBooths = booths.filter((b) =>
+    (b.psNumber + " " + (b.psSuffix || "") + " " + b.name)
+      .toLowerCase()
+      .includes(boothFilter.toLowerCase())
+  );
+
 
   // Load districts + assemblies
   useEffect(() => {
@@ -364,9 +373,60 @@ function LocalbodyTab() {
         </button>
       </div>
 
-      {/* Booth List */}
+      {/* Booth Search + Select All / None */}
       <h3 style={{ marginTop: 20 }}>Booths in AC {selectedAc}</h3>
 
+      <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+        <input
+          placeholder="Search booths…"
+          value={boothFilter}
+          onChange={(e) => setBoothFilter(e.target.value)}
+          style={{
+            flex: 1,
+            padding: 8,
+            borderRadius: 6,
+            background: "#111",
+            color: "white",
+            border: "1px solid #555",
+          }}
+        />
+
+        <button
+          onClick={() => {
+            // select all visible filtered booths
+            const newSet = new Set(selectedBooths);
+            filteredBooths.forEach((b) => newSet.add(b.id));
+            setSelectedBooths(newSet);
+          }}
+          style={{
+            padding: "6px 12px",
+            background: "#0d6efd",
+            color: "white",
+            borderRadius: 6,
+          }}
+        >
+          All
+        </button>
+
+        <button
+          onClick={() => {
+            // remove only filtered booths
+            const newSet = new Set(selectedBooths);
+            filteredBooths.forEach((b) => newSet.delete(b.id));
+            setSelectedBooths(newSet);
+          }}
+          style={{
+            padding: "6px 12px",
+            background: "#dc3545",
+            color: "white",
+            borderRadius: 6,
+          }}
+        >
+          None
+        </button>
+      </div>
+
+      {/* Booth list */}
       <div
         style={{
           maxHeight: 350,
@@ -378,7 +438,7 @@ function LocalbodyTab() {
           color: "white",
         }}
       >
-        {booths.map((b) => (
+        {filteredBooths.map((b) => (
           <div key={b.id} style={{ marginBottom: 6 }}>
             <label>
               <input
@@ -391,6 +451,7 @@ function LocalbodyTab() {
           </div>
         ))}
       </div>
+
 
       <button
         onClick={saveLocalbody}
