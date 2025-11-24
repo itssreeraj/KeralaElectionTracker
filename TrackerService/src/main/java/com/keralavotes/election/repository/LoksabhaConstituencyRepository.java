@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface LoksabhaConstituencyRepository extends JpaRepository<LoksabhaConstituency, Long> {
     Optional<LoksabhaConstituency> findByLsCode(String lsCode);
+    Optional<LoksabhaConstituency> findByName(String name);
 }

@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -153,7 +155,7 @@ public class CsvImportService {
 
                 optionalPollingStation.ifPresentOrElse(pollingStation -> {
                     Optional<Candidate> optionalCandidate = candidateRepo
-                            .findByNameAndLs_LsCodeAndElectionYear(candidateName, lsCode, year);
+                            .findByNameAndLs_NameAndElectionYear(candidateName, lsCode, year);
 
                     optionalCandidate.ifPresent(candidate -> {
                         BoothVotes bv = BoothVotes.builder()
@@ -214,5 +216,84 @@ public class CsvImportService {
             });
         }
     }
+
+    @Transactional
+    public String importCandidatesCsv(MultipartFile file) throws Exception {
+
+        log.info("Starting Candidate CSV import: {}", file.getOriginalFilename());
+
+        int inserted = 0;
+        int updated = 0;
+
+        Pattern p = Pattern.compile(
+                "^LS_(.*?)_AC(\\d+)_C\\(\\s*(\\d+),\\s*'(.+)'\\s*\\)$"
+        );
+
+        try (var in = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)) {
+            CSVParser parser = new CSVParser(in,
+                    CSVFormat.DEFAULT
+                            .withFirstRecordAsHeader()
+                            .withTrim(true)
+                            .withIgnoreEmptyLines(true)
+            );
+
+            for (CSVRecord rec : parser) {
+
+                try {
+                    String key = rec.get("candidate_key").trim();
+
+                    Matcher m = p.matcher(key);
+                    if (!m.matches()) {
+                        log.warn("Skipping invalid candidate_key format: {}", key);
+                        continue;
+                    }
+
+                    String lsName = m.group(1).trim();
+                    Integer acCode = Integer.valueOf(m.group(2));
+                    Integer candidateIndex = Integer.valueOf(m.group(3));
+                    String candidateName = m.group(4).trim();
+
+                    Integer year = 2024; // default for now
+
+                    // ---- LS ----
+                    LoksabhaConstituency ls = lsRepo.findByName(lsName)
+                            .orElseGet(() -> {
+                                log.info("Creating LS entry: {}", lsName);
+                                return null;
+                            });
+
+                    // ---- Candidate Existence Check ----
+                    Optional<Candidate> existing =
+                            candidateRepo.findByNameAndLs_NameAndElectionYear(candidateName, lsName, year);
+
+                    if (existing.isPresent()) {
+                        // maybe update index later
+                        updated++;
+                        continue;
+                    }
+
+                    Candidate candidate = Candidate.builder()
+                            .name(candidateName)
+                            .ls(ls)
+                            .electionYear(year)
+                            .party(null)
+                            .alliance(null)
+                            .build();
+
+                    candidateRepo.save(candidate);
+                    log.info("Inserted Candidate: {} (LS: {}, AC: {})",candidateName, lsName, acCode);
+                    inserted++;
+
+                } catch (Exception ex) {
+                    log.error("Error processing candidate row: {}", rec, ex);
+                }
+            }
+        }
+
+        String summary = "Inserted = " + inserted + ", Updated = " + updated;
+        log.info("Candidate CSV Import Finished: {}", summary);
+        return summary;
+    }
+
 
 }

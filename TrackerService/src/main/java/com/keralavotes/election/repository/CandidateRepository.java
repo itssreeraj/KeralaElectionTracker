@@ -6,9 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface CandidateRepository extends JpaRepository<Candidate, Long> {
-    Optional<Candidate> findByNameAndLs_LsCodeAndElectionYear(
-            String name,
-            String lsCode,
-            Integer electionYear
-    );
+    Optional<Candidate> findByNameAndLs_NameAndElectionYear(
+            String name, String lsName, Integer year);
 }

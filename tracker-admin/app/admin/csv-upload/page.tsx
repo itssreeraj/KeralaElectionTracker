@@ -2,11 +2,64 @@
 
 import React, { useState } from "react";
 
-export default function CsvUploadPage() {
+/* --------------------------------------------------
+   Main Page Component with Tabs
+--------------------------------------------------- */
+export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<"upload" | "ls">("upload");
+
+  return (
+    <div style={{ padding: "32px", maxWidth: "900px", margin: "0 auto" }}>
+      <h1 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "24px" }}>
+        Admin Panel
+      </h1>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+        <button
+          onClick={() => setActiveTab("upload")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "6px",
+            border: "1px solid #444",
+            background: activeTab === "upload" ? "#0070f3" : "#222",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          CSV Upload
+        </button>
+
+        <button
+          onClick={() => setActiveTab("ls")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "6px",
+            border: "1px solid #444",
+            background: activeTab === "ls" ? "#0070f3" : "#222",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          LS Mapping
+        </button>
+      </div>
+
+      {/* Tab Contents */}
+      {activeTab === "upload" ? <CsvUploadTab /> : <LsMappingTab />}
+    </div>
+  );
+}
+
+/* ==================================================
+   CSV UPLOAD TAB
+=================================================== */
+function CsvUploadTab() {
   const [logMessages, setLogMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+  const backend =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
 
   const log = (msg: string) => {
     setLogMessages((prev) => [...prev, msg]);
@@ -27,7 +80,6 @@ export default function CsvUploadPage() {
 
       const text = await res.text();
       if (!res.ok) throw new Error(text);
-
       log(`✔ Success: ${text}`);
     } catch (err: any) {
       log(`❌ Error: ${err.message}`);
@@ -37,12 +89,8 @@ export default function CsvUploadPage() {
   };
 
   return (
-    <div style={{ padding: "32px", maxWidth: "700px" }}>
-      <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>
-        Admin CSV Import
-      </h1>
-
-      {/* CSV Upload Section */}
+    <>
+      {/* CSV Upload Blocks */}
       <div
         style={{
           display: "flex",
@@ -51,28 +99,24 @@ export default function CsvUploadPage() {
           marginBottom: "32px",
         }}
       >
-        {/* Booth CSV */}
         <CsvUploadBlock
           title="Booth List CSV"
           onUpload={(file) => uploadFile("/import/booths", file)}
         />
 
-        {/* Form 20 Candidate Votes */}
+        <CsvUploadBlock
+          title="Candidates CSV"
+          onUpload={(file) => uploadFile("/import/candidates", file)}
+        />
+
         <CsvUploadBlock
           title="Form 20 - Candidate Votes CSV"
           onUpload={(file) => uploadFile("/import/form20", file)}
         />
 
-        {/* Form 20 Totals */}
         <CsvUploadBlock
           title="Form 20 Totals CSV"
           onUpload={(file) => uploadFile("/import/form20-totals", file)}
-        />
-
-        {/* Polling Stations CSV */}
-        <CsvUploadBlock
-          title="Polling Station CSV"
-          onUpload={(file) => uploadFile("/import/polling-stations", file)}
         />
       </div>
 
@@ -104,14 +148,106 @@ export default function CsvUploadPage() {
       {loading && (
         <p style={{ marginTop: "12px", color: "orange" }}>Uploading…</p>
       )}
+    </>
+  );
+}
+
+/* ==================================================
+   LS MAPPING TAB
+=================================================== */
+function LsMappingTab() {
+  const [lsName, setLsName] = useState("");
+  const [lsCode, setLsCode] = useState("");
+  const [response, setResponse] = useState("");
+
+  const backend =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+
+  const saveMapping = async () => {
+    if (!lsName || !lsCode) {
+      setResponse("❌ Enter LS Name & LS Code");
+      return;
+    }
+
+    const payload = { lsName, lsCode: Number(lsCode) };
+
+    const res = await fetch(`${backend}/admin/ls`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    setResponse(text);
+  };
+
+  return (
+    <div style={{ padding: "10px", border: "1px solid #555", borderRadius: 8 }}>
+      <h2 style={{ marginBottom: 16 }}>Loksabha Constituency Mapping</h2>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <input
+          type="text"
+          placeholder="LS Name (ex: Alappuzha)"
+          value={lsName}
+          onChange={(e) => setLsName(e.target.value)}
+          style={{
+            padding: 10,
+            borderRadius: 6,
+            border: "1px solid #444",
+            background: "#222",
+            color: "white",
+          }}
+        />
+
+        <input
+          type="number"
+          placeholder="LS Code (ex: 15)"
+          value={lsCode}
+          onChange={(e) => setLsCode(e.target.value)}
+          style={{
+            padding: 10,
+            borderRadius: 6,
+            border: "1px solid #444",
+            background: "#222",
+            color: "white",
+          }}
+        />
+
+        <button
+          onClick={saveMapping}
+          style={{
+            padding: "10px 20px",
+            background: "#28a745",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+        >
+          Save Mapping
+        </button>
+
+        <pre
+          style={{
+            background: "#111",
+            padding: 12,
+            borderRadius: 6,
+            color: "#0f0",
+            minHeight: 50,
+          }}
+        >
+          {response || "No action yet"}
+        </pre>
+      </div>
     </div>
   );
 }
 
-/* ------------------------
+/* ==================================================
    Reusable Upload Block
-------------------------- */
-
+=================================================== */
 function CsvUploadBlock({
   title,
   onUpload,

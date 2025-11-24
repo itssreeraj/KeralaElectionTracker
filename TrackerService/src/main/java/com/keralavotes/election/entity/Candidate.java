@@ -40,4 +40,8 @@ public class Candidate {
 
     @Column(name = "election_year", nullable = false)
     private Integer electionYear;
+
+    @ManyToOne
+    @JoinColumn(name = "alliance_id")
+    private Alliance alliance;
 }
