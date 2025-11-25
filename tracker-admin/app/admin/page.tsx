@@ -240,6 +240,8 @@ function LocalbodyTab() {
   const [booths, setBooths] = useState<any[]>([]);
   const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
 
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+
   const filteredBooths = booths.filter((b) =>
     (b.psNumber + " " + (b.psSuffix || "") + " " + b.name)
       .toLowerCase()
@@ -268,13 +270,32 @@ function LocalbodyTab() {
       .then(setBooths);
   };
 
-  const toggleBooth = (id: number) => {
+  const toggleBooth = (event: React.MouseEvent, boothId: number, index: number) => {
+    const isShift = event.shiftKey;
+
     setSelectedBooths((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
+      const newSet = new Set(prev);
+
+      // Shift-click → select range
+      if (isShift && lastClickedIndex !== null) {
+        const start = Math.min(lastClickedIndex, index);
+        const end = Math.max(lastClickedIndex, index);
+
+        for (let i = start; i <= end; i++) {
+          newSet.add(filteredBooths[i].id);
+        }
+      } else {
+        // Normal click → toggle
+        newSet.has(boothId) ? newSet.delete(boothId) : newSet.add(boothId);
+      }
+
+      return newSet;
     });
+
+    // Update last clicked
+    setLastClickedIndex(index);
   };
+
 
   const saveLocalbody = async () => {
     // Create Localbody
@@ -438,13 +459,16 @@ function LocalbodyTab() {
           color: "white",
         }}
       >
-        {filteredBooths.map((b) => (
+        {filteredBooths.map((b, idx) => (
           <div key={b.id} style={{ marginBottom: 6 }}>
-            <label>
+            <label
+              onClick={(e) => toggleBooth(e as any, b.id, idx)}   // pass index + event
+              style={{ cursor: "pointer", userSelect: "none" }}
+            >
               <input
                 type="checkbox"
                 checked={selectedBooths.has(b.id)}
-                onChange={() => toggleBooth(b.id)}
+                readOnly
               />{" "}
               [{b.psNumber}{b.psSuffix || ""}] – {b.name}
             </label>
