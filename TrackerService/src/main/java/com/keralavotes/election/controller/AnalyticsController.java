@@ -5,44 +5,60 @@ import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
 import com.keralavotes.election.repository.BoothVotesRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/analytics")
+@RequestMapping("/api/admin/analysis")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class AnalyticsController {
 
+    private final BoothVotesRepository boothVotesRepo;
     private final EntityManager em;
 
-    private final BoothVotesRepository boothVotesRepo;
+    /* =====================================================
+            UI EXPECTED ENDPOINTS — FIXED
+       ===================================================== */
 
-    @GetMapping("/localbody/{id}/party-votes")
+    /**
+     * PARTY-WISE VOTES FOR A LOCALBODY
+     * UI calls:
+     *   /api/admin/analysis/localbody/party?localbodyId=1&year=2024
+     */
+    @GetMapping("/localbody/party")
     public List<LocalbodyPartyVotesDto> partyVotesForLocalbody(
-            @PathVariable("id") Long localbodyId,
+            @RequestParam("localbodyId") Long localbodyId,
             @RequestParam(defaultValue = "2024") int year
     ) {
         return boothVotesRepo.sumVotesByPartyForLocalbody(localbodyId, year);
     }
 
-    @GetMapping("/localbody/{id}/alliance-votes")
+
+    /**
+     * ALLIANCE-WISE VOTES FOR A LOCALBODY
+     * UI calls:
+     *  /api/admin/analysis/localbody/alliance?localbodyId=1&year=2024
+     */
+    @GetMapping("/localbody/alliance")
     public List<LocalbodyAllianceVotesDto> allianceVotesForLocalbody(
-            @PathVariable("id") Long localbodyId,
+            @RequestParam("localbodyId") Long localbodyId,
             @RequestParam(defaultValue = "2024") int year
     ) {
         return boothVotesRepo.sumVotesByAllianceForLocalbody(localbodyId, year);
     }
 
+
+    /* =====================================================
+            EXISTING DETAILED RESULT ENDPOINTS
+       ===================================================== */
+
     @GetMapping("/localbody/{localbodyId}/ls/{year}")
     public List<Object[]> getLocalbodyResults(
             @PathVariable Long localbodyId,
-            @PathVariable Integer year) {
-
+            @PathVariable Integer year
+    ) {
         String jpql = """
             SELECT c.name, p.shortName, a.name, SUM(bv.votes)
             FROM BoothVotes bv
@@ -64,8 +80,8 @@ public class AnalyticsController {
     @GetMapping("/assembly/{acId}/{year}")
     public List<Object[]> getAssemblyResults(
             @PathVariable Long acId,
-            @PathVariable Integer year) {
-
+            @PathVariable Integer year
+    ) {
         String jpql = """
             SELECT c.name, p.shortName, a.name, SUM(bv.votes)
             FROM BoothVotes bv

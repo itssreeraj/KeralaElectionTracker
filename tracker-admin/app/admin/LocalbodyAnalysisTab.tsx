@@ -2,129 +2,394 @@
 
 import React, { useEffect, useState } from "react";
 
-export default function LocalbodyAnalysisTab({ backend }: { backend: string }) {
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [localbodies, setLocalbodies] = useState<any[]>([]);
-  const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedLocalbody, setSelectedLocalbody] = useState("");
-  const [year, setYear] = useState(2024);
+type District = {
+  districtCode: number;
+  name: string;
+};
 
-  const [analysis, setAnalysis] = useState<any | null>(null);
+type Localbody = {
+  id: number;
+  name: string;
+  type: string;
+};
 
-  /* Load Districts initially */
+type PartyVotes = {
+  partyId: number | null;
+  partyName: string | null;
+  partyShortName: string | null;
+  allianceId: number | null;
+  allianceName: string | null;
+  allianceColor: string | null;
+  votes: number;
+};
+
+type AllianceVotes = {
+  allianceId: number | null;
+  allianceName: string | null;
+  allianceColor: string | null;
+  votes: number;
+};
+
+export default function LocalbodyAnalysisTab() {
+  const backend =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+
+  const [localbodies, setLocalbodies] = useState<Localbody[]>([]);
+  const [selectedLocalbody, setSelectedLocalbody] = useState<string>("");
+
+  const [year, setYear] = useState<number>(2024);
+
+  const [partyVotes, setPartyVotes] = useState<PartyVotes[]>([]);
+  const [allianceVotes, setAllianceVotes] = useState<AllianceVotes[]>([]);
+
+  const [loadingLb, setLoadingLb] = useState(false);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  /* ----------------------------------------
+     LOAD DISTRICTS ONCE
+  ---------------------------------------- */
   useEffect(() => {
-    fetch(`${backend}/admin/districts`)
-      .then((r) => r.json())
-      .then(setDistricts);
-  }, []);
+    const loadDistricts = async () => {
+      try {
+        const res = await fetch(`${backend}/admin/districts`);
+        if (!res.ok) {
+          console.error("Failed to load districts", await res.text());
+          return;
+        }
+        const data = await res.json();
+        setDistricts(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Error loading districts", e);
+      }
+    };
 
-  /* Load localbodies when district changes */
+    loadDistricts();
+  }, [backend]);
+
+  /* ----------------------------------------
+     LOAD LOCALBODIES WHEN DISTRICT CHANGES
+  ---------------------------------------- */
   useEffect(() => {
-    if (!selectedDistrict) return;
+    const loadLocalbodies = async () => {
+      if (!selectedDistrict) {
+        setLocalbodies([]);
+        setSelectedLocalbody("");
+        return;
+      }
 
-    fetch(`${backend}/admin/localbodies/by-district?name=${selectedDistrict}`)
-      .then((r) => r.json())
-      .then(setLocalbodies);
-  }, [selectedDistrict]);
+      setLoadingLb(true);
+      setErrorMsg(null);
+      try {
+        const res = await fetch(
+          `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+            selectedDistrict
+          )}`
+        );
 
-  /* Load analysis */
-  const loadAnalysis = () => {
+        if (!res.ok) {
+          const txt = await res.text();
+          console.error("Failed to load localbodies", txt);
+          setErrorMsg("Failed to load localbodies");
+          setLocalbodies([]);
+          return;
+        }
+
+        const data = await res.json();
+        setLocalbodies(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Error loading localbodies", e);
+        setErrorMsg("Error loading localbodies");
+        setLocalbodies([]);
+      } finally {
+        setLoadingLb(false);
+      }
+    };
+
+    loadLocalbodies();
+  }, [backend, selectedDistrict]);
+
+  /* ----------------------------------------
+     LOAD ANALYSIS
+  ---------------------------------------- */
+  const loadAnalysis = async () => {
     if (!selectedLocalbody) {
-      alert("Select a localbody");
+      alert("Please select a localbody.");
       return;
     }
 
-    fetch(
-      `${backend}/admin/analysis/localbody?localbodyId=${selectedLocalbody}&year=${year}`
-    )
-      .then((r) => r.json())
-      .then(setAnalysis);
+    setLoadingAnalysis(true);
+    setErrorMsg(null);
+
+    const lbId = Number(selectedLocalbody);
+
+    try {
+      // PARTY-WISE
+      const partyRes = await fetch(
+        `${backend}/admin/analysis/localbody/party?localbodyId=${lbId}&year=${year}`
+      );
+      if (!partyRes.ok) {
+        console.error("Party analysis failed", await partyRes.text());
+        setErrorMsg("Failed to load party-wise analysis");
+        setPartyVotes([]);
+      } else {
+        const data = await partyRes.json();
+        setPartyVotes(Array.isArray(data) ? data : []);
+      }
+
+      // ALLIANCE-WISE
+      const allianceRes = await fetch(
+        `${backend}/admin/analysis/localbody/alliance?localbodyId=${lbId}&year=${year}`
+      );
+      if (!allianceRes.ok) {
+        console.error("Alliance analysis failed", await allianceRes.text());
+        // keep previous error if already set, or set a new one:
+        setErrorMsg((prev) => prev ?? "Failed to load alliance-wise analysis");
+        setAllianceVotes([]);
+      } else {
+        const data = await allianceRes.json();
+        setAllianceVotes(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error("Error loading analysis", e);
+      setErrorMsg("Error loading analysis");
+      setPartyVotes([]);
+      setAllianceVotes([]);
+    } finally {
+      setLoadingAnalysis(false);
+    }
   };
 
+  /* ----------------------------------------
+     RENDER
+  ---------------------------------------- */
   return (
     <div style={{ padding: 24, color: "white" }}>
-      <h2>Localbody Vote Analysis</h2>
+      <h2 style={{ marginBottom: 16 }}>Localbody Analysis</h2>
 
-      {/* District */}
-      <label>District</label>
-      <select
-        value={selectedDistrict}
-        onChange={(e) => setSelectedDistrict(e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 12 }}
-      >
-        <option value="">Select District</option>
-        {districts.map((d) => (
-          <option key={d.districtCode} value={d.name}>
-            {d.districtCode} - {d.name}
-          </option>
-        ))}
-      </select>
+      {/* DISTRICT SELECT */}
+      <div style={{ marginBottom: 16 }}>
+        <label>District</label>
+        <select
+          value={selectedDistrict}
+          onChange={(e) => {
+            setSelectedDistrict(e.target.value);
+            setSelectedLocalbody("");
+            setPartyVotes([]);
+            setAllianceVotes([]);
+          }}
+          style={{ width: "100%", padding: 8, marginTop: 4 }}
+        >
+          <option value="">Select District</option>
+          {districts.map((d) => (
+            <option key={d.districtCode} value={d.name}>
+              {d.districtCode} - {d.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      {/* Localbody */}
-      <label>Localbody</label>
-      <select
-        value={selectedLocalbody}
-        onChange={(e) => setSelectedLocalbody(e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 12 }}
-      >
-        <option value="">Select Localbody</option>
-        {localbodies.map((lb) => (
-          <option key={lb.id} value={lb.id}>
-            {lb.name} ({lb.type})
-          </option>
-        ))}
-      </select>
+      {/* LOCALBODY SELECT */}
+      <div style={{ marginBottom: 16 }}>
+        <label>Localbody</label>
+        {loadingLb ? (
+          <p style={{ marginTop: 4 }}>Loading localbodies…</p>
+        ) : (
+          <select
+            value={selectedLocalbody}
+            onChange={(e) => {
+              setSelectedLocalbody(e.target.value);
+              setPartyVotes([]);
+              setAllianceVotes([]);
+            }}
+            style={{ width: "100%", padding: 8, marginTop: 4 }}
+          >
+            <option value="">Select Localbody</option>
+            {localbodies.map((lb) => (
+              <option key={lb.id} value={lb.id}>
+                {lb.name} ({lb.type})
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
-      {/* Year */}
-      <label>Election Year</label>
-      <select
-        value={year}
-        onChange={(e) => setYear(Number(e.target.value))}
-        style={{ width: "100%", padding: 8, marginBottom: 12 }}
-      >
-        <option value={2024}>2024</option>
-      </select>
-
-      <button
-        onClick={loadAnalysis}
+      {/* YEAR + LOAD BUTTON */}
+      <div
         style={{
-          padding: "10px 16px",
-          background: "#0d6efd",
-          color: "white",
-          borderRadius: 8,
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          marginBottom: 20,
         }}
       >
-        Load Analysis
-      </button>
+        <div>
+          <label>Year</label>
+          <input
+            type="number"
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value) || 0)}
+            style={{ padding: 8, marginLeft: 8, width: 100 }}
+          />
+        </div>
 
-      {/* Analysis Output */}
-      {analysis && (
-        <div style={{ marginTop: 30 }}>
-          <h3>Votes by Party</h3>
-          <table style={{ width: "100%", background: "#111", marginBottom: 30 }}>
-            <tbody>
-              {analysis.partyVotes.map((row: any) => (
-                <tr key={row.party}>
-                  <td>{row.party}</td>
-                  <td>{row.votes}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <button
+          onClick={loadAnalysis}
+          disabled={!selectedLocalbody || loadingAnalysis}
+          style={{
+            padding: "8px 16px",
+            background: "#0d6efd",
+            color: "white",
+            borderRadius: 6,
+            border: "none",
+            cursor: "pointer",
+            opacity: !selectedLocalbody || loadingAnalysis ? 0.6 : 1,
+          }}
+        >
+          {loadingAnalysis ? "Loading..." : "Load Analysis"}
+        </button>
+      </div>
 
-          <h3>Votes by Alliance</h3>
-          <table style={{ width: "100%", background: "#111" }}>
+      {errorMsg && (
+        <p style={{ color: "salmon", marginBottom: 16 }}>{errorMsg}</p>
+      )}
+
+      {/* PARTY-WISE TABLE */}
+      {partyVotes.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h3>Party-wise Votes</h3>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              marginTop: 8,
+              fontSize: 14,
+            }}
+          >
+            <thead>
+              <tr>
+                <th
+                  style={{ borderBottom: "1px solid #555", padding: 6 }}
+                  align="left"
+                >
+                  Party
+                </th>
+                <th
+                  style={{ borderBottom: "1px solid #555", padding: 6 }}
+                  align="left"
+                >
+                  Alliance
+                </th>
+                <th
+                  style={{ borderBottom: "1px solid #555", padding: 6 }}
+                  align="right"
+                >
+                  Votes
+                </th>
+              </tr>
+            </thead>
             <tbody>
-              {analysis.allianceVotes.map((row: any) => (
-                <tr key={row.alliance}>
-                  <td>{row.alliance}</td>
-                  <td>{row.votes}</td>
+              {partyVotes.map((p, idx) => (
+                <tr key={idx}>
+                  <td style={{ padding: 6 }}>
+                    {p.partyShortName
+                      ? `${p.partyShortName} – ${p.partyName}`
+                      : p.partyName ?? "Independent / Unknown"}
+                  </td>
+                  <td style={{ padding: 6, display: "flex", alignItems: "center" }}>
+                    {p.allianceName ? (
+                      <>
+                        <div
+                          style={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: "50%",
+                            background: p.allianceColor ?? "#888",
+                            marginRight: 8,
+                          }}
+                        ></div>
+                        {p.allianceName}
+                      </>
+                    ) : (
+                      "Independent / Others"
+                    )}
+                  </td>
+
+                  <td style={{ padding: 6 }} align="right">
+                    {p.votes}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* ALLIANCE-WISE TABLE */}
+      {allianceVotes.length > 0 && (
+        <div>
+          <h3>Alliance-wise Votes</h3>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              marginTop: 8,
+              fontSize: 14,
+            }}
+          >
+            <thead>
+              <tr>
+                <th
+                  style={{ borderBottom: "1px solid #555", padding: 6 }}
+                  align="left"
+                >
+                  Alliance
+                </th>
+                <th
+                  style={{ borderBottom: "1px solid #555", padding: 6 }}
+                  align="right"
+                >
+                  Votes
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {allianceVotes.map((a, idx) => (
+                <tr key={idx}>
+                  <td style={{ padding: 6, display: "flex", alignItems: "center" }}>
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: a.alliance?.color ?? "#888",
+                        marginRight: 8,
+                      }}
+                    ></div>
+                    {a.alliance?.name ?? "Unaligned / Others"}
+                  </td>
+                  <td style={{ padding: 6 }} align="right">
+                    {a.votes}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+
+      {partyVotes.length === 0 &&
+        allianceVotes.length === 0 &&
+        selectedLocalbody &&
+        !loadingAnalysis && (
+          <p style={{ marginTop: 16, opacity: 0.7 }}>
+            No analysis data yet for this localbody/year.
+          </p>
+        )}
     </div>
   );
 }

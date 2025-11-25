@@ -61,8 +61,8 @@ public class LocalbodyAdminController {
     }
 
     @GetMapping("/localbodies/by-district")
-    public List<Localbody> getByDistrict(@RequestParam String district) {
-        return localbodyRepo.findByDistrict_NameIgnoreCase(district);
+    public List<Localbody> getByDistrict(@RequestParam("name") String districtName) {
+        return localbodyRepo.findByDistrictNameIgnoreCase(districtName);
     }
 
 
