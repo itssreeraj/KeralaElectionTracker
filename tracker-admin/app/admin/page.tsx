@@ -1,9 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import BoothManagerTab from "./BoothManagerTab";
+import LocalbodyTab from "./LocalBodyTab";
+import ReassignBoothsTab from "./ReassignBoothsTab";
+
+const tabs = ["CSV Upload", "LS Mapping", "Localbody Mapping", "Booth Manager", "Reassign Booths"];
+
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<"upload" | "ls" | "localbody">("upload");
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+  const [tab, setTab] = useState<"upload" | "ls" | "localbody" | "booth" | "reassign">("upload");
 
   return (
     <div style={{ padding: 32, maxWidth: 1000 }}>
@@ -14,11 +21,16 @@ export default function AdminPage() {
         <TabButton label="CSV Upload" active={tab === "upload"} onClick={() => setTab("upload")} />
         <TabButton label="LS Mapping" active={tab === "ls"} onClick={() => setTab("ls")} />
         <TabButton label="Localbody Mapping" active={tab === "localbody"} onClick={() => setTab("localbody")} />
+        <TabButton label="Booth Manager" active={tab === "booth"} onClick={() => setTab("booth")} />
+        <TabButton label="Reassign Booths" active={tab==="reassign"} onClick={() => setTab("reassign")} />
+
       </div>
 
       {tab === "upload" && <CsvUploadTab />}
       {tab === "ls" && <LsMappingTab />}
       {tab === "localbody" && <LocalbodyTab />}
+      {tab === "booth" && <BoothManagerTab backend={backend} />}
+      {tab === "reassign" && <ReassignBoothsTab backend={backend} />}
     </div>
   );
 }
@@ -218,277 +230,191 @@ function LsMappingTab() {
   );
 }
 
-/* ---------------------------------------------------
-    TAB 3 – LOCALBODY MAPPING
------------------------------------------------------ */
+// /* ---------------------------------------------------
+//     TAB 3 – LOCALBODY MAPPING
+// ----------------------------------------------------- */
 
-function LocalbodyTab() {
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+// /* ---------------------------------------------------
+//     TAB 3 – LOCALBODY MAPPING (UPDATED FULL VERSION)
+// ----------------------------------------------------- */
 
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [district, setDistrict] = useState("");
+// function LocalbodyTab() {
+//   const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
 
-  const [name, setName] = useState("");
-  const [type, setType] = useState("gramapanchayat");
+//   const [districts, setDistricts] = useState<any[]>([]);
+//   const [localbodies, setLocalbodies] = useState<any[]>([]);
+//   const [assemblies, setAssemblies] = useState<any[]>([]);
+//   const [booths, setBooths] = useState<any[]>([]);
+//   const [wards, setWards] = useState<any[]>([]);
 
-  const [assemblies, setAssemblies] = useState<any[]>([]);
-  const [boothFilter, setBoothFilter] = useState("");
+//   const [selectedAc, setSelectedAc] = useState("");
+//   const [boothFilter, setBoothFilter] = useState("");
+//   const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
+//   const [selectedLocalbody, setSelectedLocalbody] = useState("");
+//   const [selectedWard, setSelectedWard] = useState("");
 
-  const [acFilter, setAcFilter] = useState("");
-  const [selectedAc, setSelectedAc] = useState("");
+//   const filteredBooths = booths.filter((b) =>
+//     (b.psNumber + " " + b.psSuffix + " " + b.name)
+//       .toLowerCase()
+//       .includes(boothFilter.toLowerCase())
+//   );
 
-  const [booths, setBooths] = useState<any[]>([]);
-  const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
+//   // Load initial
+//   useEffect(() => {
+//     fetch(`${backend}/admin/districts`).then(r => r.json()).then(setDistricts);
+//     fetch(`${backend}/admin/assemblies`).then(r => r.json()).then(setAssemblies);
+//     fetch(`${backend}/admin/localbodies`).then(r => r.json()).then(setLocalbodies);
+//   }, []);
 
-  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+//   const loadBooths = (acCode: string) => {
+//     fetch(`${backend}/admin/booths?acCode=${acCode}`)
+//       .then(r => r.json())
+//       .then(setBooths);
+//   };
 
-  const filteredBooths = booths.filter((b) =>
-    (b.psNumber + " " + (b.psSuffix || "") + " " + b.name)
-      .toLowerCase()
-      .includes(boothFilter.toLowerCase())
-  );
+//   const loadWards = (localbodyId: string) => {
+//     fetch(`${backend}/admin/wards?localbodyId=${localbodyId}`)
+//       .then(r => r.json())
+//       .then(setWards);
+//   };
 
+//   const toggleBooth = (id: number) => {
+//     setSelectedBooths(prev => {
+//       const s = new Set(prev);
+//       s.has(id) ? s.delete(id) : s.add(id);
+//       return s;
+//     });
+//   };
 
-  // Load districts + assemblies
-  useEffect(() => {
-    fetch(`${backend}/admin/districts`)
-      .then((r) => r.json())
-      .then(setDistricts);
+//   const bulkReassign = async () => {
+//     const payload = {
+//       boothIds: Array.from(selectedBooths),
+//       localbodyId: Number(selectedLocalbody),
+//       wardId: selectedWard ? Number(selectedWard) : null,
+//     };
 
-    fetch(`${backend}/admin/assemblies`)
-      .then((r) => r.json())
-      .then(setAssemblies);
-  }, []);
+//     const res = await fetch(`${backend}/admin/booths/reassign`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(payload)
+//     });
 
-  const filteredAssemblies = assemblies.filter((ac) =>
-    (ac.acCode + " " + ac.name).toLowerCase().includes(acFilter.toLowerCase())
-  );
+//     alert(await res.text());
+//   };
 
-  const loadBooths = () => {
-    fetch(`${backend}/admin/booths?acCode=${selectedAc}`)
-      .then((r) => r.json())
-      .then(setBooths);
-  };
+//   return (
+//     <div style={{ padding: 20 }}>
+//       <h2>Localbody – Booth Reassignment</h2>
 
-  const toggleBooth = (event: React.MouseEvent, boothId: number, index: number) => {
-    const isShift = event.shiftKey;
+//       <div style={{ marginTop: 20 }}>
+//         <label>Select Assembly</label>
+//         <select
+//           value={selectedAc}
+//           onChange={(e) => {
+//             setSelectedAc(e.target.value);
+//             loadBooths(e.target.value);
+//           }}
+//           style={{ width: "100%", padding: 8 }}
+//         >
+//           <option value="">Select AC</option>
+//           {assemblies.map(ac => (
+//             <option key={String(ac.acCode)} value={ac.acCode}>
+//               {ac.acCode} – {ac.name}
+//             </option>
+//           ))}
+//         </select>
+//       </div>
 
-    setSelectedBooths((prev) => {
-      const newSet = new Set(prev);
+//       {/* Booth List */}
+//       <div style={{ marginTop: 20 }}>
+//         <input
+//           placeholder="Filter Booths"
+//           value={boothFilter}
+//           onChange={(e) => setBoothFilter(e.target.value)}
+//           style={{ width: "100%", padding: 8 }}
+//         />
 
-      // Shift-click → select range
-      if (isShift && lastClickedIndex !== null) {
-        const start = Math.min(lastClickedIndex, index);
-        const end = Math.max(lastClickedIndex, index);
+//         <div style={{
+//           maxHeight: 300, overflowY: "auto",
+//           border: "1px solid #555", padding: 12,
+//           marginTop: 10, background: "#111", color: "white"
+//         }}>
+//           {filteredBooths.map(b => (
+//             <div key={b.id}>
+//               <label>
+//                 <input
+//                   type="checkbox"
+//                   checked={selectedBooths.has(b.id)}
+//                   onChange={() => toggleBooth(b.id)}
+//                 />
+//                 [{b.psNumber}{b.psSuffix}] – {b.name}
+//                 {b.localbodyName ? (
+//                   <span style={{ color: "#0ff", marginLeft: 10 }}>
+//                     (Now: {b.localbodyName})
+//                   </span>
+//                 ) : null}
+//               </label>
+//             </div>
+//           ))}
+//         </div>
 
-        for (let i = start; i <= end; i++) {
-          newSet.add(filteredBooths[i].id);
-        }
-      } else {
-        // Normal click → toggle
-        newSet.has(boothId) ? newSet.delete(boothId) : newSet.add(boothId);
-      }
+//         <p style={{ marginTop: 8 }}>Selected Booths: {selectedBooths.size}</p>
 
-      return newSet;
-    });
+//         {/* Localbody + Ward Selection */}
+//         <div style={{ marginTop: 20 }}>
+//           <label>Move to Localbody</label>
+//           <select
+//             value={selectedLocalbody}
+//             onChange={(e) => {
+//               setSelectedLocalbody(e.target.value);
+//               loadWards(e.target.value);
+//             }}
+//             style={{ width: "100%", padding: 8 }}
+//           >
+//             <option value="">Select Localbody</option>
+//             {localbodies.map(lb => (
+//               <option key={lb.id} value={lb.id}>
+//                 {lb.name} ({lb.type})
+//               </option>
+//             ))}
+//           </select>
+//         </div>
 
-    // Update last clicked
-    setLastClickedIndex(index);
-  };
+//         {wards.length > 0 && (
+//           <div style={{ marginTop: 10 }}>
+//             <label>Ward (optional)</label>
+//             <select
+//               value={selectedWard}
+//               onChange={(e) => setSelectedWard(e.target.value)}
+//               style={{ width: "100%", padding: 8 }}
+//             >
+//               <option value="">None</option>
+//               {wards.map(w => (
+//                 <option key={w.id} value={w.id}>
+//                   {w.number} – {w.name}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+//         )}
 
+//         <button
+//           onClick={bulkReassign}
+//           style={{
+//             marginTop: 20,
+//             padding: "10px 16px",
+//             background: "#ff6600",
+//             color: "white",
+//             borderRadius: 6
+//           }}
+//           disabled={selectedBooths.size === 0 || !selectedLocalbody}
+//         >
+//           Move Selected Booths
+//         </button>
 
-  const saveLocalbody = async () => {
-    // Create Localbody
-    const res = await fetch(`${backend}/admin/localbody`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        districtName: district,
-        name,
-        type,
-      }),
-    });
-
-    const data = await res.json();
-
-    // Map booths
-    await fetch(`${backend}/admin/localbody/${data.id}/map-booths`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ boothIds: Array.from(selectedBooths) }),
-    });
-
-    alert("Localbody & Booths saved!");
-  };
-
-  return (
-    <div>
-      <h2>Localbody Mapping</h2>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 500 }}>
-
-        {/* District Dropdown */}
-        <div>
-          <label>District</label>
-          <select
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-            style={{ width: "100%", padding: 8 }}
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.code} value={d.code}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Localbody Name */}
-        <input
-          placeholder="Localbody Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{ padding: 8 }}
-        />
-
-        {/* Type */}
-        <select value={type} onChange={(e) => setType(e.target.value)} style={{ padding: 8 }}>
-          <option value="gramapanchayat">Gramapanchayat</option>
-          <option value="municipality">Municipality</option>
-          <option value="corporation">Corporation</option>
-        </select>
-
-        {/* AC SEARCH FILTER */}
-        <div>
-          <label>Search Assembly Constituency</label>
-          <input
-            placeholder="Type AC code or name..."
-            value={acFilter}
-            onChange={(e) => setAcFilter(e.target.value)}
-            style={{
-              width: "100%",
-              padding: 8,
-              marginBottom: 8,
-              borderRadius: 6,
-            }}
-          />
-
-          {/* Filtered AC dropdown */}
-          <select
-            value={selectedAc}
-            onChange={(e) => setSelectedAc(e.target.value)}
-            style={{ width: "100%", padding: 8 }}
-          >
-            <option value="">Select AC</option>
-            {filteredAssemblies.map((ac) => (
-              <option key={ac.id} value={ac.acCode}>
-                {ac.acCode} – {ac.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button onClick={loadBooths} disabled={!selectedAc}>
-          Load Booths
-        </button>
-      </div>
-
-      {/* Booth Search + Select All / None */}
-      <h3 style={{ marginTop: 20 }}>Booths in AC {selectedAc}</h3>
-
-      <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-        <input
-          placeholder="Search booths…"
-          value={boothFilter}
-          onChange={(e) => setBoothFilter(e.target.value)}
-          style={{
-            flex: 1,
-            padding: 8,
-            borderRadius: 6,
-            background: "#111",
-            color: "white",
-            border: "1px solid #555",
-          }}
-        />
-
-        <button
-          onClick={() => {
-            // select all visible filtered booths
-            const newSet = new Set(selectedBooths);
-            filteredBooths.forEach((b) => newSet.add(b.id));
-            setSelectedBooths(newSet);
-          }}
-          style={{
-            padding: "6px 12px",
-            background: "#0d6efd",
-            color: "white",
-            borderRadius: 6,
-          }}
-        >
-          All
-        </button>
-
-        <button
-          onClick={() => {
-            // remove only filtered booths
-            const newSet = new Set(selectedBooths);
-            filteredBooths.forEach((b) => newSet.delete(b.id));
-            setSelectedBooths(newSet);
-          }}
-          style={{
-            padding: "6px 12px",
-            background: "#dc3545",
-            color: "white",
-            borderRadius: 6,
-          }}
-        >
-          None
-        </button>
-      </div>
-
-      {/* Booth list */}
-      <div
-        style={{
-          maxHeight: 350,
-          overflowY: "auto",
-          border: "1px solid #555",
-          padding: 12,
-          borderRadius: 6,
-          background: "#222",
-          color: "white",
-        }}
-      >
-        {filteredBooths.map((b, idx) => (
-          <div key={b.id} style={{ marginBottom: 6 }}>
-            <label
-              onClick={(e) => toggleBooth(e as any, b.id, idx)}   // pass index + event
-              style={{ cursor: "pointer", userSelect: "none" }}
-            >
-              <input
-                type="checkbox"
-                checked={selectedBooths.has(b.id)}
-                readOnly
-              />{" "}
-              [{b.psNumber}{b.psSuffix || ""}] – {b.name}
-            </label>
-          </div>
-        ))}
-      </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 
-      <button
-        onClick={saveLocalbody}
-        style={{
-          marginTop: 20,
-          padding: "10px 16px",
-          background: "#28a745",
-          color: "white",
-          borderRadius: 6,
-        }}
-      >
-        Save Localbody & Map Booths
-      </button>
-    </div>
-  );
-}

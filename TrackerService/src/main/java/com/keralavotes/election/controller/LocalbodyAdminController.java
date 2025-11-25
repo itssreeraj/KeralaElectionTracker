@@ -3,18 +3,15 @@ package com.keralavotes.election.controller;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.District;
 import com.keralavotes.election.entity.Localbody;
-import com.keralavotes.election.entity.LoksabhaConstituency;
 import com.keralavotes.election.entity.PollingStation;
-import com.keralavotes.election.model.CreateLocalbodyRequest;
-import com.keralavotes.election.model.MapBoothsRequest;
+import com.keralavotes.election.dto.CreateLocalbodyRequest;
+import com.keralavotes.election.dto.MapBoothsRequest;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.repository.DistrictRepository;
 import com.keralavotes.election.repository.LocalbodyRepository;
-import com.keralavotes.election.repository.LoksabhaConstituencyRepository;
 import com.keralavotes.election.repository.PollingStationRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -48,23 +45,57 @@ public class LocalbodyAdminController {
         return acRepo.findAll();
     }
 
+    @GetMapping("/localbodies")
+    public List<Localbody> listLocalbodies() {
+        return localbodyRepo.findAll();
+    }
+
+    @GetMapping("/localbodies/by-ac")
+    public List<Localbody> listLocalbodiesByAc(@RequestParam String acCode) {
+        AssemblyConstituency ac = acRepo.findByAcCode(Integer.parseInt(acCode))
+                .orElseThrow(() -> new IllegalArgumentException("Unknown AC: " + acCode));
+
+        return localbodyRepo.findAllByDistrict(ac.getDistrict());
+    }
+
+    @GetMapping("/localbodies/by-district")
+    public List<Localbody> getByDistrict(@RequestParam String district) {
+        return localbodyRepo.findByDistrict_NameIgnoreCase(district);
+    }
+
+
+
     @GetMapping("/booths")
     public List<PollingStation> getBooths(@RequestParam String acCode) {
         return boothRepo.findByAc_AcCodeOrderByPsNumberAsc(acCode);
     }
 
     @PostMapping("/localbody")
-    public Localbody createLocalbody(@RequestBody CreateLocalbodyRequest req) {
-        District district = districtRepository.findByName(req.getDistrictName())
-                .orElseThrow(() -> new RuntimeException("District not found"));
+    public Localbody createOrFetchLocalbody(@RequestBody CreateLocalbodyRequest req) {
 
+        // 1. Find district first
+        District dist = districtRepository.findByName(req.getDistrictName())
+                .orElseThrow(() -> new RuntimeException("District not found: " + req.getDistrictName()));
+
+        // 2. Check if localbody already exists
+        Optional<Localbody> existing = localbodyRepo
+                .findByNameIgnoreCaseAndTypeIgnoreCaseAndDistrict_NameIgnoreCase(
+                        req.getName(), req.getType(), req.getDistrictName());
+
+        if (existing.isPresent()) {
+            return existing.get(); // <-- return existing instead of creating new
+        }
+
+        // 3. Create new localbody if not found
         Localbody lb = Localbody.builder()
-                .district(district)
                 .name(req.getName())
                 .type(req.getType())
+                .district(dist)
                 .build();
+
         return localbodyRepo.save(lb);
     }
+
 
     @PostMapping("/localbody/{id}/map-booths")
     @Transactional
