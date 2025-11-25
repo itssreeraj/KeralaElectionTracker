@@ -71,7 +71,7 @@ public class CsvImportService {
 
 
                 // ======= 1. AUTO-CREATE DISTRICT =======
-                District district = districtRepo.findByDistrictCode(districtCode)
+                District district = districtRepo.findByDistrictCode(Integer.parseInt(districtCode))
                         .orElseGet(() -> {
                             District d = District.builder()
                                     .districtCode(Integer.parseInt(districtCode))

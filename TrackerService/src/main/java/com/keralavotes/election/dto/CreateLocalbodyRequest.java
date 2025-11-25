@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class CreateLocalbodyRequest {
-    private String districtName;
+    private Integer districtCode;
     private String name;
     private String type;   // gramapanchayat / municipality / corporation
 }

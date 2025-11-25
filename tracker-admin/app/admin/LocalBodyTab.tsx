@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 
-export default function LocalbodyTab() {
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+export default function LocalbodyTab({ backend }: { backend: string }) {
 
   const [districts, setDistricts] = useState<any[]>([]);
   const [assemblies, setAssemblies] = useState<any[]>([]);
@@ -120,13 +119,21 @@ export default function LocalbodyTab() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        districtName: district,
+        districtCode: Number(district),
         name: lbName,
         type: lbType,
       }),
     });
 
-    const lb = await res.json();
+    let lb;
+    try {
+        lb = await res.json();
+    } catch (_) {
+        const txt = await res.text();
+        alert("Error: " + txt);
+        return;
+    }
+
 
     // 2. Map booths
     await fetch(`${backend}/admin/localbody/${lb.id}/map-booths`, {
@@ -169,7 +176,7 @@ export default function LocalbodyTab() {
         >
           <option value="">Select District</option>
           {districts.map((d) => (
-            <option key={d.districtCode} value={d.name}>
+            <option key={d.districtCode} value={d.districtCode}>
               {d.districtCode} - {d.name}
             </option>
           ))}

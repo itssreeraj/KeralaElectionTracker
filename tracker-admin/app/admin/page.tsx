@@ -28,7 +28,7 @@ export default function AdminPage() {
 
       {tab === "upload" && <CsvUploadTab />}
       {tab === "ls" && <LsMappingTab />}
-      {tab === "localbody" && <LocalbodyTab />}
+      {tab === "localbody" && <LocalbodyTab backend={backend}/>}
       {tab === "booth" && <BoothManagerTab backend={backend} />}
       {tab === "reassign" && <ReassignBoothsTab backend={backend} />}
     </div>

@@ -52,6 +52,7 @@ public class BoothController {
                 .localbody(lb)
                 .psNumber(req.getPsNumber())
                 .psSuffix(req.getPsSuffix())
+                .psNumberRaw(req.getPsNumber()+ (req.getPsSuffix() !=null ? req.getPsSuffix() :""))
                 .name(req.getName())
                 .build();
 

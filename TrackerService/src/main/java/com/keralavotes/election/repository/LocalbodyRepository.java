@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LocalbodyRepository extends JpaRepository<Localbody, Long> {
-    Optional<Localbody> findByNameIgnoreCaseAndTypeIgnoreCaseAndDistrict_NameIgnoreCase(
+    Optional<Localbody> findByNameIgnoreCaseAndTypeIgnoreCaseAndDistrict_DistrictCode(
             String name,
             String type,
-            String districtName
+            int districtCode
     );
+
 
     List<Localbody> findAllByDistrict(District district);
     List<Localbody> findByDistrict_NameIgnoreCase(String districtName);

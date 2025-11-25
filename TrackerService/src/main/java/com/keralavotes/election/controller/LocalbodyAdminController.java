@@ -1,5 +1,6 @@
 package com.keralavotes.election.controller;
 
+import com.keralavotes.election.dto.LocalbodyResponse;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.District;
 import com.keralavotes.election.entity.Localbody;
@@ -12,6 +13,7 @@ import com.keralavotes.election.repository.LocalbodyRepository;
 import com.keralavotes.election.repository.PollingStationRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -71,30 +73,32 @@ public class LocalbodyAdminController {
     }
 
     @PostMapping("/localbody")
-    public Localbody createOrFetchLocalbody(@RequestBody CreateLocalbodyRequest req) {
+    public ResponseEntity<?> createOrFetchLocalbody(@RequestBody CreateLocalbodyRequest req) {
+        try {
+            District dist = districtRepository.findByDistrictCode(req.getDistrictCode())
+                    .orElseThrow(() -> new RuntimeException("District not found: " + req.getDistrictCode()));
 
-        // 1. Find district first
-        District dist = districtRepository.findByName(req.getDistrictName())
-                .orElseThrow(() -> new RuntimeException("District not found: " + req.getDistrictName()));
+            Optional<Localbody> existing = localbodyRepo
+                    .findByNameIgnoreCaseAndTypeIgnoreCaseAndDistrict_DistrictCode(
+                            req.getName(), req.getType(), req.getDistrictCode()
+                    );
 
-        // 2. Check if localbody already exists
-        Optional<Localbody> existing = localbodyRepo
-                .findByNameIgnoreCaseAndTypeIgnoreCaseAndDistrict_NameIgnoreCase(
-                        req.getName(), req.getType(), req.getDistrictName());
+            Localbody lb = existing.orElseGet(() ->
+                    localbodyRepo.save(
+                            Localbody.builder()
+                                    .name(req.getName())
+                                    .type(req.getType())
+                                    .district(dist)
+                                    .build()
+                    )
+            );
+            return ResponseEntity.ok(lb);
 
-        if (existing.isPresent()) {
-            return existing.get(); // <-- return existing instead of creating new
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        // 3. Create new localbody if not found
-        Localbody lb = Localbody.builder()
-                .name(req.getName())
-                .type(req.getType())
-                .district(dist)
-                .build();
-
-        return localbodyRepo.save(lb);
     }
+
 
 
     @PostMapping("/localbody/{id}/map-booths")
