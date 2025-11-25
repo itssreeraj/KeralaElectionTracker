@@ -4,13 +4,15 @@ import React, { useState, useEffect } from "react";
 import BoothManagerTab from "./BoothManagerTab";
 import LocalbodyTab from "./LocalBodyTab";
 import ReassignBoothsTab from "./ReassignBoothsTab";
+import PartyMappingTab from "./PartyMappingTab";
+import LocalbodyAnalysisTab from "./LocalbodyAnalysisTab";
 
-const tabs = ["CSV Upload", "LS Mapping", "Localbody Mapping", "Booth Manager", "Reassign Booths"];
+const tabs = ["CSV Upload", "LS Mapping", "Localbody Mapping", "Booth Manager", "Reassign Booths", "Party Mapping", "Localbody Analysis"];
 
 
 export default function AdminPage() {
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
-  const [tab, setTab] = useState<"upload" | "ls" | "localbody" | "booth" | "reassign">("upload");
+  const [tab, setTab] = useState<"upload" | "ls" | "localbody" | "booth" | "reassign" | "party" | "analysis">("upload");
 
   return (
     <div style={{ padding: 32, maxWidth: 1000 }}>
@@ -23,7 +25,8 @@ export default function AdminPage() {
         <TabButton label="Localbody Mapping" active={tab === "localbody"} onClick={() => setTab("localbody")} />
         <TabButton label="Booth Manager" active={tab === "booth"} onClick={() => setTab("booth")} />
         <TabButton label="Reassign Booths" active={tab==="reassign"} onClick={() => setTab("reassign")} />
-
+        <TabButton label="Party Mapping" active={tab === "party"} onClick={() => setTab("party")} />
+        <TabButton label="Localbody Analysis" active={tab === "analysis"} onClick={() => setTab("analysis")} />
       </div>
 
       {tab === "upload" && <CsvUploadTab />}
@@ -31,6 +34,9 @@ export default function AdminPage() {
       {tab === "localbody" && <LocalbodyTab backend={backend}/>}
       {tab === "booth" && <BoothManagerTab backend={backend} />}
       {tab === "reassign" && <ReassignBoothsTab backend={backend} />}
+      {tab === "party" && <PartyMappingTab backend={backend} />}
+      {tab === "analysis" && <LocalbodyAnalysisTab backend={backend} />}
+
     </div>
   );
 }
