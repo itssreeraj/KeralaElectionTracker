@@ -49,6 +49,9 @@ export default function LocalbodyAnalysisTab() {
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const [boothBreakdown, setBoothBreakdown] = useState<any[]>([]);
+
+
   /* ----------------------------------------
      LOAD DISTRICTS ONCE
   ---------------------------------------- */
@@ -153,6 +156,14 @@ export default function LocalbodyAnalysisTab() {
         const data = await allianceRes.json();
         setAllianceVotes(Array.isArray(data) ? data : []);
       }
+
+      // BOOTH LEVEL BREAKDOWN
+      const boothRes = await fetch(
+        `${backend}/admin/analysis/localbody/${lbId}/booths?year=${year}`
+      );
+      if (boothRes.ok) setBoothBreakdown(await boothRes.json());
+      else setBoothBreakdown([]);
+      
     } catch (e) {
       console.error("Error loading analysis", e);
       setErrorMsg("Error loading analysis");
@@ -162,6 +173,9 @@ export default function LocalbodyAnalysisTab() {
       setLoadingAnalysis(false);
     }
   };
+
+
+
 
   /* ----------------------------------------
      RENDER
@@ -381,6 +395,84 @@ export default function LocalbodyAnalysisTab() {
         </div>
       )}
 
+      {boothBreakdown.length > 0 && (
+        <div style={{ marginTop: 32 }}>
+          <h3>Booth-wise Breakdown</h3>
+
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              marginTop: 8,
+              fontSize: 14,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }}>PS No</th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }}>Booth Name</th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }}>Party</th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }}>Alliance</th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">
+                  Votes
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {boothBreakdown.map((row, i) => {
+                const [
+                  boothId,
+                  psNumber,
+                  psSuffix,
+                  boothName,
+                  candidateName,
+                  partyShort,
+                  allianceName,
+                  allianceColor,
+                  votes,
+                ] = row;
+
+                return (
+                  <tr key={i}>
+                    <td style={{ padding: 6 }}>
+                      {psNumber}
+                      {psSuffix || ""}
+                    </td>
+                    <td style={{ padding: 6 }}>{boothName}</td>
+
+                    <td style={{ padding: 6 }}>
+                      {partyShort ?? "—"}
+                    </td>
+
+                    <td style={{ padding: 6 }}>
+                      {allianceName ? (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            background: allianceColor || "#444",
+                            color: "white",
+                          }}
+                        >
+                          {allianceName}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+
+                    <td style={{ padding: 6 }} align="right">
+                      {votes}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {partyVotes.length === 0 &&
         allianceVotes.length === 0 &&

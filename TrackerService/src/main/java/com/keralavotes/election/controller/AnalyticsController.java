@@ -99,4 +99,39 @@ public class AnalyticsController {
                 .setParameter("year", year)
                 .getResultList();
     }
+
+    @GetMapping("/localbody/{id}/booths")
+    public List<Object[]> getBoothLevelVotes(
+            @PathVariable("id") Long localbodyId,
+            @RequestParam(defaultValue = "2024") int year) {
+
+        String jpql = """
+        SELECT 
+            ps.id,
+            ps.psNumber,
+            ps.psSuffix,
+            ps.name,
+            c.name,
+            p.shortName,
+            a.name,
+            a.color,
+            SUM(bv.votes)
+        FROM BoothVotes bv
+            JOIN bv.pollingStation ps
+            JOIN bv.candidate c
+            LEFT JOIN c.party p
+            LEFT JOIN p.alliance a
+        WHERE ps.localbody.id = :lbId
+          AND bv.year = :year
+        GROUP BY ps.id, ps.psNumber, ps.psSuffix, ps.name,
+                 c.name, p.shortName, a.name, a.color
+        ORDER BY ps.psNumber ASC, SUM(bv.votes) DESC
+        """;
+
+        return em.createQuery(jpql, Object[].class)
+                .setParameter("lbId", localbodyId)
+                .setParameter("year", year)
+                .getResultList();
+    }
+
 }
