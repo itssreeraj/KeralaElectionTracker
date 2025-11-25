@@ -16,6 +16,7 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
   const [selectedLocalbody, setSelectedLocalbody] = useState("");
 
   const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
 
   /* ---------------------------------------------
        LOAD ASSEMBLIES + LOCALBODIES
@@ -34,7 +35,7 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
   }, [backend]);
 
   /* ---------------------------------------------
-       AC SEARCH FILTER
+       AC FILTER
   ---------------------------------------------- */
   useEffect(() => {
     const q = assemblySearch.toLowerCase();
@@ -48,21 +49,21 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
   }, [assemblySearch, assemblies]);
 
   /* ---------------------------------------------
-       LOAD BOOTHS FROM AC
+       LOAD BOOTHS FOR AC
   ---------------------------------------------- */
   const loadBooths = async () => {
     if (!selectedAc) return;
-
     const r = await fetch(`${backend}/admin/booths?acCode=${selectedAc}`);
     const data = await r.json();
 
     setBooths(data);
     setFilteredBooths(data);
     setSelectedBooths(new Set());
+    setLastClickedIndex(null);
   };
 
   /* ---------------------------------------------
-       FILTER BOOTHS
+       BOOTH FILTER
   ---------------------------------------------- */
   useEffect(() => {
     const q = boothFilter.toLowerCase();
@@ -76,22 +77,57 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
   }, [boothFilter, booths]);
 
   /* ---------------------------------------------
-       SELECT / UNSELECT
+       SELECTION (NORMAL + SHIFT CLICK)
   ---------------------------------------------- */
-  const toggleBooth = (id: number) => {
+  const toggleBooth = (e: React.MouseEvent, boothId: number, index: number) => {
+    const isShift = e.shiftKey;
+
     setSelectedBooths((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
+      const newSet = new Set(prev);
+
+      if (isShift && lastClickedIndex !== null) {
+        const start = Math.min(lastClickedIndex, index);
+        const end = Math.max(lastClickedIndex, index);
+
+        for (let i = start; i <= end; i++) {
+          newSet.add(filteredBooths[i].id);
+        }
+      } else {
+        newSet.has(boothId) ? newSet.delete(boothId) : newSet.add(boothId);
+      }
+
+      return newSet;
     });
+
+    setLastClickedIndex(index);
   };
 
   /* ---------------------------------------------
-        SUBMIT REASSIGNMENT
+       SELECT ALL / NONE (filtered only)
+  ---------------------------------------------- */
+
+  const selectAll = () => {
+    const s = new Set(selectedBooths);
+    filteredBooths.forEach((b) => s.add(b.id));
+    setSelectedBooths(s);
+  };
+
+  const selectNone = () => {
+    const s = new Set(selectedBooths);
+    filteredBooths.forEach((b) => s.delete(b.id));
+    setSelectedBooths(s);
+  };
+
+  /* ---------------------------------------------
+        REASSIGN 
   ---------------------------------------------- */
   const reassign = async () => {
-    if (!selectedLocalbody || selectedBooths.size === 0) {
-      alert("Select target localbody and booths.");
+    if (!selectedLocalbody) {
+      alert("Select a target localbody!");
+      return;
+    }
+    if (selectedBooths.size === 0) {
+      alert("Select at least one booth!");
       return;
     }
 
@@ -107,8 +143,34 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
     });
 
     const text = await res.text();
-
     if (res.ok) alert("✔ Booths reassigned successfully");
+    else alert("❌ Error: " + text);
+
+    loadBooths();
+  };
+
+  /* ---------------------------------------------
+        UNASSIGN BOOTHS
+  ---------------------------------------------- */
+  const unassign = async () => {
+    if (selectedBooths.size === 0) {
+      alert("Select at least one booth!");
+      return;
+    }
+
+    const payload = {
+      boothIds: Array.from(selectedBooths),
+      localbodyId: null,
+    };
+
+    const res = await fetch(`${backend}/admin/booths/reassign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    if (res.ok) alert("✔ Booths unassigned successfully");
     else alert("❌ Error: " + text);
 
     loadBooths();
@@ -159,30 +221,59 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
             style={{ width: "100%", padding: 8, marginBottom: 12 }}
           />
 
+          {/* Select All / None */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+            <button
+              onClick={selectAll}
+              style={{
+                padding: "6px 12px",
+                background: "#0d6efd",
+                color: "white",
+                borderRadius: 6,
+              }}
+            >
+              All
+            </button>
+
+            <button
+              onClick={selectNone}
+              style={{
+                padding: "6px 12px",
+                background: "#dc3545",
+                color: "white",
+                borderRadius: 6,
+              }}
+            >
+              None
+            </button>
+          </div>
+
           {/* Booth list */}
           <div
             style={{
               background: "#111",
               padding: 12,
               borderRadius: 6,
-              maxHeight: 250,
+              maxHeight: 300,
               overflowY: "auto",
               border: "1px solid #444",
             }}
           >
-            {filteredBooths.map((b) => (
+            {filteredBooths.map((b, idx) => (
               <label
                 key={b.id}
                 style={{
                   display: "block",
                   marginBottom: 6,
                   cursor: "pointer",
+                  userSelect: "none",
                 }}
+                onClick={(e) => toggleBooth(e, b.id, idx)}
               >
                 <input
                   type="checkbox"
                   checked={selectedBooths.has(b.id)}
-                  onChange={() => toggleBooth(b.id)}
+                  readOnly
                 />{" "}
                 [{b.psNumber}
                 {b.psSuffix || ""}] — {b.name}{" "}
@@ -214,18 +305,33 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
             ))}
           </select>
 
-          <button
-            onClick={reassign}
-            style={{
-              padding: "12px 20px",
-              background: "orange",
-              color: "black",
-              borderRadius: 6,
-              fontWeight: 600,
-            }}
-          >
-            Reassign Booths
-          </button>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              onClick={reassign}
+              style={{
+                padding: "12px 20px",
+                background: "orange",
+                color: "black",
+                borderRadius: 6,
+                fontWeight: 600,
+              }}
+            >
+              Reassign
+            </button>
+
+            <button
+              onClick={unassign}
+              style={{
+                padding: "12px 20px",
+                background: "#ff4444",
+                color: "white",
+                borderRadius: 6,
+                fontWeight: 600,
+              }}
+            >
+              Unassign
+            </button>
+          </div>
         </>
       )}
     </div>
