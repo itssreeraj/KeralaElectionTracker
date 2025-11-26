@@ -50,6 +50,7 @@ export default function LocalbodyAnalysisTab() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [boothBreakdown, setBoothBreakdown] = useState<any[]>([]);
+  const [boothTable, setBoothTable] = useState<any[]>([]);
 
 
   /* ----------------------------------------
@@ -161,8 +162,53 @@ export default function LocalbodyAnalysisTab() {
       const boothRes = await fetch(
         `${backend}/admin/analysis/localbody/${lbId}/booths?year=${year}`
       );
-      if (boothRes.ok) setBoothBreakdown(await boothRes.json());
-      else setBoothBreakdown([]);
+      let raw: any[] = [];
+      if (boothRes.ok) {
+        raw = await boothRes.json();  // parse ONCE
+        setBoothBreakdown(raw);       // reuse
+      } else {
+        setBoothBreakdown([]);
+      }
+
+      // Pivot
+      const temp: Record<number, any> = {};
+
+      raw.forEach((row: any[]) => {
+        const [
+          boothId,
+          psNumber,
+          psSuffix,
+          boothName,
+          allianceName,
+          votes
+        ] = row;
+
+        if (!temp[boothId]) {
+          temp[boothId] = {
+            boothId,
+            psNumber: psNumber + (psSuffix || ""),
+            boothName,
+            LDF: 0,
+            UDF: 0,
+            NDA: 0,
+            OTH: 0,
+          };
+        }
+
+        const col =
+          allianceName === "LDF"
+            ? "LDF"
+            : allianceName === "UDF"
+            ? "UDF"
+            : allianceName === "NDA"
+            ? "NDA"
+            : "OTH";
+
+        temp[boothId][col] += votes;
+      });
+
+      setBoothTable(Object.values(temp));
+
       
     } catch (e) {
       console.error("Error loading analysis", e);
@@ -395,9 +441,9 @@ export default function LocalbodyAnalysisTab() {
         </div>
       )}
 
-      {boothBreakdown.length > 0 && (
+      {boothTable.length > 0 && (
         <div style={{ marginTop: 32 }}>
-          <h3>Booth-wise Breakdown</h3>
+          <h3>Booth-wise Alliance Breakdown</h3>
 
           <table
             style={{
@@ -411,68 +457,30 @@ export default function LocalbodyAnalysisTab() {
               <tr>
                 <th style={{ borderBottom: "1px solid #555", padding: 6 }}>PS No</th>
                 <th style={{ borderBottom: "1px solid #555", padding: 6 }}>Booth Name</th>
-                <th style={{ borderBottom: "1px solid #555", padding: 6 }}>Party</th>
-                <th style={{ borderBottom: "1px solid #555", padding: 6 }}>Alliance</th>
-                <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">
-                  Votes
-                </th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">LDF</th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">UDF</th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">NDA</th>
+                <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">OTH</th>
               </tr>
             </thead>
 
             <tbody>
-              {boothBreakdown.map((row, i) => {
-                const [
-                  boothId,
-                  psNumber,
-                  psSuffix,
-                  boothName,
-                  candidateName,
-                  partyShort,
-                  allianceName,
-                  allianceColor,
-                  votes,
-                ] = row;
+              {boothTable.map((b) => (
+                <tr key={b.boothId}>
+                  <td style={{ padding: 6 }}>{b.psNumber}</td>
+                  <td style={{ padding: 6 }}>{b.boothName}</td>
 
-                return (
-                  <tr key={i}>
-                    <td style={{ padding: 6 }}>
-                      {psNumber}
-                      {psSuffix || ""}
-                    </td>
-                    <td style={{ padding: 6 }}>{boothName}</td>
-
-                    <td style={{ padding: 6 }}>
-                      {partyShort ?? "—"}
-                    </td>
-
-                    <td style={{ padding: 6 }}>
-                      {allianceName ? (
-                        <span
-                          style={{
-                            display: "inline-block",
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            background: allianceColor || "#444",
-                            color: "white",
-                          }}
-                        >
-                          {allianceName}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-
-                    <td style={{ padding: 6 }} align="right">
-                      {votes}
-                    </td>
-                  </tr>
-                );
-              })}
+                  <td style={{ padding: 6 }} align="right">{b.LDF}</td>
+                  <td style={{ padding: 6 }} align="right">{b.UDF}</td>
+                  <td style={{ padding: 6 }} align="right">{b.NDA}</td>
+                  <td style={{ padding: 6 }} align="right">{b.OTH}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
+
 
       {partyVotes.length === 0 &&
         allianceVotes.length === 0 &&

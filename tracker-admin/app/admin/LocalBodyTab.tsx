@@ -114,40 +114,65 @@ export default function LocalbodyTab({ backend }: { backend: string }) {
       return;
     }
 
-    // 1. Create Localbody
-    const res = await fetch(`${backend}/admin/localbody`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        districtCode: Number(district),
-        name: lbName,
-        type: lbType,
-      }),
-    });
-
-    let lb;
     try {
-        lb = await res.json();
-    } catch (_) {
-        const txt = await res.text();
-        alert("Error: " + txt);
+      // 1. Create or fetch the localbody
+      const res = await fetch(`${backend}/admin/localbody`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          districtCode: Number(district),   // IMPORTANT: now districtCode
+          name: lbName,
+          type: lbType,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(`❌ Error: ${data.error || "Unknown error"}`);
         return;
+      }
+
+      // Backend returns:  { status, message, localbody }
+      const lb = data.localbody;
+
+      if (!lb || !lb.id) {
+        alert("❌ Invalid localbody response from backend");
+        return;
+      }
+
+      // Show message from backend
+      if (data.status === "EXISTS") {
+        alert(`ℹ Existing localbody found: ${lb.name}`);
+      } else if (data.status === "CREATED") {
+        alert(`✔ Created localbody: ${lb.name}`);
+      }
+
+      // 2. Map booths
+      const mapRes = await fetch(`${backend}/admin/localbody/${lb.id}/map-booths`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boothIds: Array.from(selectedBooths) }),
+      });
+
+      if (!mapRes.ok) {
+        const txt = await mapRes.text();
+        alert(`❌ Booth mapping failed: ${txt}`);
+        return;
+      }
+
+      alert(`✔ Booths mapped to ${lb.name} successfully`);
+
+      // Reset form
+      setLbName("");
+      setDistrict("");
+      setSelectedBooths(new Set());
+    } catch (err: any) {
+      console.error("Localbody create/mapping error", err);
+      alert("Unexpected error: " + err.message);
     }
-
-
-    // 2. Map booths
-    await fetch(`${backend}/admin/localbody/${lb.id}/map-booths`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ boothIds: Array.from(selectedBooths) }),
-    });
-
-    alert(`Localbody '${lb.name}' created and booths mapped successfully!`);
-
-    setLbName("");
-    setDistrict("");
-    setSelectedBooths(new Set());
   };
+
 
   /* ---------------------------------------------------
      RENDER

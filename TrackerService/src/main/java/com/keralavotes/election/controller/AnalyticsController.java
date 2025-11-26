@@ -111,10 +111,7 @@ public class AnalyticsController {
             ps.psNumber,
             ps.psSuffix,
             ps.name,
-            c.name,
-            p.shortName,
-            a.name,
-            a.color,
+            COALESCE(a.name, 'OTH') as allianceName,
             SUM(bv.votes)
         FROM BoothVotes bv
             JOIN bv.pollingStation ps
@@ -123,9 +120,8 @@ public class AnalyticsController {
             LEFT JOIN p.alliance a
         WHERE ps.localbody.id = :lbId
           AND bv.year = :year
-        GROUP BY ps.id, ps.psNumber, ps.psSuffix, ps.name,
-                 c.name, p.shortName, a.name, a.color
-        ORDER BY ps.psNumber ASC, SUM(bv.votes) DESC
+        GROUP BY ps.id, ps.psNumber, ps.psSuffix, ps.name, a.name
+        ORDER BY ps.psNumber ASC
         """;
 
         return em.createQuery(jpql, Object[].class)
