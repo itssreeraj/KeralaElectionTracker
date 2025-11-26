@@ -13,6 +13,10 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
   const [booths, setBooths] = useState<any[]>([]);
 
   const [loadingBooths, setLoadingBooths] = useState(false);
+  
+  const [filteredLocalbodies, setFilteredLocalbodies] = useState<any[]>([]);
+  const [localbodySearch, setLocalbodySearch] = useState("");
+
 
   // Form fields for create-booth
   const [form, setForm] = useState({
@@ -64,6 +68,40 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
       )
     );
   }, [assemblySearch, assemblies]);
+
+  // Load localbodies based on selected district
+  useEffect(() => {
+    if (!form.district) {
+      setLocalbodies([]);
+      setFilteredLocalbodies([]);
+      return;
+    }
+
+    fetch(
+      `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+        form.district
+      )}`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        setLocalbodies(data);
+        setFilteredLocalbodies(data);
+      });
+  }, [form.district, backend]);
+
+  // Localbody search filter
+  useEffect(() => {
+    const q = localbodySearch.toLowerCase();
+
+    setFilteredLocalbodies(
+      localbodies.filter(
+        (lb) =>
+          lb.name.toLowerCase().includes(q) ||
+          lb.type.toLowerCase().includes(q)
+      )
+    );
+  }, [localbodySearch, localbodies]);
+
 
   /* ---------------------------------------------------
       LOAD BOOTHS FOR SELECTED AC
@@ -226,6 +264,22 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
         )}
       </div>
 
+      {/* Localbody Search */}
+      <label>Search Localbody</label>
+      <input
+        type="text"
+        placeholder="search name or type..."
+        value={localbodySearch}
+        onChange={(e) => setLocalbodySearch(e.target.value)}
+        style={{
+          width: "100%",
+          padding: 8,
+          marginBottom: 8,
+          background: "#222",
+          color: "white",
+        }}
+      />
+
       {/* Localbody */}
       <label>Localbody</label>
       <select
@@ -237,12 +291,13 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
         style={{ width: "100%", padding: 8, marginBottom: 16 }}
       >
         <option value="">-- none --</option>
-        {localbodies.map((lb) => (
+        {filteredLocalbodies.map((lb) => (
           <option key={String(lb.id)} value={lb.id}>
             {lb.name} ({lb.type})
           </option>
         ))}
       </select>
+
 
       {/* Ward */}
       <label>Ward</label>
