@@ -481,6 +481,70 @@ export default function LocalbodyAnalysisTab() {
         </div>
       )}
 
+      {/* ALLIANCE-WISE BOOTH RANK SUMMARY */}
+      {boothTable.length > 0 && (() => {
+
+        // Prepare counters
+        const summary: Record<string, { first: number; second: number; third: number }> = {
+          LDF: { first: 0, second: 0, third: 0 },
+          UDF: { first: 0, second: 0, third: 0 },
+          NDA: { first: 0, second: 0, third: 0 },
+          OTH: { first: 0, second: 0, third: 0 },
+        };
+
+        // Rank alliances for each booth
+        boothTable.forEach((b) => {
+          const entries = [
+            ["LDF", b.LDF],
+            ["UDF", b.UDF],
+            ["NDA", b.NDA],
+            ["OTH", b.OTH],
+          ];
+
+          // Sort by votes desc
+          entries.sort((a, b) => b[1] - a[1]);
+
+          if (entries[0]) summary[entries[0][0]].first++;
+          if (entries[1]) summary[entries[1][0]].second++;
+          if (entries[2]) summary[entries[2][0]].third++;
+        });
+
+        return (
+          <div style={{ marginTop: 32 }}>
+            <h3>Alliance-wise Booth Ranking Summary</h3>
+
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: 8,
+                fontSize: 14,
+              }}
+            >
+              <thead>
+                <tr>
+                  <th style={{ borderBottom: "1px solid #555", padding: 6 }}>Alliance</th>
+                  <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">#1 Rank</th>
+                  <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">#2 Rank</th>
+                  <th style={{ borderBottom: "1px solid #555", padding: 6 }} align="right">#3 Rank</th>
+                </tr>
+              </thead>
+              <tbody>
+                {["LDF", "UDF", "NDA", "OTH"].map((al) => (
+                  <tr key={al}>
+                    <td style={{ padding: 6 }}>{al}</td>
+                    <td style={{ padding: 6 }} align="right">{summary[al].first}</td>
+                    <td style={{ padding: 6 }} align="right">{summary[al].second}</td>
+                    <td style={{ padding: 6 }} align="right">{summary[al].third}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
+
 
       {partyVotes.length === 0 &&
         allianceVotes.length === 0 &&
