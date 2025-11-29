@@ -20,9 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -132,7 +136,59 @@ public class CsvImportService {
     // ----------------------------------------
     // Import booth-wise votes from Form 20 CSV
     // ----------------------------------------
+    @Transactional
     public void importForm20Votes(MultipartFile file) throws Exception {
+
+        long start = System.currentTimeMillis();
+        log.info("=== Form20 import started ===");
+
+    /* ---------------------------------------------------------
+       STEP 1: Load full lookup data into memory (FAST)
+    --------------------------------------------------------- */
+
+        // Map <(acCode,psNumber,psSuffix), PollingStation>
+        Map<String, PollingStation> psMap = psRepo.findAll()
+                .stream()
+                .collect(Collectors.toMap(
+                        ps -> ps.getAc().getAcCode() + "|" +
+                                ps.getPsNumber() + "|" +
+                                (ps.getPsSuffix() == null ? "" : ps.getPsSuffix().trim()),
+                        ps -> ps
+                ));
+
+        log.info("Loaded {} polling stations", psMap.size());
+
+        // Map <(lsName|candidateName|year), Candidate>
+        Map<String, Candidate> candidateMap = candidateRepo.findAll()
+                .stream()
+                .collect(Collectors.toMap(
+                        c -> c.getLs().getName().trim().toLowerCase() + "|" +
+                                c.getName().trim().toLowerCase() + "|" +
+                                c.getElectionYear(),
+                        c -> c
+                ));
+
+        log.info("Loaded {} candidates", candidateMap.size());
+
+        // Map existing booth votes to skip duplicates
+        // key format: "psId|candidateId|year"
+        Map<String, BoothVotes> existingVotes = bvRepo.findAll()
+                .stream()
+                .collect(Collectors.toMap(
+                        bv -> bv.getPollingStation().getId() + "|" +
+                                bv.getCandidate().getId() + "|" +
+                                bv.getYear(),
+                        bv -> bv,
+                        (a, b) -> a     // ignore duplicates
+                ));
+
+        log.info("Loaded {} existing booth vote rows", existingVotes.size());
+
+
+    /* ---------------------------------------------------------
+       STEP 2: Parse CSV rows
+    --------------------------------------------------------- */
+        List<BoothVotes> toInsert = new ArrayList<>();
 
         try (var in = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)) {
             CSVParser parser = CSVFormat.DEFAULT
@@ -141,43 +197,135 @@ public class CsvImportService {
                     .withTrim(true)
                     .parse(in);
 
+            int processed = 0;
+            int skippedMissingPS = 0;
+            int skippedMissingCandidate = 0;
+            int skippedDuplicate = 0;
+
             for (CSVRecord rec : parser) {
-                Integer acCode = Integer.parseInt(rec.get("ac"));
-                Integer psNumber = Integer.valueOf(rec.get("ps_number"));
+
+                processed++;
+
+                int acCode = Integer.parseInt(rec.get("ac"));
+                int psNumber = Integer.parseInt(rec.get("ps_number"));
                 String psSuffix = rec.get("ps_suffix");
-                String lsCode = rec.get("ls");
-                String candidateName = rec.get("candidate_name");
-                Integer year = Integer.valueOf(rec.get("year"));
-                Integer votes = Integer.valueOf(rec.get("votes"));
+                if (psSuffix == null) psSuffix = "";
+                psSuffix = psSuffix.trim();
 
-                Optional<PollingStation> optionalPollingStation = psRepo
-                        .findByAc_AcCodeAndPsNumberAndPsSuffix(acCode, psNumber, psSuffix);
+                String lsName = rec.get("ls").trim().toLowerCase();
+                String candidateName = rec.get("candidate_name").trim().toLowerCase();
+                int year = Integer.parseInt(rec.get("year"));
+                int votes = Integer.parseInt(rec.get("votes"));
 
-                optionalPollingStation.ifPresentOrElse(pollingStation -> {
-                    Optional<Candidate> optionalCandidate = candidateRepo
-                            .findByNameAndLs_NameAndElectionYear(candidateName, lsCode, year);
+            /* ---------------------------------------------------------
+               STEP 2A: Find polling station (from cached map)
+            --------------------------------------------------------- */
+                String psKey = acCode + "|" + psNumber + "|" + psSuffix;
+                PollingStation ps = psMap.get(psKey);
 
-                    optionalCandidate.ifPresent(candidate -> {
-                        BoothVotes bv = BoothVotes.builder()
-                                .pollingStation(pollingStation)
-                                .candidate(candidate)
-                                .votes(votes)
-                                .year(year)
-                                .build();
+                if (ps == null) {
+                    skippedMissingPS++;
+                    continue;
+                }
 
-                        bvRepo.save(bv);
-                    });
-                }, () -> {
-                    log.info("Skipping votes: Unknown PS {} - {}", acCode, psNumber);
-                });
+            /* ---------------------------------------------------------
+               STEP 2B: Find candidate (from cached map)
+            --------------------------------------------------------- */
+                String candKey = lsName + "|" + candidateName + "|" + year;
+                Candidate candidate = candidateMap.get(candKey);
+
+                if (candidate == null) {
+                    skippedMissingCandidate++;
+                    continue;
+                }
+
+            /* ---------------------------------------------------------
+               STEP 2C: Skip duplicates (existing booth vote)
+            --------------------------------------------------------- */
+                String voteKey = ps.getId() + "|" + candidate.getId() + "|" + year;
+                if (existingVotes.containsKey(voteKey)) {
+                    skippedDuplicate++;
+                    continue;
+                }
+
+            /* ---------------------------------------------------------
+               STEP 2D: Add batch insert
+            --------------------------------------------------------- */
+                BoothVotes bv = BoothVotes.builder()
+                        .pollingStation(ps)
+                        .candidate(candidate)
+                        .votes(votes)
+                        .year(year)
+                        .build();
+
+                toInsert.add(bv);
+
+                // Gradually free memory for huge imports
+                if (toInsert.size() >= 2000) {
+                    bvRepo.saveAll(toInsert);
+                    toInsert.clear();
+                }
             }
+
+            // Final batch save
+            if (!toInsert.isEmpty()) {
+                bvRepo.saveAll(toInsert);
+            }
+
+            long ms = System.currentTimeMillis() - start;
+
+            log.info("=== Form20 import finished in {} ms ===", ms);
+            log.info("Total rows processed  : {}", processed);
+            log.info("Inserted new votes    : {}", toInsert.size());
+            log.info("Skipped missing PS    : {}", skippedMissingPS);
+            log.info("Skipped missing cand  : {}", skippedMissingCandidate);
+            log.info("Skipped duplicates    : {}", skippedDuplicate);
         }
     }
+
 
     // ----------------------------------------
     // Import booth totals from Form 20 CSV
     // ----------------------------------------
+    @Transactional
     public void importForm20Totals(MultipartFile file) throws Exception {
+
+        long start = System.currentTimeMillis();
+        log.info("=== Form20 Totals Import Started ===");
+
+    /* ---------------------------------------------------------
+       STEP 1: Preload lookup maps (FAST)
+    --------------------------------------------------------- */
+
+        // Map <acCode|psNumber|psSuffix> → PollingStation
+        Map<String, PollingStation> psMap = psRepo.findAll()
+                .stream()
+                .collect(Collectors.toMap(
+                        ps -> ps.getAc().getAcCode() + "|" +
+                                ps.getPsNumber() + "|" +
+                                (ps.getPsSuffix() == null ? "" : ps.getPsSuffix().trim()),
+                        ps -> ps
+                ));
+
+        log.info("Loaded {} polling stations", psMap.size());
+
+        // Map existing totals to detect duplicates
+        // key: "psId|year"
+        Map<String, BoothTotals> existingTotals = boothTotalsRepo.findAll()
+                .stream()
+                .collect(Collectors.toMap(
+                        bt -> bt.getPollingStation().getId() + "|" + bt.getYear(),
+                        bt -> bt,
+                        (a, b) -> a
+                ));
+
+        log.info("Loaded {} existing booth totals", existingTotals.size());
+
+    /* ---------------------------------------------------------
+       STEP 2: Read CSV and build list of inserts
+    --------------------------------------------------------- */
+
+        List<BoothTotals> batchInsert = new ArrayList<>();
 
         CSVParser parser = CSVFormat.DEFAULT
                 .withFirstRecordAsHeader()
@@ -185,37 +333,83 @@ public class CsvImportService {
                 .withTrim()
                 .parse(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
 
+        int processed = 0;
+        int skippedMissingPS = 0;
+        int skippedDuplicate = 0;
+
         for (CSVRecord row : parser) {
 
-            Integer acCode = Integer.parseInt(row.get("ac"));
-            String lsCode = row.get("ls");
+            processed++;
 
-            Integer psNumber = Integer.valueOf(row.get("ps_number"));
+            int acCode = Integer.parseInt(row.get("ac"));
+            int psNumber = Integer.parseInt(row.get("ps_number"));
             String psSuffix = row.get("ps_suffix");
+            if (psSuffix == null) psSuffix = "";
+            psSuffix = psSuffix.trim();
 
-            Integer year = Integer.valueOf(row.get("year"));
-            Integer totalValid = Integer.valueOf(row.get("total_valid"));
-            Integer rejected = Integer.valueOf(row.get("rejected"));
-            Integer nota = Integer.valueOf(row.get("nota"));
+            int year = Integer.parseInt(row.get("year"));
+            int totalValid = Integer.parseInt(row.get("total_valid"));
+            int rejected = Integer.parseInt(row.get("rejected"));
+            int nota = Integer.parseInt(row.get("nota"));
 
-            Optional<PollingStation> optionalPollingStation = psRepo
-                    .findByAc_AcCodeAndPsNumberAndPsSuffix(acCode, psNumber, psSuffix);
+        /* ---------------------------------------------------------
+           Lookup PollingStation (O(1), no DB)
+        --------------------------------------------------------- */
+            String psKey = acCode + "|" + psNumber + "|" + psSuffix;
+            PollingStation ps = psMap.get(psKey);
 
-            optionalPollingStation.ifPresentOrElse(pollingStation -> {
-                BoothTotals bt = BoothTotals.builder()
-                        .pollingStation(pollingStation)
-                        .totalValid(totalValid)
-                        .rejected(rejected)
-                        .nota(nota)
-                        .year(year)
-                        .build();
+            if (ps == null) {
+                skippedMissingPS++;
+                continue;
+            }
 
-                boothTotalsRepo.save(bt);
-            }, () -> {
-                log.info("Skipping totals: Unknown PS {} - {}", acCode, psNumber);
-            });
+        /* ---------------------------------------------------------
+           Skip duplicate totals (O(1), no DB)
+        --------------------------------------------------------- */
+            String totalKey = ps.getId() + "|" + year;
+            if (existingTotals.containsKey(totalKey)) {
+                skippedDuplicate++;
+                continue;
+            }
+
+        /* ---------------------------------------------------------
+           Add to batch insert
+        --------------------------------------------------------- */
+            BoothTotals bt = BoothTotals.builder()
+                    .pollingStation(ps)
+                    .totalValid(totalValid)
+                    .rejected(rejected)
+                    .nota(nota)
+                    .year(year)
+                    .build();
+
+            batchInsert.add(bt);
+
+            // batch flush to keep memory low
+            if (batchInsert.size() >= 2000) {
+                boothTotalsRepo.saveAll(batchInsert);
+                batchInsert.clear();
+            }
         }
+
+        // final flush
+        if (!batchInsert.isEmpty()) {
+            boothTotalsRepo.saveAll(batchInsert);
+        }
+
+        long ms = System.currentTimeMillis() - start;
+
+    /* ---------------------------------------------------------
+       LOG SUMMARY
+    --------------------------------------------------------- */
+
+        log.info("=== Form20 Totals Import Completed in {} ms ===", ms);
+        log.info("Total CSV rows processed : {}", processed);
+        log.info("Inserted new totals     : {}", batchInsert.size());
+        log.info("Skipped missing PS      : {}", skippedMissingPS);
+        log.info("Skipped duplicates      : {}", skippedDuplicate);
     }
+
 
     @Transactional
     public String importCandidatesCsv(MultipartFile file) throws Exception {
