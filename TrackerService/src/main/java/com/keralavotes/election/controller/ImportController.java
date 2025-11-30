@@ -47,4 +47,15 @@ public class ImportController {
             return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
+
+    @PostMapping("/candidates")
+    public ResponseEntity<String> importCandidates(@RequestParam("file") MultipartFile file) {
+
+        try {
+            String summary = csvImportService.importCandidatesCsv(file);
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
 }

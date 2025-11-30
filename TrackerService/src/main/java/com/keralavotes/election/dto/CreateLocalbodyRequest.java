@@ -1,0 +1,11 @@
+package com.keralavotes.election.dto;
+
+import lombok.Data;
+
+@Data
+public class CreateLocalbodyRequest {
+    private Integer districtCode;
+    private String name;
+    private String type;   // gramapanchayat / municipality / corporation
+}
+

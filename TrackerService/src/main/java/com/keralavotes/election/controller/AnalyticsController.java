@@ -1,26 +1,64 @@
 package com.keralavotes.election.controller;
 
+import com.keralavotes.election.dto.LocalbodyAllianceVotesDto;
+import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
+import com.keralavotes.election.repository.BoothVotesRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/analytics")
+@RequestMapping("/api/admin/analysis")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class AnalyticsController {
 
+    private final BoothVotesRepository boothVotesRepo;
     private final EntityManager em;
+
+    /* =====================================================
+            UI EXPECTED ENDPOINTS — FIXED
+       ===================================================== */
+
+    /**
+     * PARTY-WISE VOTES FOR A LOCALBODY
+     * UI calls:
+     *   /api/admin/analysis/localbody/party?localbodyId=1&year=2024
+     */
+    @GetMapping("/localbody/party")
+    public List<LocalbodyPartyVotesDto> partyVotesForLocalbody(
+            @RequestParam("localbodyId") Long localbodyId,
+            @RequestParam(defaultValue = "2024") int year
+    ) {
+        return boothVotesRepo.sumVotesByPartyForLocalbody(localbodyId, year);
+    }
+
+
+    /**
+     * ALLIANCE-WISE VOTES FOR A LOCALBODY
+     * UI calls:
+     *  /api/admin/analysis/localbody/alliance?localbodyId=1&year=2024
+     */
+    @GetMapping("/localbody/alliance")
+    public List<LocalbodyAllianceVotesDto> allianceVotesForLocalbody(
+            @RequestParam("localbodyId") Long localbodyId,
+            @RequestParam(defaultValue = "2024") int year
+    ) {
+        return boothVotesRepo.sumVotesByAllianceForLocalbody(localbodyId, year);
+    }
+
+
+    /* =====================================================
+            EXISTING DETAILED RESULT ENDPOINTS
+       ===================================================== */
 
     @GetMapping("/localbody/{localbodyId}/ls/{year}")
     public List<Object[]> getLocalbodyResults(
             @PathVariable Long localbodyId,
-            @PathVariable Integer year) {
-
+            @PathVariable Integer year
+    ) {
         String jpql = """
             SELECT c.name, p.shortName, a.name, SUM(bv.votes)
             FROM BoothVotes bv
@@ -42,8 +80,8 @@ public class AnalyticsController {
     @GetMapping("/assembly/{acId}/{year}")
     public List<Object[]> getAssemblyResults(
             @PathVariable Long acId,
-            @PathVariable Integer year) {
-
+            @PathVariable Integer year
+    ) {
         String jpql = """
             SELECT c.name, p.shortName, a.name, SUM(bv.votes)
             FROM BoothVotes bv
@@ -61,4 +99,35 @@ public class AnalyticsController {
                 .setParameter("year", year)
                 .getResultList();
     }
+
+    @GetMapping("/localbody/{id}/booths")
+    public List<Object[]> getBoothLevelVotes(
+            @PathVariable("id") Long localbodyId,
+            @RequestParam(defaultValue = "2024") int year) {
+
+        String jpql = """
+        SELECT 
+            ps.id,
+            ps.psNumber,
+            ps.psSuffix,
+            ps.name,
+            COALESCE(a.name, 'OTH') as allianceName,
+            SUM(bv.votes)
+        FROM BoothVotes bv
+            JOIN bv.pollingStation ps
+            JOIN bv.candidate c
+            LEFT JOIN c.party p
+            LEFT JOIN p.alliance a
+        WHERE ps.localbody.id = :lbId
+          AND bv.year = :year
+        GROUP BY ps.id, ps.psNumber, ps.psSuffix, ps.name, a.name
+        ORDER BY ps.psNumber ASC
+        """;
+
+        return em.createQuery(jpql, Object[].class)
+                .setParameter("lbId", localbodyId)
+                .setParameter("year", year)
+                .getResultList();
+    }
+
 }
