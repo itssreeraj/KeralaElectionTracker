@@ -16,16 +16,16 @@ type Localbody = {
 };
 
 type VoteShareRow = {
-  alliance: string;       // "LDF", "UDF", "NDA", "IND", "OTH"
+  alliance: string;
   votes: number;
   percentage: number;
 };
 
 type PerformanceRow = {
   alliance: string;
-  winner: number;   // for LOCALBODY: ward wins; for GE: #1 booths
-  runnerUp: number; // for LOCALBODY: #2; for GE: #2 booths
-  third: number;    // #3
+  winner: number;
+  runnerUp: number;
+  third: number;
 };
 
 type ElectionType = "LOCALBODY" | "GE" | "ASSEMBLY";
@@ -34,9 +34,9 @@ type SingleElectionAnalysis = {
   year: number;
   type: ElectionType;
   label: string;
-  voteShare: VoteShareRow[] | null;         // ward-based (LOCALBODY)
-  wardPerformance: PerformanceRow[] | null; // LOCALBODY
-  boothVoteShare: VoteShareRow[] | null;    // GE/ASSEMBLY
+  voteShare: VoteShareRow[] | null;
+  wardPerformance: PerformanceRow[] | null;
+  boothVoteShare: VoteShareRow[] | null;
   boothPerformance: PerformanceRow[] | null;
 };
 
@@ -62,7 +62,7 @@ const ALLIANCE_COLORS: Record<string, string> = {
   OTH: "#999999",
 };
 
-const AVAILABLE_YEARS = [2015, 2020, 2019, 2024, 2025, 2026]; // you can extend to 2019, 2025, 2026 later
+const AVAILABLE_YEARS = [2015, 2020, 2019, 2024, 2025, 2026];
 
 /* ========= COMPONENT ========= */
 
@@ -76,7 +76,11 @@ export default function LocalbodyAnalysisTab() {
   const [localbodies, setLocalbodies] = useState<Localbody[]>([]);
   const [selectedLocalbody, setSelectedLocalbody] = useState<string>("");
 
-  const [selectedYears, setSelectedYears] = useState<number[]>([2015, 2020, 2024]);
+  const [selectedYears, setSelectedYears] = useState<number[]>([
+    2015,
+    2020,
+    2024,
+  ]);
 
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
 
@@ -84,7 +88,7 @@ export default function LocalbodyAnalysisTab() {
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  /* === NEW STATES for POSTER === */
+  /* === POSTER STATES === */
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [posterImage, setPosterImage] = useState<string | null>(null);
   const [posterLoading, setPosterLoading] = useState(false);
@@ -164,7 +168,7 @@ export default function LocalbodyAnalysisTab() {
     setLoadingAnalysis(false);
   };
 
-  /* -------- HELPERS FOR RENDERING -------- */
+  /* -------- HELPERS -------- */
 
   const formatPct = (v: number) => `${v.toFixed(2)}%`;
 
@@ -173,6 +177,104 @@ export default function LocalbodyAnalysisTab() {
     const key = name.toUpperCase();
     return ALLIANCE_COLORS[key] || ALLIANCE_COLORS.OTH;
   };
+
+  /* ========= LEGACY POSTER FORMAT CONVERTER ========= */
+
+  const convertToLegacyFormat = () => {
+    if (!analysis) return null;
+
+    const lb = analysis.localbody;
+
+    return {
+      template: "combined",
+      localbody: lb.name,
+      district: lb.districtName,
+      showVotes: true,
+      showPercent: true,
+
+      years: Object.values(analysis.elections)
+        .sort((a, b) => a.year - b.year)
+        .map((el) => {
+          const isLocal = el.type === "LOCALBODY";
+          const isGE = el.type === "GE";
+
+          return {
+            year: el.year.toString(),
+            notes: notes[el.year] || "",
+
+            votes: isLocal
+              ? (el.voteShare || []).map((v) => ({
+                  alliance: v.alliance,
+                  color: getAllianceColor(v.alliance),
+                  votes: v.votes,
+                  percent: Number(v.percentage?.toFixed(2) ?? 0),
+                }))
+              : [],
+
+            wards: isLocal
+              ? (el.wardPerformance || []).map((w) => ({
+                  alliance: w.alliance,
+                  color: getAllianceColor(w.alliance),
+                  winner: w.winner,
+                  runnerUp: w.runnerUp,
+                  third: w.third,
+                }))
+              : [],
+
+            generalVotes: isGE
+              ? (el.boothVoteShare || []).map((v) => ({
+                  alliance: v.alliance,
+                  color: getAllianceColor(v.alliance),
+                  votes: v.votes,
+                  percent: Number(v.percentage?.toFixed(2) ?? 0),
+                }))
+              : [],
+
+            generalBooths: isGE
+              ? (el.boothPerformance || []).map((b) => ({
+                  alliance: b.alliance,
+                  color: getAllianceColor(b.alliance),
+                  winner: b.winner,
+                  runnerUp: b.runnerUp,
+                  third: b.third,
+                }))
+              : [],
+          };
+        }),
+    };
+  };
+
+  /* ========= POSTER GENERATION ========= */
+
+  const generatePoster = async () => {
+    if (!analysis) return;
+
+    setPosterLoading(true);
+    setPosterImage(null);
+
+    const payload = convertToLegacyFormat();
+    console.log("POSTER PAYLOAD:", payload);
+
+    try {
+      const res = await fetch("http://localhost:4000/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Poster backend failed");
+
+      const data = await res.json();
+      setPosterImage(data.imageBase64 || data.image || null);
+    } catch (err) {
+      console.error(err);
+      alert("Poster generation failed");
+    }
+
+    setPosterLoading(false);
+  };
+
+  /* ========= UI RENDERING LOGIC ========= */
 
   const renderVoteShareTable = (rows: VoteShareRow[], title: string) => {
     if (!rows || rows.length === 0) return null;
@@ -226,7 +328,10 @@ export default function LocalbodyAnalysisTab() {
                         {alliance}
                       </div>
                     </td>
-                    <td style={tdStyleRight}>{row.votes.toLocaleString("en-IN")}</td>
+
+                    <td style={tdStyleRight}>
+                      {row.votes.toLocaleString("en-IN")}
+                    </td>
                     <td style={tdStyleRight}>{pct}</td>
                   </tr>
                 );
@@ -246,7 +351,7 @@ export default function LocalbodyAnalysisTab() {
 
     const sorted = rows
       .slice()
-      .sort((a, b) => (b.winner ?? 0) - (a.winner ?? 0)); // sort by # wins / #1
+      .sort((a, b) => (b.winner ?? 0) - (a.winner ?? 0));
 
     return (
       <div style={{ marginTop: 12 }}>
@@ -271,9 +376,6 @@ export default function LocalbodyAnalysisTab() {
             {sorted.map((row, idx) => {
               const alliance = row.alliance || "OTH";
               const color = getAllianceColor(alliance);
-              const w = row.winner ?? 0;
-              const r2 = row.runnerUp ?? 0;
-              const r3 = row.third ?? 0;
 
               return (
                 <tr key={idx}>
@@ -292,9 +394,9 @@ export default function LocalbodyAnalysisTab() {
                       {alliance}
                     </div>
                   </td>
-                  <td style={tdStyleRight}>{w}</td>
-                  <td style={tdStyleRight}>{r2}</td>
-                  <td style={tdStyleRight}>{r3}</td>
+                  <td style={tdStyleRight}>{row.winner}</td>
+                  <td style={tdStyleRight}>{row.runnerUp}</td>
+                  <td style={tdStyleRight}>{row.third}</td>
                 </tr>
               );
             })}
@@ -310,48 +412,15 @@ export default function LocalbodyAnalysisTab() {
     );
   };
 
-  /* ========= NEW: GENERATE POSTER LOGIC ========= */
-
-  const generatePoster = async () => {
-    if (!analysis) return;
-
-    setPosterLoading(true);
-    setPosterImage(null);
-
-    const payload = {
-      localbody: analysis.localbody,
-      elections: Object.values(analysis.elections),
-      notes,
-    };
-
-    try {
-      const res = await fetch("http://localhost:4000/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Poster backend failed");
-
-      const data = await res.json();
-      setPosterImage(data.image); // Expect backend to return { imageBase64 }
-    } catch (err) {
-      console.error(err);
-      alert("Poster generation failed");
-    }
-
-    setPosterLoading(false);
-  };
-
-
-  /* -------- RENDER -------- */
+  /* ========= RENDER ========= */
 
   return (
     <div style={{ padding: 24, color: "white" }}>
       <h2 style={{ marginBottom: 8 }}>Localbody Election Analysis</h2>
+
       <p style={{ marginBottom: 20, opacity: 0.8, fontSize: 14 }}>
         Compare alliance performance across Localbody (2015, 2020) and
-        General Election (2024) for the selected localbody.
+        General Election (2024).
       </p>
 
       {/* TOP FILTER BAR */}
@@ -363,7 +432,6 @@ export default function LocalbodyAnalysisTab() {
           marginBottom: 20,
         }}
       >
-        {/* DISTRICT */}
         <div>
           <label style={labelStyle}>District</label>
           <select
@@ -384,11 +452,10 @@ export default function LocalbodyAnalysisTab() {
           </select>
         </div>
 
-        {/* LOCALBODY */}
         <div>
           <label style={labelStyle}>Localbody</label>
           {loadingLb ? (
-            <div style={{ paddingTop: 8 }}>Loading localbodies…</div>
+            <div style={{ paddingTop: 8 }}>Loading…</div>
           ) : (
             <select
               value={selectedLocalbody}
@@ -408,7 +475,6 @@ export default function LocalbodyAnalysisTab() {
           )}
         </div>
 
-        {/* YEARS + LOAD BUTTON */}
         <div>
           <label style={labelStyle}>Election Years</label>
           <div
@@ -452,7 +518,8 @@ export default function LocalbodyAnalysisTab() {
               border: "none",
               background: loadingAnalysis ? "#444" : "#0d6efd",
               color: "#fff",
-              cursor: !selectedLocalbody || loadingAnalysis ? "not-allowed" : "pointer",
+              cursor:
+                !selectedLocalbody || loadingAnalysis ? "not-allowed" : "pointer",
               fontSize: 14,
             }}
           >
@@ -468,7 +535,7 @@ export default function LocalbodyAnalysisTab() {
       {/* ANALYSIS CARDS */}
       {analysis && (
         <div style={{ marginTop: 16 }}>
-          {/* Localbody header */}
+          {/* HEADER */}
           <div
             style={{
               marginBottom: 16,
@@ -489,7 +556,7 @@ export default function LocalbodyAnalysisTab() {
             </div>
           </div>
 
-          {/* Grid of elections */}
+          {/* GRID */}
           <div
             style={{
               display: "grid",
@@ -500,14 +567,10 @@ export default function LocalbodyAnalysisTab() {
             {Object.values(analysis.elections)
               .sort((a, b) => a.year - b.year)
               .map((el) => {
-                const isLocalbody = el.type === "LOCALBODY";
+                const isLocal = el.type === "LOCALBODY";
                 const isGE = el.type === "GE";
                 const badgeColor =
-                  el.type === "LOCALBODY"
-                    ? "#059669"
-                    : el.type === "GE"
-                    ? "#3b82f6"
-                    : "#f59e0b";
+                  isLocal ? "#059669" : isGE ? "#3b82f6" : "#f59e0b";
 
                 return (
                   <div
@@ -520,12 +583,10 @@ export default function LocalbodyAnalysisTab() {
                       boxShadow: "0 8px 20px rgba(0,0,0,0.35)",
                     }}
                   >
-                    {/* Header */}
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center",
                         marginBottom: 8,
                       }}
                     >
@@ -534,11 +595,11 @@ export default function LocalbodyAnalysisTab() {
                           style={{
                             fontSize: 13,
                             opacity: 0.8,
-                            marginBottom: 2,
                           }}
                         >
                           {el.label}
                         </div>
+
                         <div
                           style={{
                             fontWeight: 600,
@@ -548,13 +609,12 @@ export default function LocalbodyAnalysisTab() {
                           {el.year}
                         </div>
                       </div>
+
                       <div
                         style={{
                           padding: "3px 10px",
                           borderRadius: 999,
                           fontSize: 11,
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
                           backgroundColor: badgeColor,
                         }}
                       >
@@ -562,17 +622,15 @@ export default function LocalbodyAnalysisTab() {
                       </div>
                     </div>
 
-                    {/* Content */}
-                    {isLocalbody && (
+                    {isLocal && (
                       <>
                         {renderVoteShareTable(
                           el.voteShare || [],
                           "Ward-wise Alliance Vote Share"
                         )}
-
                         {renderPerformanceTable(
                           el.wardPerformance,
-                          "Ward Performance (Alliance-wise)",
+                          "Ward Performance",
                           {
                             win: "# Wins",
                             second: "# 2nd",
@@ -588,28 +646,19 @@ export default function LocalbodyAnalysisTab() {
                           el.boothVoteShare || [],
                           "Booth-wise Alliance Vote Share"
                         )}
-
                         {renderPerformanceTable(
                           el.boothPerformance,
-                          "Booth Performance (Alliance-wise)",
+                          "Booth Ranking",
                           {
                             win: "#1 Rank",
                             second: "#2 Rank",
                             third: "#3 Rank",
                           }
                         )}
-
-                        {(!el.boothVoteShare || el.boothVoteShare.length === 0) &&
-                          (!el.boothPerformance ||
-                            el.boothPerformance.length === 0) && (
-                            <p style={{ fontSize: 13, opacity: 0.7, marginTop: 8 }}>
-                              No booth-level data available for this election.
-                            </p>
-                          )}
                       </>
                     )}
 
-                    {/* === NEW: NOTES BOX === */}
+                    {/* NOTES */}
                     <textarea
                       placeholder={`Notes for ${el.year}…`}
                       value={notes[el.year] || ""}
@@ -628,17 +677,12 @@ export default function LocalbodyAnalysisTab() {
                         fontSize: 13,
                       }}
                     />
-
-                    {!isLocalbody && !isGE && (
-                      <p style={{ fontSize: 13, opacity: 0.7 }}>
-                        No renderer defined for type: {el.type}
-                      </p>
-                    )}
                   </div>
                 );
               })}
           </div>
-          {/* === NEW: GENERATE POSTER BUTTON === */}
+
+          {/* POSTER GENERATION BUTTON */}
           <div style={{ marginTop: 30, textAlign: "center" }}>
             <button
               onClick={generatePoster}
@@ -654,10 +698,11 @@ export default function LocalbodyAnalysisTab() {
                 fontWeight: 600,
               }}
             >
-              {posterLoading ? "Generating Poster\u2026" : "Generate Combined Poster"}
+              {posterLoading ? "Generating Poster…" : "Generate Combined Poster"}
             </button>
           </div>
-          {/* === NEW: POSTER PREVIEW === */}
+
+          {/* POSTER PREVIEW */}
           {posterImage && (
             <div style={{ marginTop: 20, textAlign: "center" }}>
               <h3>Poster Preview</h3>
@@ -679,7 +724,7 @@ export default function LocalbodyAnalysisTab() {
   );
 }
 
-/* ========= SMALL STYLE HELPERS ========= */
+/* ========= STYLES ========= */
 
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
@@ -721,5 +766,5 @@ const tdStyleRight: React.CSSProperties = {
   padding: 6,
   borderBottom: "1px solid #111827",
   textAlign: "right",
-  fontVariantNumeric: "tabular-nums", // nice aligned numbers
+  fontVariantNumeric: "tabular-nums",
 };
