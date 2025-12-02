@@ -33,6 +33,9 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    //MongoDB
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
     // PostgreSQL
 	runtimeOnly 'org.postgresql:postgresql'
 
