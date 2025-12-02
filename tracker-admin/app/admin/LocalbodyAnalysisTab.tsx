@@ -84,6 +84,11 @@ export default function LocalbodyAnalysisTab() {
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  /* === NEW STATES for POSTER === */
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const [posterImage, setPosterImage] = useState<string | null>(null);
+  const [posterLoading, setPosterLoading] = useState(false);
+
   /* -------- LOAD DISTRICTS -------- */
 
   useEffect(() => {
@@ -304,6 +309,40 @@ export default function LocalbodyAnalysisTab() {
       prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]
     );
   };
+
+  /* ========= NEW: GENERATE POSTER LOGIC ========= */
+
+  const generatePoster = async () => {
+    if (!analysis) return;
+
+    setPosterLoading(true);
+    setPosterImage(null);
+
+    const payload = {
+      localbody: analysis.localbody,
+      elections: Object.values(analysis.elections),
+      notes,
+    };
+
+    try {
+      const res = await fetch("http://localhost:4000/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Poster backend failed");
+
+      const data = await res.json();
+      setPosterImage(data.image); // Expect backend to return { imageBase64 }
+    } catch (err) {
+      console.error(err);
+      alert("Poster generation failed");
+    }
+
+    setPosterLoading(false);
+  };
+
 
   /* -------- RENDER -------- */
 
@@ -570,6 +609,26 @@ export default function LocalbodyAnalysisTab() {
                       </>
                     )}
 
+                    {/* === NEW: NOTES BOX === */}
+                    <textarea
+                      placeholder={`Notes for ${el.year}…`}
+                      value={notes[el.year] || ""}
+                      onChange={(e) =>
+                        setNotes({ ...notes, [el.year]: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        marginTop: 10,
+                        padding: 8,
+                        borderRadius: 6,
+                        background: "#1e293b",
+                        border: "1px solid #334155",
+                        color: "white",
+                        minHeight: 70,
+                        fontSize: 13,
+                      }}
+                    />
+
                     {!isLocalbody && !isGE && (
                       <p style={{ fontSize: 13, opacity: 0.7 }}>
                         No renderer defined for type: {el.type}
@@ -579,6 +638,41 @@ export default function LocalbodyAnalysisTab() {
                 );
               })}
           </div>
+          {/* === NEW: GENERATE POSTER BUTTON === */}
+          <div style={{ marginTop: 30, textAlign: "center" }}>
+            <button
+              onClick={generatePoster}
+              disabled={posterLoading}
+              style={{
+                padding: "12px 20px",
+                background: "#0d6efd",
+                color: "white",
+                borderRadius: 8,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 16,
+                fontWeight: 600,
+              }}
+            >
+              {posterLoading ? "Generating Poster\u2026" : "Generate Combined Poster"}
+            </button>
+          </div>
+          {/* === NEW: POSTER PREVIEW === */}
+          {posterImage && (
+            <div style={{ marginTop: 20, textAlign: "center" }}>
+              <h3>Poster Preview</h3>
+              <img
+                src={`data:image/png;base64,${posterImage}`}
+                alt="Poster"
+                style={{
+                  maxWidth: "100%",
+                  border: "1px solid #333",
+                  borderRadius: 10,
+                  marginTop: 10,
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
