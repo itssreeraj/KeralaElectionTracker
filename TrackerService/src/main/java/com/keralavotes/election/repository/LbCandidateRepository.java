@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LbCandidateRepository extends JpaRepository<LbCandidate, Integer> {
+    List<LbCandidate> findByLocalbodyIdAndElectionYear(Long localbodyId, Integer electionYear);
     Optional<LbCandidate> findByNameAndLocalbodyIdAndElectionYear(String name, Long localbodyId, Integer electionYear);
     Optional<LbCandidate> findByLocalbodyIdAndElectionYearAndNameAndPartyId(int lbId, int year, String name, Integer partyId);
 }
