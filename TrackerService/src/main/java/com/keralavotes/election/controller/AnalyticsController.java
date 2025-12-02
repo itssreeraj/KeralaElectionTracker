@@ -3,7 +3,9 @@ package com.keralavotes.election.controller;
 import com.keralavotes.election.dto.LocalbodyAllianceVotesDto;
 import com.keralavotes.election.dto.LocalbodyAnalysisResponse;
 import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
+import com.keralavotes.election.dto.details.DetailedYearDataDto;
 import com.keralavotes.election.repository.BoothVotesRepository;
+import com.keralavotes.election.service.AnalysisDetailService;
 import com.keralavotes.election.service.LocalbodyElectionAnalysisService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -23,6 +26,7 @@ public class AnalyticsController {
     private final BoothVotesRepository boothVotesRepo;
     private final EntityManager em;
     private final LocalbodyElectionAnalysisService analysisService;
+    private final AnalysisDetailService detailService;
 
     /* =====================================================
             UI EXPECTED ENDPOINTS — FIXED
@@ -159,5 +163,19 @@ public class AnalyticsController {
 
         return analysisService.analyzeLocalbody(localbodyId, yearList);
     }
+
+    @GetMapping("/localbody/{lbId}/details")
+    public Map<String, DetailedYearDataDto> getDetailedResults(
+            @PathVariable Long lbId,
+            @RequestParam("years") String yearsCsv
+    ) {
+        List<Integer> years =
+                Arrays.stream(yearsCsv.split(","))
+                        .map(Integer::parseInt)
+                        .toList();
+
+        return detailService.loadDetails(lbId, years);
+    }
+
 
 }

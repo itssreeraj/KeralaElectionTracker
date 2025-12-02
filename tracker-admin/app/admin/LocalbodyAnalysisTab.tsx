@@ -16,16 +16,16 @@ type Localbody = {
 };
 
 type VoteShareRow = {
-  alliance: string;
+  alliance: string; // "LDF", "UDF", "NDA", "IND", "OTH"
   votes: number;
   percentage: number;
 };
 
 type PerformanceRow = {
   alliance: string;
-  winner: number;
-  runnerUp: number;
-  third: number;
+  winner: number; // for LOCALBODY: ward wins; for GE: #1 booths
+  runnerUp: number; // for LOCALBODY: #2; for GE: #2 booths
+  third: number; // #3
 };
 
 type ElectionType = "LOCALBODY" | "GE" | "ASSEMBLY";
@@ -34,9 +34,9 @@ type SingleElectionAnalysis = {
   year: number;
   type: ElectionType;
   label: string;
-  voteShare: VoteShareRow[] | null;
-  wardPerformance: PerformanceRow[] | null;
-  boothVoteShare: VoteShareRow[] | null;
+  voteShare: VoteShareRow[] | null; // ward-based (LOCALBODY)
+  wardPerformance: PerformanceRow[] | null; // LOCALBODY
+  boothVoteShare: VoteShareRow[] | null; // GE/ASSEMBLY
   boothPerformance: PerformanceRow[] | null;
 };
 
@@ -51,6 +51,82 @@ type AnalysisResponse = {
   localbody: LocalbodyInfo;
   elections: Record<string, SingleElectionAnalysis>;
 };
+
+/* ========= DETAILED TABLE TYPES ========= */
+
+/**
+ * Backend shape suggested for detailed endpoint:
+ *
+ * GET /admin/analysis/localbody/{id}/details?years=2015,2020,2024
+ *
+ * {
+ *   "2015": {
+ *     "year": 2015,
+ *     "type": "LOCALBODY",
+ *     "wards": [
+ *       {
+ *         "wardNum": 1,
+ *         "wardName": "Chemmaruthy",
+ *         "alliances": [
+ *           { "alliance": "LDF", "votes": 123, "percentage": 45.6 },
+ *           { "alliance": "UDF", "votes": 100, "percentage": 37.0 },
+ *           ...
+ *         ],
+ *         "total": 270,
+ *         "winner": "LDF",
+ *         "margin": 23
+ *       }
+ *     ]
+ *   },
+ *   "2024": {
+ *     "year": 2024,
+ *     "type": "GE",
+ *     "booths": [
+ *       {
+ *         "boothNum": 56,
+ *         "boothName": "St. Joseph School",
+ *         "alliances": [...],
+ *         "total": 802,
+ *         "winner": "UDF",
+ *         "margin": 32
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+
+type AllianceVoteDetail = {
+  alliance: string;
+  votes: number;
+  percentage: number;
+};
+
+type WardDetailRow = {
+  wardNum: number;
+  wardName: string;
+  alliances: AllianceVoteDetail[];
+  total: number;
+  winner: string | null;
+  margin: number | null;
+};
+
+type BoothDetailRow = {
+  boothNum: number;
+  boothName: string;
+  alliances: AllianceVoteDetail[];
+  total: number;
+  winner: string | null;
+  margin: number | null;
+};
+
+type DetailedYearData = {
+  year: number;
+  type: ElectionType;
+  wards?: WardDetailRow[];
+  booths?: BoothDetailRow[];
+};
+
+type DetailedResponse = Record<string, DetailedYearData>;
 
 /* ========= CONSTANTS ========= */
 
@@ -92,6 +168,10 @@ export default function LocalbodyAnalysisTab() {
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [posterImage, setPosterImage] = useState<string | null>(null);
   const [posterLoading, setPosterLoading] = useState(false);
+
+  /* === DETAILED TABLE STATES === */
+  const [detailed, setDetailed] = useState<DetailedResponse | null>(null);
+  const [loadingDetailed, setLoadingDetailed] = useState(false);
 
   /* -------- LOAD DISTRICTS -------- */
 
@@ -136,6 +216,39 @@ export default function LocalbodyAnalysisTab() {
     loadLocalbodies();
   }, [backend, selectedDistrict]);
 
+  /* -------- HELPERS -------- */
+
+  const formatPct = (v: number) => `${v.toFixed(2)}%`;
+
+  const getAllianceColor = (name: string | null | undefined) => {
+    if (!name) return ALLIANCE_COLORS.OTH;
+    const key = name.toUpperCase();
+    return ALLIANCE_COLORS[key] || ALLIANCE_COLORS.OTH;
+  };
+
+  /* -------- LOAD DETAILED RESULTS -------- */
+
+  const loadDetailed = async (lbId: number, years: number[]) => {
+    setLoadingDetailed(true);
+    setDetailed(null);
+    try {
+      const yearsParam = years.join(",");
+      const res = await fetch(
+        `${backend}/admin/analysis/localbody/${lbId}/details?years=${yearsParam}`
+      );
+      if (!res.ok) {
+        console.error("Failed to load detailed results");
+        setLoadingDetailed(false);
+        return;
+      }
+      const data = (await res.json()) as DetailedResponse;
+      setDetailed(data);
+    } catch (e) {
+      console.error("Error loading detailed results", e);
+    }
+    setLoadingDetailed(false);
+  };
+
   /* -------- LOAD ANALYSIS (multi-year) -------- */
 
   const loadAnalysis = async () => {
@@ -144,6 +257,8 @@ export default function LocalbodyAnalysisTab() {
     setLoadingAnalysis(true);
     setErrorMsg(null);
     setAnalysis(null);
+    setDetailed(null);
+    setPosterImage(null);
 
     const lbId = Number(selectedLocalbody);
     const yearsParam = selectedYears.join(",");
@@ -160,6 +275,9 @@ export default function LocalbodyAnalysisTab() {
 
       const data = (await res.json()) as AnalysisResponse;
       setAnalysis(data);
+
+      // also load detailed ward/booth tables
+      await loadDetailed(lbId, selectedYears);
     } catch (e) {
       console.error("Error loading analysis", e);
       setErrorMsg("Error loading analysis");
@@ -168,113 +286,7 @@ export default function LocalbodyAnalysisTab() {
     setLoadingAnalysis(false);
   };
 
-  /* -------- HELPERS -------- */
-
-  const formatPct = (v: number) => `${v.toFixed(2)}%`;
-
-  const getAllianceColor = (name: string | null | undefined) => {
-    if (!name) return ALLIANCE_COLORS.OTH;
-    const key = name.toUpperCase();
-    return ALLIANCE_COLORS[key] || ALLIANCE_COLORS.OTH;
-  };
-
-  /* ========= LEGACY POSTER FORMAT CONVERTER ========= */
-
-  const convertToLegacyFormat = () => {
-    if (!analysis) return null;
-
-    const lb = analysis.localbody;
-
-    return {
-      template: "combined",
-      localbody: lb.name,
-      district: lb.districtName,
-      showVotes: true,
-      showPercent: true,
-
-      years: Object.values(analysis.elections)
-        .sort((a, b) => a.year - b.year)
-        .map((el) => {
-          const isLocal = el.type === "LOCALBODY";
-          const isGE = el.type === "GE";
-
-          return {
-            year: el.year.toString(),
-            notes: notes[el.year] || "",
-
-            votes: isLocal
-              ? (el.voteShare || []).map((v) => ({
-                  alliance: v.alliance,
-                  color: getAllianceColor(v.alliance),
-                  votes: v.votes,
-                  percent: Number(v.percentage?.toFixed(2) ?? 0),
-                }))
-              : [],
-
-            wards: isLocal
-              ? (el.wardPerformance || []).map((w) => ({
-                  alliance: w.alliance,
-                  color: getAllianceColor(w.alliance),
-                  winner: w.winner,
-                  runnerUp: w.runnerUp,
-                  third: w.third,
-                }))
-              : [],
-
-            generalVotes: isGE
-              ? (el.boothVoteShare || []).map((v) => ({
-                  alliance: v.alliance,
-                  color: getAllianceColor(v.alliance),
-                  votes: v.votes,
-                  percent: Number(v.percentage?.toFixed(2) ?? 0),
-                }))
-              : [],
-
-            generalBooths: isGE
-              ? (el.boothPerformance || []).map((b) => ({
-                  alliance: b.alliance,
-                  color: getAllianceColor(b.alliance),
-                  winner: b.winner,
-                  runnerUp: b.runnerUp,
-                  third: b.third,
-                }))
-              : [],
-          };
-        }),
-    };
-  };
-
-  /* ========= POSTER GENERATION ========= */
-
-  const generatePoster = async () => {
-    if (!analysis) return;
-
-    setPosterLoading(true);
-    setPosterImage(null);
-
-    const payload = convertToLegacyFormat();
-    console.log("POSTER PAYLOAD:", payload);
-
-    try {
-      const res = await fetch("http://localhost:4000/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Poster backend failed");
-
-      const data = await res.json();
-      setPosterImage(data.imageBase64 || data.image || null);
-    } catch (err) {
-      console.error(err);
-      alert("Poster generation failed");
-    }
-
-    setPosterLoading(false);
-  };
-
-  /* ========= UI RENDERING LOGIC ========= */
+  /* -------- TABLE RENDER HELPERS -------- */
 
   const renderVoteShareTable = (rows: VoteShareRow[], title: string) => {
     if (!rows || rows.length === 0) return null;
@@ -328,7 +340,6 @@ export default function LocalbodyAnalysisTab() {
                         {alliance}
                       </div>
                     </td>
-
                     <td style={tdStyleRight}>
                       {row.votes.toLocaleString("en-IN")}
                     </td>
@@ -376,6 +387,9 @@ export default function LocalbodyAnalysisTab() {
             {sorted.map((row, idx) => {
               const alliance = row.alliance || "OTH";
               const color = getAllianceColor(alliance);
+              const w = row.winner ?? 0;
+              const r2 = row.runnerUp ?? 0;
+              const r3 = row.third ?? 0;
 
               return (
                 <tr key={idx}>
@@ -394,9 +408,9 @@ export default function LocalbodyAnalysisTab() {
                       {alliance}
                     </div>
                   </td>
-                  <td style={tdStyleRight}>{row.winner}</td>
-                  <td style={tdStyleRight}>{row.runnerUp}</td>
-                  <td style={tdStyleRight}>{row.third}</td>
+                  <td style={tdStyleRight}>{w}</td>
+                  <td style={tdStyleRight}>{r2}</td>
+                  <td style={tdStyleRight}>{r3}</td>
                 </tr>
               );
             })}
@@ -412,15 +426,106 @@ export default function LocalbodyAnalysisTab() {
     );
   };
 
-  /* ========= RENDER ========= */
+  /* ========= POSTER GENERATION (combined template) ========= */
+
+  const generatePoster = async () => {
+    if (!analysis) return;
+
+    setPosterLoading(true);
+    setPosterImage(null);
+
+    // Build years block like your old puppeteer backend expects
+    const yearsPayload = Object.values(analysis.elections)
+      .sort((a, b) => a.year - b.year)
+      .map((el) => {
+        const isLocalbody = el.type === "LOCALBODY";
+        const isGE = el.type === "GE";
+
+        const baseYearLabel = isGE ? `${el.year} GE` : `${el.year}`;
+
+        const yearBlock: any = {
+          year: baseYearLabel,
+          notes: notes[el.year] || "",
+          votes: [] as any[],
+          wards: [] as any[],
+          generalVotes: [] as any[],
+          generalBooths: [] as any[],
+        };
+
+        if (isLocalbody) {
+          yearBlock.votes = (el.voteShare || []).map((v) => ({
+            alliance: v.alliance,
+            color: getAllianceColor(v.alliance),
+            votes: v.votes,
+            percent: Number(v.percentage.toFixed(2)),
+          }));
+
+          yearBlock.wards = (el.wardPerformance || []).map((p) => ({
+            alliance: p.alliance,
+            color: getAllianceColor(p.alliance),
+            winner: p.winner,
+            runnerUp: p.runnerUp,
+            third: p.third,
+          }));
+        }
+
+        if (isGE) {
+          yearBlock.generalVotes = (el.boothVoteShare || []).map((v) => ({
+            alliance: v.alliance,
+            color: getAllianceColor(v.alliance),
+            votes: v.votes,
+            percent: Number(v.percentage.toFixed(2)),
+          }));
+
+          yearBlock.generalBooths = (el.boothPerformance || []).map((p) => ({
+            alliance: p.alliance,
+            color: getAllianceColor(p.alliance),
+            winner: p.winner,
+            runnerUp: p.runnerUp,
+            third: p.third,
+          }));
+        }
+
+        return yearBlock;
+      });
+
+    const payload = {
+      template: "combined",
+      localbody: analysis.localbody.name,
+      district: analysis.localbody.districtName || "",
+      showVotes: true,
+      showPercent: true,
+      years: yearsPayload,
+    };
+
+    try {
+      const res = await fetch("http://localhost:4000/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Poster backend failed");
+
+      const data = await res.json();
+      // Backend returns { image: "<base64>" }
+      setPosterImage(data.image);
+    } catch (err) {
+      console.error(err);
+      alert("Poster generation failed");
+    }
+
+    setPosterLoading(false);
+  };
+
+  /* -------- RENDER -------- */
 
   return (
     <div style={{ padding: 24, color: "white" }}>
       <h2 style={{ marginBottom: 8 }}>Localbody Election Analysis</h2>
-
       <p style={{ marginBottom: 20, opacity: 0.8, fontSize: 14 }}>
-        Compare alliance performance across Localbody (2015, 2020) and
-        General Election (2024).
+        Compare alliance performance across Localbody (2015, 2020) and General
+        Election (2024) for the selected localbody.
       </p>
 
       {/* TOP FILTER BAR */}
@@ -432,6 +537,7 @@ export default function LocalbodyAnalysisTab() {
           marginBottom: 20,
         }}
       >
+        {/* DISTRICT */}
         <div>
           <label style={labelStyle}>District</label>
           <select
@@ -440,6 +546,8 @@ export default function LocalbodyAnalysisTab() {
               setSelectedDistrict(e.target.value);
               setSelectedLocalbody("");
               setAnalysis(null);
+              setDetailed(null);
+              setPosterImage(null);
             }}
             style={selectStyle}
           >
@@ -452,16 +560,19 @@ export default function LocalbodyAnalysisTab() {
           </select>
         </div>
 
+        {/* LOCALBODY */}
         <div>
           <label style={labelStyle}>Localbody</label>
           {loadingLb ? (
-            <div style={{ paddingTop: 8 }}>Loading…</div>
+            <div style={{ paddingTop: 8 }}>Loading localbodies…</div>
           ) : (
             <select
               value={selectedLocalbody}
               onChange={(e) => {
                 setSelectedLocalbody(e.target.value);
                 setAnalysis(null);
+                setDetailed(null);
+                setPosterImage(null);
               }}
               style={selectStyle}
             >
@@ -475,6 +586,7 @@ export default function LocalbodyAnalysisTab() {
           )}
         </div>
 
+        {/* YEARS + LOAD BUTTON */}
         <div>
           <label style={labelStyle}>Election Years</label>
           <div
@@ -519,7 +631,9 @@ export default function LocalbodyAnalysisTab() {
               background: loadingAnalysis ? "#444" : "#0d6efd",
               color: "#fff",
               cursor:
-                !selectedLocalbody || loadingAnalysis ? "not-allowed" : "pointer",
+                !selectedLocalbody || loadingAnalysis
+                  ? "not-allowed"
+                  : "pointer",
               fontSize: 14,
             }}
           >
@@ -532,10 +646,10 @@ export default function LocalbodyAnalysisTab() {
         <p style={{ color: "salmon", marginBottom: 12 }}>{errorMsg}</p>
       )}
 
-      {/* ANALYSIS CARDS */}
+      {/* ANALYSIS CARDS + POSTER + DETAILED TABLES */}
       {analysis && (
         <div style={{ marginTop: 16 }}>
-          {/* HEADER */}
+          {/* Localbody header */}
           <div
             style={{
               marginBottom: 16,
@@ -556,7 +670,7 @@ export default function LocalbodyAnalysisTab() {
             </div>
           </div>
 
-          {/* GRID */}
+          {/* Grid of elections */}
           <div
             style={{
               display: "grid",
@@ -567,10 +681,14 @@ export default function LocalbodyAnalysisTab() {
             {Object.values(analysis.elections)
               .sort((a, b) => a.year - b.year)
               .map((el) => {
-                const isLocal = el.type === "LOCALBODY";
+                const isLocalbody = el.type === "LOCALBODY";
                 const isGE = el.type === "GE";
                 const badgeColor =
-                  isLocal ? "#059669" : isGE ? "#3b82f6" : "#f59e0b";
+                  el.type === "LOCALBODY"
+                    ? "#059669"
+                    : el.type === "GE"
+                    ? "#3b82f6"
+                    : "#f59e0b";
 
                 return (
                   <div
@@ -583,10 +701,12 @@ export default function LocalbodyAnalysisTab() {
                       boxShadow: "0 8px 20px rgba(0,0,0,0.35)",
                     }}
                   >
+                    {/* Header */}
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
+                        alignItems: "center",
                         marginBottom: 8,
                       }}
                     >
@@ -595,11 +715,11 @@ export default function LocalbodyAnalysisTab() {
                           style={{
                             fontSize: 13,
                             opacity: 0.8,
+                            marginBottom: 2,
                           }}
                         >
                           {el.label}
                         </div>
-
                         <div
                           style={{
                             fontWeight: 600,
@@ -609,12 +729,13 @@ export default function LocalbodyAnalysisTab() {
                           {el.year}
                         </div>
                       </div>
-
                       <div
                         style={{
                           padding: "3px 10px",
                           borderRadius: 999,
                           fontSize: 11,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
                           backgroundColor: badgeColor,
                         }}
                       >
@@ -622,15 +743,17 @@ export default function LocalbodyAnalysisTab() {
                       </div>
                     </div>
 
-                    {isLocal && (
+                    {/* Content */}
+                    {isLocalbody && (
                       <>
                         {renderVoteShareTable(
                           el.voteShare || [],
                           "Ward-wise Alliance Vote Share"
                         )}
+
                         {renderPerformanceTable(
                           el.wardPerformance,
-                          "Ward Performance",
+                          "Ward Performance (Alliance-wise)",
                           {
                             win: "# Wins",
                             second: "# 2nd",
@@ -646,19 +769,35 @@ export default function LocalbodyAnalysisTab() {
                           el.boothVoteShare || [],
                           "Booth-wise Alliance Vote Share"
                         )}
+
                         {renderPerformanceTable(
                           el.boothPerformance,
-                          "Booth Ranking",
+                          "Booth Performance (Alliance-wise)",
                           {
                             win: "#1 Rank",
                             second: "#2 Rank",
                             third: "#3 Rank",
                           }
                         )}
+
+                        {(!el.boothVoteShare ||
+                          el.boothVoteShare.length === 0) &&
+                          (!el.boothPerformance ||
+                            el.boothPerformance.length === 0) && (
+                            <p
+                              style={{
+                                fontSize: 13,
+                                opacity: 0.7,
+                                marginTop: 8,
+                              }}
+                            >
+                              No booth-level data available for this election.
+                            </p>
+                          )}
                       </>
                     )}
 
-                    {/* NOTES */}
+                    {/* NOTES BOX */}
                     <textarea
                       placeholder={`Notes for ${el.year}…`}
                       value={notes[el.year] || ""}
@@ -677,12 +816,18 @@ export default function LocalbodyAnalysisTab() {
                         fontSize: 13,
                       }}
                     />
+
+                    {!isLocalbody && !isGE && (
+                      <p style={{ fontSize: 13, opacity: 0.7 }}>
+                        No renderer defined for type: {el.type}
+                      </p>
+                    )}
                   </div>
                 );
               })}
           </div>
 
-          {/* POSTER GENERATION BUTTON */}
+          {/* GENERATE POSTER BUTTON */}
           <div style={{ marginTop: 30, textAlign: "center" }}>
             <button
               onClick={generatePoster}
@@ -718,13 +863,218 @@ export default function LocalbodyAnalysisTab() {
               />
             </div>
           )}
+
+          {/* DETAILED TABLES (WARDS + BOOTHS, PER YEAR) */}
+          <div style={{ marginTop: 40 }}>
+            <h3 style={{ marginBottom: 12 }}>Detailed Ward / Booth Results</h3>
+
+            {loadingDetailed && (
+              <p style={{ fontSize: 13, opacity: 0.7 }}>
+                Loading detailed results…
+              </p>
+            )}
+
+            {!loadingDetailed && detailed && (
+              <DetailedResultsTabs
+                detailed={detailed}
+                allianceColors={ALLIANCE_COLORS}
+                formatPct={formatPct}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-/* ========= STYLES ========= */
+/* ========= DETAILED RESULTS TABS COMPONENT ========= */
+
+type DetailedResultsTabsProps = {
+  detailed: DetailedResponse;
+  allianceColors: Record<string, string>;
+  formatPct: (v: number) => string;
+};
+
+function DetailedResultsTabs({
+  detailed,
+  allianceColors,
+  formatPct,
+}: DetailedResultsTabsProps) {
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const years = Object.values(detailed).sort((a, b) => a.year - b.year);
+
+  if (years.length === 0) {
+    return (
+      <p style={{ fontSize: 13, opacity: 0.7 }}>
+        No detailed ward/booth data available.
+      </p>
+    );
+  }
+
+  const activeYear = years[Math.min(activeIdx, years.length - 1)];
+  const isLocalbody = activeYear.type === "LOCALBODY";
+  const labelId = isLocalbody ? "Ward" : "Booth";
+
+  const rows = (isLocalbody
+    ? activeYear.wards || []
+    : activeYear.booths || []) as (WardDetailRow | BoothDetailRow)[];
+
+  // Determine alliance order from first row
+  let allianceOrder: string[] = [];
+  if (rows.length > 0) {
+    allianceOrder = rows[0].alliances
+      .slice()
+      .sort((a, b) => b.votes - a.votes)
+      .map((a) => a.alliance);
+  }
+
+  const getAllianceColor = (name: string | null | undefined) => {
+    if (!name) return allianceColors.OTH;
+    const key = name.toUpperCase();
+    return allianceColors[key] || allianceColors.OTH;
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: 16,
+        borderRadius: 10,
+        background: "#020617",
+        border: "1px solid #1f2937",
+      }}
+    >
+      {/* Year tabs */}
+      <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {years.map((y, idx) => {
+          const active = idx === activeIdx;
+          return (
+            <button
+              key={y.year}
+              type="button"
+              onClick={() => setActiveIdx(idx)}
+              style={{
+                padding: "4px 10px",
+                borderRadius: 999,
+                border: active ? "1px solid #0d6efd" : "1px solid #555",
+                background: active ? "#0d6efd33" : "transparent",
+                color: active ? "#fff" : "#ddd",
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              {y.year} {y.type === "GE" ? "GE" : ""}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Active year table */}
+      {rows.length === 0 ? (
+        <p style={{ fontSize: 13, opacity: 0.7 }}>
+          No {isLocalbody ? "ward" : "booth"} data available for {activeYear.year}.
+        </p>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              tableLayout: "auto",
+              fontSize: 13,
+              minWidth: 600,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={thStyleLeft}>{labelId} #</th>
+                <th style={thStyleLeft}>{labelId} Name</th>
+
+                {allianceOrder.map((a) => (
+                  <React.Fragment key={a}>
+                    <th style={thStyleRight}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          gap: 4,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            background: getAllianceColor(a),
+                            display: "inline-block",
+                          }}
+                        />
+                        {a} Votes
+                      </div>
+                    </th>
+                    <th style={thStyleRight}>{a} %</th>
+                  </React.Fragment>
+                ))}
+
+                <th style={thStyleRight}>Total</th>
+                <th style={thStyleLeft}>Winner</th>
+                <th style={thStyleRight}>Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => {
+                const num =
+                  (row as WardDetailRow).wardNum ??
+                  (row as BoothDetailRow).boothNum ??
+                  null;
+                const name =
+                  (row as WardDetailRow).wardName ??
+                  (row as BoothDetailRow).boothName ??
+                  "";
+
+                return (
+                  <tr key={idx}>
+                    <td style={tdStyleLeft}>{num}</td>
+                    <td style={tdStyleLeft}>{name}</td>
+
+                    {allianceOrder.map((a) => {
+                      const found = row.alliances.find(
+                        (x) => x.alliance === a
+                      );
+                      const votes = found?.votes ?? 0;
+                      const pct = found?.percentage ?? 0;
+                      return (
+                        <React.Fragment key={a}>
+                          <td style={tdStyleRight}>
+                            {votes.toLocaleString("en-IN")}
+                          </td>
+                          <td style={tdStyleRight}>{formatPct(pct)}</td>
+                        </React.Fragment>
+                      );
+                    })}
+
+                    <td style={tdStyleRight}>
+                      {row.total.toLocaleString("en-IN")}
+                    </td>
+                    <td style={tdStyleLeft}>{row.winner || "-"}</td>
+                    <td style={tdStyleRight}>
+                      {row.margin != null ? row.margin : "-"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ========= SMALL STYLE HELPERS ========= */
 
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
