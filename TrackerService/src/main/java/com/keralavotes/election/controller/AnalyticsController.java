@@ -3,7 +3,7 @@ package com.keralavotes.election.controller;
 import com.keralavotes.election.dto.LocalbodyAllianceVotesDto;
 import com.keralavotes.election.dto.LocalbodyAnalysisResponse;
 import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
-import com.keralavotes.election.dto.details.DetailedYearDataDto;
+import com.keralavotes.election.dto.details.LocalbodyDetailYearDataDto;
 import com.keralavotes.election.repository.BoothVotesRepository;
 import com.keralavotes.election.service.AnalysisDetailService;
 import com.keralavotes.election.service.LocalbodyElectionAnalysisService;
@@ -165,7 +165,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/localbody/{lbId}/details")
-    public Map<String, DetailedYearDataDto> getDetailedResults(
+    public Map<Integer, LocalbodyDetailYearDataDto> getDetailedResults(
             @PathVariable Long lbId,
             @RequestParam("years") String yearsCsv
     ) {
@@ -174,7 +174,7 @@ public class AnalyticsController {
                         .map(Integer::parseInt)
                         .toList();
 
-        return detailService.loadDetails(lbId, years);
+        return analysisService.analyzeLocalbodyDetails(lbId, years);
     }
 
 

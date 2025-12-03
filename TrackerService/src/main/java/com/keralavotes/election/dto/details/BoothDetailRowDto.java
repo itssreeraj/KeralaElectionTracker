@@ -4,7 +4,7 @@ import lombok.*;
 import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class BoothDetailDto {
+public class BoothDetailRowDto {
     private Integer boothNum;
     private String boothName;
     private List<AllianceVoteDetailDto> alliances;

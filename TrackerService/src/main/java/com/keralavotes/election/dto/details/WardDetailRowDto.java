@@ -4,7 +4,7 @@ import lombok.*;
 import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class WardDetailDto {
+public class WardDetailRowDto {
     private Integer wardNum;
     private String wardName;
     private List<AllianceVoteDetailDto> alliances;

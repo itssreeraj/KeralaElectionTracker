@@ -1,6 +1,10 @@
 package com.keralavotes.election.service;
 
 import com.keralavotes.election.dto.*;
+import com.keralavotes.election.dto.details.AllianceVoteDetailDto;
+import com.keralavotes.election.dto.details.BoothDetailRowDto;
+import com.keralavotes.election.dto.details.LocalbodyDetailYearDataDto;
+import com.keralavotes.election.dto.details.WardDetailRowDto;
 import com.keralavotes.election.entity.LbCandidate;
 import com.keralavotes.election.entity.LbWardResult;
 import com.keralavotes.election.entity.Localbody;
@@ -357,6 +361,288 @@ public class LocalbodyElectionAnalysisService {
         dto.setWardPerformance(null);
 
         return dto;
+    }
+
+    // ========================================================================
+    // NEW: DETAILED ANALYSIS (WARD / BOOTH TABLES)
+    // ========================================================================
+
+    /**
+     * Detailed analysis per year:
+     *  - LOCALBODY: ward-wise tables
+     *  - GE / ASSEMBLY: booth-wise tables
+     *
+     * JSON shape:
+     *  {
+     *    "2015": { "year": 2015, "type": "LOCALBODY", "wards": [...], "booths": null },
+     *    "2024": { "year": 2024, "type": "GE", "wards": null, "booths": [...] }
+     *  }
+     */
+    public Map<Integer, LocalbodyDetailYearDataDto> analyzeLocalbodyDetails(
+            Long localbodyId,
+            List<Integer> requestedYears
+    ) {
+        Localbody lb = localbodyRepo.findById(localbodyId)
+                .orElseThrow(() -> new IllegalArgumentException("Localbody not found: " + localbodyId));
+
+        List<Integer> yearsToProcess;
+        if (requestedYears == null || requestedYears.isEmpty()) {
+            yearsToProcess = new ArrayList<>(ELECTION_TYPES.keySet());
+        } else {
+            yearsToProcess = requestedYears.stream()
+                    .filter(ELECTION_TYPES::containsKey)
+                    .distinct()
+                    .sorted()
+                    .toList();
+        }
+
+        Map<Integer, LocalbodyDetailYearDataDto> result = new LinkedHashMap<>();
+
+        for (Integer year : yearsToProcess) {
+            ElectionType type = ELECTION_TYPES.get(year);
+            if (type == null) {
+                log.warn("Year {} not configured in ELECTION_TYPES, skipping details", year);
+                continue;
+            }
+
+            LocalbodyDetailYearDataDto dto = new LocalbodyDetailYearDataDto();
+            dto.setYear(year);
+            dto.setType(type);
+
+            if (type == ElectionType.LOCALBODY) {
+                dto.setWards(buildWardDetailRows(lb, year));
+                dto.setBooths(null);
+            } else if (type == ElectionType.GE || type == ElectionType.ASSEMBLY) {
+                dto.setWards(null);
+                dto.setBooths(buildBoothDetailRows(lb, year));
+            } else {
+                dto.setWards(null);
+                dto.setBooths(null);
+            }
+
+            result.put(year, dto);
+        }
+
+        return result;
+    }
+
+    // ------------------------------------------------------------------------
+    // LOCALBODY: WARD DETAIL TABLE
+    // ------------------------------------------------------------------------
+    private List<WardDetailRowDto> buildWardDetailRows(Localbody lb, int year) {
+
+        log.debug("Building ward detail rows for LB={} year={}", lb.getId(), year);
+
+        // 1) Candidates for this localbody/year
+        List<LbCandidate> candidates =
+                candidateRepo.findByLocalbodyIdAndElectionYear(lb.getId(), year);
+
+        if (candidates.isEmpty()) {
+            log.info("No localbody candidates for LB={} year={} (ward details)", lb.getId(), year);
+            return Collections.emptyList();
+        }
+
+        Map<Integer, LbCandidate> candById = candidates.stream()
+                .filter(c -> c.getId() != null)
+                .collect(Collectors.toMap(LbCandidate::getId, Function.identity()));
+
+        Set<Integer> candIds = candById.keySet();
+        if (candIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2) Ward-level results
+        List<LbWardResult> results =
+                wardResultRepo.findByElectionYearAndCandidateIdIn(year, candIds);
+
+        if (results.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 3) Ward map
+        Set<Long> wardIds = results.stream()
+                .map(r -> (long) r.getWardId())
+                .collect(Collectors.toSet());
+
+        Map<Long, Ward> wardById = wardRepo.findAllById(wardIds).stream()
+                .collect(Collectors.toMap(Ward::getId, Function.identity()));
+
+        // 4) Party map
+        Map<Long, Party> partyById = partyRepo.findAll().stream()
+                .filter(p -> p.getId() != null)
+                .collect(Collectors.toMap(Party::getId, Function.identity()));
+
+        // 5) Group results by ward
+        Map<Integer, List<LbWardResult>> resultsByWard =
+                results.stream().collect(Collectors.groupingBy(LbWardResult::getWardId));
+
+        List<WardDetailRowDto> rows = new ArrayList<>();
+
+        for (Map.Entry<Integer, List<LbWardResult>> entry : resultsByWard.entrySet()) {
+            Integer wardIdInt = entry.getKey();
+            Long wardId = wardIdInt.longValue();
+
+            Ward ward = wardById.get(wardId);
+            String wardName = ward != null ? ward.getWardName() : ("Ward " + wardIdInt);
+            Integer wardNum = ward != null ? (int) ward.getWardNum() : wardIdInt;
+
+            List<LbWardResult> wardResults = entry.getValue();
+
+            // 5a) sum votes per alliance
+            Map<String, Long> votesByAlliance = new HashMap<>();
+            long totalVotes = 0L;
+
+            for (LbWardResult r : wardResults) {
+                LbCandidate c = candById.get(r.getCandidateId());
+                if (c == null) continue;
+
+                Party party = (c.getPartyId() != null) ? partyById.get(c.getPartyId()) : null;
+                String alliance = resolveAlliance(party);
+
+                long v = r.getVotes();
+                totalVotes += v;
+                votesByAlliance.merge(alliance, v, Long::sum);
+            }
+
+            if (votesByAlliance.isEmpty()) {
+                continue;
+            }
+
+            // 5b) alliance list sorted by votes desc
+            List<Map.Entry<String, Long>> sortedAlliances = votesByAlliance.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                    .toList();
+
+            String winnerAlliance = sortedAlliances.get(0).getKey();
+            long winnerVotes = sortedAlliances.get(0).getValue();
+            long secondVotes = sortedAlliances.size() > 1 ? sortedAlliances.get(1).getValue() : 0L;
+            long margin = winnerVotes - secondVotes;
+
+            // 5c) build AllianceBreakup list
+            long finalTotalVotes = totalVotes;
+            List<AllianceVoteDetailDto> allianceDtos = sortedAlliances.stream()
+                    .map(e -> new AllianceVoteDetailDto(
+                            e.getKey(),
+                            e.getValue(),
+                            finalTotalVotes == 0 ? 0.0 : (e.getValue() * 100.0 / finalTotalVotes)
+                    ))
+                    .toList();
+
+            WardDetailRowDto row = new WardDetailRowDto();
+            row.setWardNum(wardNum);
+            row.setWardName(wardName);
+            row.setAlliances(allianceDtos);
+            row.setTotal(totalVotes);
+            row.setWinner(winnerAlliance);
+            row.setMargin(margin);
+
+            rows.add(row);
+        }
+
+        // Sort rows by wardNum ascending
+        rows.sort(Comparator.comparing(
+                r -> r.getWardNum() != null ? r.getWardNum() : Integer.MAX_VALUE
+        ));
+
+        return rows;
+    }
+
+    // ------------------------------------------------------------------------
+    // GE / ASSEMBLY: BOOTH DETAIL TABLE
+    // ------------------------------------------------------------------------
+    private List<BoothDetailRowDto> buildBoothDetailRows(Localbody lb, int year) {
+
+        log.debug("Building booth detail rows for LB={} year={}", lb.getId(), year);
+
+        // Query returns: ps.id, ps.psNumber, ps.name, allianceName, SUM(votes)
+        List<Object[]> rows = em.createQuery("""
+            SELECT 
+                ps.id,
+                ps.psNumber,
+                ps.name,
+                COALESCE(a.name, 'OTH'),
+                SUM(bv.votes)
+            FROM BoothVotes bv
+                JOIN bv.pollingStation ps
+                JOIN bv.candidate c
+                LEFT JOIN c.party p
+                LEFT JOIN p.alliance a
+            WHERE ps.localbody.id = :lbId
+              AND bv.year = :year
+            GROUP BY ps.id, ps.psNumber, ps.name, a.name
+        """, Object[].class)
+                .setParameter("lbId", lb.getId())
+                .setParameter("year", year)
+                .getResultList();
+
+        if (rows.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Group by booth id
+        record BoothKey(Long id, Integer num, String name) {}
+
+        Map<BoothKey, Map<String, Long>> boothMap = new HashMap<>();
+
+        for (Object[] r : rows) {
+            Long boothId = ((Number) r[0]).longValue();
+            Integer boothNum = r[1] != null ? ((Number) r[1]).intValue() : null;
+            String boothName = r[2] != null ? r[2].toString() : "";
+            String alliance = r[3] != null ? r[3].toString() : "OTH";
+            long votes = ((Number) r[4]).longValue();
+
+            BoothKey key = new BoothKey(boothId, boothNum, boothName);
+
+            boothMap.computeIfAbsent(key, k -> new HashMap<>())
+                    .merge(alliance, votes, Long::sum);
+        }
+
+        List<BoothDetailRowDto> result = new ArrayList<>();
+
+        for (var entry : boothMap.entrySet()) {
+            BoothKey key = entry.getKey();
+            Map<String, Long> votesByAlliance = entry.getValue();
+
+            long totalVotes = votesByAlliance.values().stream()
+                    .mapToLong(Long::longValue)
+                    .sum();
+
+            if (totalVotes == 0) continue;
+
+            List<Map.Entry<String, Long>> sortedAlliances = votesByAlliance.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                    .toList();
+
+            String winnerAlliance = sortedAlliances.get(0).getKey();
+            long winnerVotes = sortedAlliances.get(0).getValue();
+            long secondVotes = sortedAlliances.size() > 1 ? sortedAlliances.get(1).getValue() : 0L;
+            long margin = winnerVotes - secondVotes;
+
+            List<AllianceVoteDetailDto> allianceDtos = sortedAlliances.stream()
+                    .map(e -> new AllianceVoteDetailDto(
+                            e.getKey(),
+                            e.getValue(),
+                            totalVotes == 0 ? 0.0 : (e.getValue() * 100.0 / totalVotes)
+                    ))
+                    .toList();
+
+            BoothDetailRowDto dto = new BoothDetailRowDto();
+            dto.setBoothNum(key.num());
+            dto.setBoothName(key.name());
+            dto.setAlliances(allianceDtos);
+            dto.setTotal(totalVotes);
+            dto.setWinner(winnerAlliance);
+            dto.setMargin(margin);
+
+            result.add(dto);
+        }
+
+        // sort by booth number (nulls at end)
+        result.sort(Comparator.comparing(
+                r -> r.getBoothNum() != null ? r.getBoothNum() : Integer.MAX_VALUE
+        ));
+
+        return result;
     }
 
 }

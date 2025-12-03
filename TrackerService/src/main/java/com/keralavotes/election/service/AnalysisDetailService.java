@@ -1,5 +1,6 @@
 package com.keralavotes.election.service;
 
+import com.keralavotes.election.dto.ElectionType;
 import com.keralavotes.election.dto.details.*;
 import com.keralavotes.election.repository.BoothVotesRepository;
 import com.keralavotes.election.repository.LocalbodyRepository;
@@ -16,9 +17,9 @@ public class AnalysisDetailService {
     private final BoothVotesRepository repo;
     private final LocalbodyRepository localbodyRepo;
 
-    public Map<String, DetailedYearDataDto> loadDetails(Long lbId, List<Integer> years) {
+    public Map<String, LocalbodyDetailYearDataDto> loadDetails(Long lbId, List<Integer> years) {
 
-        Map<String, DetailedYearDataDto> result = new LinkedHashMap<>();
+        Map<String, LocalbodyDetailYearDataDto> result = new LinkedHashMap<>();
 
         for (Integer year : years) {
 
@@ -30,7 +31,7 @@ public class AnalysisDetailService {
                 Map<Integer, List<Object[]>> grouped =
                         rows.stream().collect(Collectors.groupingBy(r -> (Integer) r[0], LinkedHashMap::new, Collectors.toList()));
 
-                List<WardDetailDto> wards = new ArrayList<>();
+                List<WardDetailRowDto> wards = new ArrayList<>();
 
                 for (var entry : grouped.entrySet()) {
                     int wardNum = entry.getKey();
@@ -54,7 +55,7 @@ public class AnalysisDetailService {
                     Long margin = alliances.size() < 2 ? null :
                             alliances.get(0).getVotes() - alliances.get(1).getVotes();
 
-                    wards.add(WardDetailDto.builder()
+                    wards.add(WardDetailRowDto.builder()
                             .wardNum(wardNum)
                             .wardName(name)
                             .alliances(alliances)
@@ -65,9 +66,9 @@ public class AnalysisDetailService {
                 }
 
                 result.put(year.toString(),
-                        DetailedYearDataDto.builder()
+                        LocalbodyDetailYearDataDto.builder()
                                 .year(year)
-                                .type("LOCALBODY")
+                                .type(ElectionType.LOCALBODY)
                                 .wards(wards)
                                 .build());
 
@@ -77,7 +78,7 @@ public class AnalysisDetailService {
                 Map<Integer, List<Object[]>> grouped =
                         rows.stream().collect(Collectors.groupingBy(r -> (Integer) r[0], LinkedHashMap::new, Collectors.toList()));
 
-                List<BoothDetailDto> booths = new ArrayList<>();
+                List<BoothDetailRowDto> booths = new ArrayList<>();
 
                 for (var entry : grouped.entrySet()) {
                     int psnum = entry.getKey();
@@ -101,7 +102,7 @@ public class AnalysisDetailService {
                     Long margin = alliances.size() < 2 ? null :
                             alliances.get(0).getVotes() - alliances.get(1).getVotes();
 
-                    booths.add(BoothDetailDto.builder()
+                    booths.add(BoothDetailRowDto.builder()
                             .boothNum(psnum)
                             .boothName(name)
                             .alliances(alliances)
@@ -112,9 +113,9 @@ public class AnalysisDetailService {
                 }
 
                 result.put(year.toString(),
-                        DetailedYearDataDto.builder()
+                        LocalbodyDetailYearDataDto.builder()
                                 .year(year)
-                                .type(type)
+                                .type(ElectionType.valueOf(type))
                                 .booths(booths)
                                 .build());
             }
