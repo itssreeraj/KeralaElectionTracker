@@ -2,6 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 
+type District = {
+  districtCode: number;
+  name: string;
+};
+
 export default function ReassignBoothsTab({ backend }: { backend: string }) {
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [filteredAssemblies, setFilteredAssemblies] = useState<any[]>([]);
@@ -14,9 +19,23 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
 
   const [localbodies, setLocalbodies] = useState<any[]>([]);
   const [selectedLocalbody, setSelectedLocalbody] = useState("");
+  const [loadingLb, setLoadingLb] = useState(false);
 
   const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+
+  const [lbDistrictFilter, setLbDistrictFilter] = useState("");
+  const [lbTypeFilter, setLbTypeFilter] = useState<string[]>([]);
+  const [lbSearch, setLbSearch] = useState("");
+  const [filteredLocalbodies, setFilteredLocalbodies] = useState<any[]>([]);
+
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
+
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+
 
   /* ---------------------------------------------
        LOAD ASSEMBLIES + LOCALBODIES
@@ -75,6 +94,113 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
       )
     );
   }, [boothFilter, booths]);
+
+  /* -------- LOAD DISTRICTS -------- */
+  useEffect(() => {
+    const loadDistricts = async () => {
+      try {
+        const res = await fetch(`${backend}/admin/districts`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setDistricts(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Error loading districts", e);
+      }
+    };
+    loadDistricts();
+  }, [backend]);
+
+  /* -------- LOAD LOCALBODIES WHEN DISTRICT CHANGES -------- */
+  useEffect(() => {
+    const loadLocalbodies = async () => {
+      if (!selectedDistrict) {
+        setLocalbodies([]);
+        setFilteredLocalbodies([]);
+        return;
+      }
+
+      setLoadingLb(true);
+
+      try {
+        const res = await fetch(
+          `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+            selectedDistrict
+          )}`
+        );
+
+        if (!res.ok) {
+          setLocalbodies([]);
+          setFilteredLocalbodies([]);
+          return;
+        }
+
+        const data = await res.json();
+        setLocalbodies(Array.isArray(data) ? data : []);
+        setFilteredLocalbodies(Array.isArray(data) ? data : []);
+
+        // ALSO build type list from the filtered localbodies
+        const types = [
+          ...new Set(
+            (Array.isArray(data) ? data : [])
+              .map((lb: any) => lb.type)
+              .filter((t: string) => t && t.trim())
+          ),
+        ].sort();
+
+        setAvailableTypes(types);
+
+      } catch (e) {
+        console.error("Error loading localbodies", e);
+        setLocalbodies([]);
+        setFilteredLocalbodies([]);
+      }
+
+      setLoadingLb(false);
+    };
+
+    loadLocalbodies();
+  }, [backend, selectedDistrict]);
+
+  useEffect(() => {
+    if (!localbodies.length) return;
+
+    const districts = Array.from(
+      new Set(
+        localbodies
+          .map(lb => lb.districtName)
+          .filter(name => name && name.trim() !== "")
+      )
+    ).sort();
+
+    const types = Array.from(
+      new Set(localbodies.map(lb => lb.type))
+    ).sort();
+
+    setAvailableDistricts(districts);
+    setAvailableTypes(types);
+  }, [localbodies]);
+
+  /* -------- APPLY TYPE + TEXT FILTER -------- */
+  useEffect(() => {
+    let list = [...localbodies];
+
+    // Type filter
+    if (selectedTypes.size > 0) {
+      list = list.filter((lb) => selectedTypes.has(lb.type));
+    }
+
+    // Text search
+    if (lbSearch.trim()) {
+      const q = lbSearch.toLowerCase();
+      list = list.filter(
+        (lb) =>
+          lb.name.toLowerCase().includes(q) ||
+          lb.type.toLowerCase().includes(q)
+      );
+    }
+
+    setFilteredLocalbodies(list);
+  }, [lbSearch, selectedTypes, localbodies]);
 
   /* ---------------------------------------------
        SELECTION (NORMAL + SHIFT CLICK)
@@ -175,6 +301,7 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
 
     loadBooths();
   };
+
 
   /* ---------------------------------------------
         RENDER UI
@@ -290,15 +417,96 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
             Selected Booths: {selectedBooths.size}
           </p>
 
+          {/* DISTRICT FILTER */}
+          <div style={{ marginTop: 20 }}>
+            <label style={{ fontWeight: 600 }}>District</label>
+
+            <select
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+              style={{
+                width: "100%",
+                padding: 8,
+                marginTop: 6,
+                marginBottom: 16,
+              }}
+            >
+              <option value="">All Districts</option>
+
+              {districts.map((d) => (
+                <option key={d.districtCode} value={d.name}>
+                  {d.districtCode} – {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* TYPE FILTER */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontWeight: 600 }}>Localbody Type</label>
+
+            <div
+              style={{
+                background: "#111",
+                padding: 10,
+                borderRadius: 6,
+                border: "1px solid #333",
+                maxHeight: 150,
+                overflowY: "auto",
+                marginTop: 6,
+              }}
+            >
+              {availableTypes.map((t) => (
+                <label
+                  key={t}
+                  style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTypes.has(t)}
+                    onChange={() =>
+                      setSelectedTypes((prev) => {
+                        const next = new Set(prev);
+                        next.has(t) ? next.delete(t) : next.add(t);
+                        return next;
+                      })
+                    }
+                  />
+                  {t}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* LOCALBODY TEXT SEARCH */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontWeight: 600 }}>Search Localbody</label>
+            <input
+              type="text"
+              value={lbSearch}
+              onChange={(e) => setLbSearch(e.target.value)}
+              placeholder="Type localbody name\u2026"
+              style={{
+                width: "100%",
+                padding: 8,
+                marginTop: 6,
+                background: "#111",
+                color: "white",
+                borderRadius: 6,
+                border: "1px solid #333",
+              }}
+            />
+          </div>
+
           {/* Localbody dropdown */}
           <label>New Localbody</label>
           <select
             value={selectedLocalbody}
             onChange={(e) => setSelectedLocalbody(e.target.value)}
-            style={{ width: "100%", padding: 8, marginBottom: 16 }}
+            style={{ width: "100%", padding: 8, marginBottom: 12 }}
           >
             <option value="">Select Localbody</option>
-            {localbodies.map((lb) => (
+            {filteredLocalbodies.map((lb) => (
               <option key={lb.id} value={lb.id}>
                 {lb.name} ({lb.type})
               </option>

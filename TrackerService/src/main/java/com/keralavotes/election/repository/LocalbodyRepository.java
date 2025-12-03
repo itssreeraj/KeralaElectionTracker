@@ -26,4 +26,6 @@ public interface LocalbodyRepository extends JpaRepository<Localbody, Long> {
         where lower(lb.district.name) = lower(:districtName)
     """)
     List<Localbody> findByDistrictNameIgnoreCase(@Param("districtName") String districtName);
+
+    Optional<Localbody> findByNameAndType(String localbodyName, String localbodyType);
 }

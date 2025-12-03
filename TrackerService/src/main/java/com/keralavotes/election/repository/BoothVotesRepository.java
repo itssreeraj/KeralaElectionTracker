@@ -60,4 +60,42 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
     List<LocalbodyAllianceVotesDto> sumVotesByAllianceForLocalbody(
             @Param("localbodyId") Long localbodyId,
             @Param("year") int year);
+
+    @Query("""
+    SELECT 
+        w.wardNum,
+        w.wardName,
+        COALESCE(a.name, 'OTH') AS alliance,
+        SUM(bv.votes) AS votes
+    FROM BoothVotes bv
+        JOIN bv.pollingStation ps
+        JOIN ps.ward w
+        JOIN bv.candidate c
+        LEFT JOIN c.party p
+        LEFT JOIN p.alliance a
+    WHERE ps.localbody.id = :lbId
+      AND bv.year = :year
+    GROUP BY w.wardNum, w.wardName, a.name
+    ORDER BY w.wardNum ASC
+""")
+    List<Object[]> getWardAllianceVotes(Long lbId, Integer year);
+
+    @Query("""
+    SELECT 
+        ps.psNumber,
+        ps.name,
+        COALESCE(a.name, 'OTH') AS alliance,
+        SUM(bv.votes) AS votes
+    FROM BoothVotes bv
+        JOIN bv.pollingStation ps
+        JOIN bv.candidate c
+        LEFT JOIN c.party p
+        LEFT JOIN p.alliance a
+    WHERE ps.localbody.id = :lbId
+      AND bv.year = :year
+    GROUP BY ps.psNumber, ps.name, a.name
+    ORDER BY ps.psNumber ASC
+""")
+    List<Object[]> getBoothAllianceVotes(Long lbId, Integer year);
+
 }

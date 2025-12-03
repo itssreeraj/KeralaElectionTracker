@@ -26,7 +26,13 @@ public class Ward {
     private Localbody localbody;
 
     @Column(nullable = false)
-    private String wardNum;
+    private Integer wardNum;
 
     private String wardName;
+
+    @Column(name = "ward_details_id", unique = true)
+    private String wardDetailsId;
+
+    @Column(name = "delimitation_year")
+    private Integer delimitationYear;
 }

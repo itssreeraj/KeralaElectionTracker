@@ -18,9 +18,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate.format_sql: true
+  mongodb:
+    uri: mongodb://appuser:apppassword@localhost:27017/keralavotes?authSource=keralavotes
+    database: keralavotes
+    authentication-database: keralavotes
 
   web:
     cors:

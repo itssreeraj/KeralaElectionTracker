@@ -6,8 +6,9 @@ TrackerService/.idea/gradle.xml
 TrackerService/.idea/
 
 # Build output
-TrackerService/build/
-TrackerService/out/
+**/build/
+**/.gradle/
+**/.idea/
 
 # Logs
 TrackerService/logs/

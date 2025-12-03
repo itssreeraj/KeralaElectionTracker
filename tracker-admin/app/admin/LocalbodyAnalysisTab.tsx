@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 
+/* ========= TYPES ========= */
+
 type District = {
   districtCode: number;
   name: string;
@@ -13,22 +15,132 @@ type Localbody = {
   type: string;
 };
 
-type PartyVotes = {
-  partyId: number | null;
-  partyName: string | null;
-  partyShortName: string | null;
-  allianceId: number | null;
-  allianceName: string | null;
-  allianceColor: string | null;
+type VoteShareRow = {
+  alliance: string; // "LDF", "UDF", "NDA", "IND", "OTH"
   votes: number;
+  percentage: number;
 };
 
-type AllianceVotes = {
-  id: number | null;
-  name: string | null;
-  color: string | null;
-  votes: number;
+type PerformanceRow = {
+  alliance: string;
+  winner: number; // for LOCALBODY: ward wins; for GE: #1 booths
+  runnerUp: number; // for LOCALBODY: #2; for GE: #2 booths
+  third: number; // #3
 };
+
+type ElectionType = "LOCALBODY" | "GE" | "ASSEMBLY";
+
+type SingleElectionAnalysis = {
+  year: number;
+  type: ElectionType;
+  label: string;
+  voteShare: VoteShareRow[] | null; // ward-based (LOCALBODY)
+  wardPerformance: PerformanceRow[] | null; // LOCALBODY
+  boothVoteShare: VoteShareRow[] | null; // GE/ASSEMBLY
+  boothPerformance: PerformanceRow[] | null;
+};
+
+type LocalbodyInfo = {
+  id: number;
+  name: string;
+  type: string;
+  districtName: string | null;
+};
+
+type AnalysisResponse = {
+  localbody: LocalbodyInfo;
+  elections: Record<string, SingleElectionAnalysis>;
+};
+
+/* ========= DETAILED TABLE TYPES ========= */
+
+/**
+ * Backend shape suggested for detailed endpoint:
+ *
+ * GET /admin/analysis/localbody/{id}/details?years=2015,2020,2024
+ *
+ * {
+ *   "2015": {
+ *     "year": 2015,
+ *     "type": "LOCALBODY",
+ *     "wards": [
+ *       {
+ *         "wardNum": 1,
+ *         "wardName": "Chemmaruthy",
+ *         "alliances": [
+ *           { "alliance": "LDF", "votes": 123, "percentage": 45.6 },
+ *           { "alliance": "UDF", "votes": 100, "percentage": 37.0 },
+ *           ...
+ *         ],
+ *         "total": 270,
+ *         "winner": "LDF",
+ *         "margin": 23
+ *       }
+ *     ]
+ *   },
+ *   "2024": {
+ *     "year": 2024,
+ *     "type": "GE",
+ *     "booths": [
+ *       {
+ *         "boothNum": 56,
+ *         "boothName": "St. Joseph School",
+ *         "alliances": [...],
+ *         "total": 802,
+ *         "winner": "UDF",
+ *         "margin": 32
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+
+type AllianceVoteDetail = {
+  alliance: string;
+  votes: number;
+  percentage: number;
+};
+
+type WardDetailRow = {
+  wardNum: number;
+  wardName: string;
+  alliances: AllianceVoteDetail[];
+  total: number;
+  winner: string | null;
+  margin: number | null;
+};
+
+type BoothDetailRow = {
+  boothNum: number;
+  boothName: string;
+  alliances: AllianceVoteDetail[];
+  total: number;
+  winner: string | null;
+  margin: number | null;
+};
+
+type DetailedYearData = {
+  year: number;
+  type: ElectionType;
+  wards?: WardDetailRow[];
+  booths?: BoothDetailRow[];
+};
+
+type DetailedResponse = Record<string, DetailedYearData>;
+
+/* ========= CONSTANTS ========= */
+
+const ALLIANCE_COLORS: Record<string, string> = {
+  LDF: "#ff4b4b",
+  UDF: "#3584e4",
+  NDA: "#e66100",
+  IND: "#9b59b6",
+  OTH: "#999999",
+};
+
+const AVAILABLE_YEARS = [2015, 2020, 2019, 2024, 2025, 2026];
+
+/* ========= COMPONENT ========= */
 
 export default function LocalbodyAnalysisTab() {
   const backend =
@@ -40,32 +152,45 @@ export default function LocalbodyAnalysisTab() {
   const [localbodies, setLocalbodies] = useState<Localbody[]>([]);
   const [selectedLocalbody, setSelectedLocalbody] = useState<string>("");
 
-  const [year, setYear] = useState<number>(2024);
+  const [selectedYears, setSelectedYears] = useState<number[]>([
+    2015,
+    2020,
+    2024,
+  ]);
 
-  const [partyVotes, setPartyVotes] = useState<PartyVotes[]>([]);
-  const [allianceVotes, setAllianceVotes] = useState<AllianceVotes[]>([]);
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
 
   const [loadingLb, setLoadingLb] = useState(false);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [boothTable, setBoothTable] = useState<any[]>([]);
+  /* === POSTER STATES === */
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const [posterImage, setPosterImage] = useState<string | null>(null);
+  const [posterLoading, setPosterLoading] = useState(false);
 
-  /* LOAD DISTRICTS */
+  /* === DETAILED TABLE STATES === */
+  const [detailed, setDetailed] = useState<DetailedResponse | null>(null);
+  const [loadingDetailed, setLoadingDetailed] = useState(false);
+
+  /* -------- LOAD DISTRICTS -------- */
+
   useEffect(() => {
     const loadDistricts = async () => {
       try {
         const res = await fetch(`${backend}/admin/districts`);
         if (!res.ok) return;
-
         const data = await res.json();
         setDistricts(Array.isArray(data) ? data : []);
-      } catch {}
+      } catch (e) {
+        console.error("Error loading districts", e);
+      }
     };
     loadDistricts();
   }, [backend]);
 
-  /* LOAD LOCALBODIES WHEN DISTRICT CHANGES */
+  /* -------- LOAD LOCALBODIES WHEN DISTRICT CHANGES -------- */
+
   useEffect(() => {
     const loadLocalbodies = async () => {
       if (!selectedDistrict) {
@@ -82,7 +207,8 @@ export default function LocalbodyAnalysisTab() {
         );
         const data = await res.json();
         setLocalbodies(Array.isArray(data) ? data : []);
-      } catch {
+      } catch (e) {
+        console.error("Error loading localbodies", e);
         setLocalbodies([]);
       }
       setLoadingLb(false);
@@ -90,413 +216,905 @@ export default function LocalbodyAnalysisTab() {
     loadLocalbodies();
   }, [backend, selectedDistrict]);
 
-  /* LOAD ANALYSIS */
+  /* -------- HELPERS -------- */
+
+  const formatPct = (v: number) => `${v.toFixed(2)}%`;
+
+  const getAllianceColor = (name: string | null | undefined) => {
+    if (!name) return ALLIANCE_COLORS.OTH;
+    const key = name.toUpperCase();
+    return ALLIANCE_COLORS[key] || ALLIANCE_COLORS.OTH;
+  };
+
+  /* -------- LOAD DETAILED RESULTS -------- */
+
+  const loadDetailed = async (lbId: number, years: number[]) => {
+    setLoadingDetailed(true);
+    setDetailed(null);
+    try {
+      const yearsParam = years.join(",");
+      const res = await fetch(
+        `${backend}/admin/analysis/localbody/${lbId}/details?years=${yearsParam}`
+      );
+      if (!res.ok) {
+        console.error("Failed to load detailed results");
+        setLoadingDetailed(false);
+        return;
+      }
+      const data = (await res.json()) as DetailedResponse;
+      setDetailed(data);
+    } catch (e) {
+      console.error("Error loading detailed results", e);
+    }
+    setLoadingDetailed(false);
+  };
+
+  /* -------- LOAD ANALYSIS (multi-year) -------- */
+
   const loadAnalysis = async () => {
-    if (!selectedLocalbody) return;
+    if (!selectedLocalbody || selectedYears.length === 0) return;
 
     setLoadingAnalysis(true);
     setErrorMsg(null);
+    setAnalysis(null);
+    setDetailed(null);
+    setPosterImage(null);
+
     const lbId = Number(selectedLocalbody);
+    const yearsParam = selectedYears.join(",");
 
     try {
-      /* PARTY */
-      const partyRes = await fetch(
-        `${backend}/admin/analysis/localbody/party?localbodyId=${lbId}&year=${year}`
+      const res = await fetch(
+        `${backend}/admin/analysis/localbody/${lbId}?years=${yearsParam}`
       );
-      if (partyRes.ok) setPartyVotes(await partyRes.json());
-      else setPartyVotes([]);
+      if (!res.ok) {
+        setErrorMsg("Failed to load analysis");
+        setLoadingAnalysis(false);
+        return;
+      }
 
-      /* ALLIANCE */
-      const allianceRes = await fetch(
-        `${backend}/admin/analysis/localbody/alliance?localbodyId=${lbId}&year=${year}`
-      );
-      if (allianceRes.ok) setAllianceVotes(await allianceRes.json());
-      else setAllianceVotes([]);
+      const data = (await res.json()) as AnalysisResponse;
+      setAnalysis(data);
 
-      /* BOOTHS */
-      const boothRes = await fetch(
-        `${backend}/admin/analysis/localbody/${lbId}/booths?year=${year}`
-      );
-      let raw: any[] = boothRes.ok ? await boothRes.json() : [];
-
-      const temp: Record<number, any> = {};
-      raw.forEach((row) => {
-        const [
-          boothId,
-          psNumber,
-          psSuffix,
-          boothName,
-          allianceName,
-          votes,
-        ] = row;
-
-        if (!temp[boothId]) {
-          temp[boothId] = {
-            boothId,
-            psNumber: psNumber + (psSuffix || ""),
-            boothName,
-            LDF: 0,
-            UDF: 0,
-            NDA: 0,
-            OTH: 0,
-          };
-        }
-
-        const col =
-          allianceName === "LDF"
-            ? "LDF"
-            : allianceName === "UDF"
-            ? "UDF"
-            : allianceName === "NDA"
-            ? "NDA"
-            : "OTH";
-
-        temp[boothId][col] += votes;
-      });
-
-      setBoothTable(Object.values(temp));
-    } catch {
+      // also load detailed ward/booth tables
+      await loadDetailed(lbId, selectedYears);
+    } catch (e) {
+      console.error("Error loading analysis", e);
       setErrorMsg("Error loading analysis");
     }
 
     setLoadingAnalysis(false);
   };
 
-  /* RENDER */
+  /* -------- TABLE RENDER HELPERS -------- */
+
+  const renderVoteShareTable = (rows: VoteShareRow[], title: string) => {
+    if (!rows || rows.length === 0) return null;
+
+    const totalVotes = rows.reduce((sum, r) => sum + r.votes, 0);
+
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <h4 style={{ marginBottom: 8 }}>{title}</h4>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            tableLayout: "fixed",
+            fontSize: 14,
+          }}
+        >
+          <thead>
+            <tr>
+              <th style={thStyleLeft}>Alliance</th>
+              <th style={thStyleRight}>Votes</th>
+              <th style={thStyleRight}>Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows
+              .slice()
+              .sort((a, b) => b.votes - a.votes)
+              .map((row, idx) => {
+                const alliance = row.alliance || "OTH";
+                const color = getAllianceColor(alliance);
+                const pct =
+                  totalVotes === 0
+                    ? "0.00%"
+                    : formatPct((row.votes * 100.0) / totalVotes);
+
+                return (
+                  <tr key={idx}>
+                    <td style={tdStyleLeft}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span
+                          style={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: "50%",
+                            backgroundColor: color,
+                            display: "inline-block",
+                            marginRight: 8,
+                          }}
+                        />
+                        {alliance}
+                      </div>
+                    </td>
+                    <td style={tdStyleRight}>
+                      {row.votes.toLocaleString("en-IN")}
+                    </td>
+                    <td style={tdStyleRight}>{pct}</td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderPerformanceTable = (
+    rows: PerformanceRow[] | null,
+    title: string,
+    colLabels: { win: string; second: string; third: string }
+  ) => {
+    if (!rows || rows.length === 0) return null;
+
+    const sorted = rows
+      .slice()
+      .sort((a, b) => (b.winner ?? 0) - (a.winner ?? 0));
+
+    return (
+      <div style={{ marginTop: 12 }}>
+        <h4 style={{ marginBottom: 8 }}>{title}</h4>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            tableLayout: "fixed",
+            fontSize: 14,
+          }}
+        >
+          <thead>
+            <tr>
+              <th style={thStyleLeft}>Alliance</th>
+              <th style={thStyleRight}>{colLabels.win}</th>
+              <th style={thStyleRight}>{colLabels.second}</th>
+              <th style={thStyleRight}>{colLabels.third}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((row, idx) => {
+              const alliance = row.alliance || "OTH";
+              const color = getAllianceColor(alliance);
+              const w = row.winner ?? 0;
+              const r2 = row.runnerUp ?? 0;
+              const r3 = row.third ?? 0;
+
+              return (
+                <tr key={idx}>
+                  <td style={tdStyleLeft}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <span
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          backgroundColor: color,
+                          display: "inline-block",
+                          marginRight: 8,
+                        }}
+                      />
+                      {alliance}
+                    </div>
+                  </td>
+                  <td style={tdStyleRight}>{w}</td>
+                  <td style={tdStyleRight}>{r2}</td>
+                  <td style={tdStyleRight}>{r3}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const toggleYear = (year: number) => {
+    setSelectedYears((prev) =>
+      prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]
+    );
+  };
+
+  /* ========= POSTER GENERATION (combined template) ========= */
+
+  const generatePoster = async () => {
+    if (!analysis) return;
+
+    setPosterLoading(true);
+    setPosterImage(null);
+
+    // Build years block like your old puppeteer backend expects
+    const yearsPayload = Object.values(analysis.elections)
+      .sort((a, b) => a.year - b.year)
+      .map((el) => {
+        const isLocalbody = el.type === "LOCALBODY";
+        const isGE = el.type === "GE";
+
+        const baseYearLabel = isGE ? `${el.year} GE` : `${el.year}`;
+
+        const yearBlock: any = {
+          year: baseYearLabel,
+          notes: notes[el.year] || "",
+          votes: [] as any[],
+          wards: [] as any[],
+          generalVotes: [] as any[],
+          generalBooths: [] as any[],
+        };
+
+        if (isLocalbody) {
+          yearBlock.votes = (el.voteShare || []).map((v) => ({
+            alliance: v.alliance,
+            color: getAllianceColor(v.alliance),
+            votes: v.votes,
+            percent: Number(v.percentage.toFixed(2)),
+          }));
+
+          yearBlock.wards = (el.wardPerformance || []).map((p) => ({
+            alliance: p.alliance,
+            color: getAllianceColor(p.alliance),
+            winner: p.winner,
+            runnerUp: p.runnerUp,
+            third: p.third,
+          }));
+        }
+
+        if (isGE) {
+          yearBlock.generalVotes = (el.boothVoteShare || []).map((v) => ({
+            alliance: v.alliance,
+            color: getAllianceColor(v.alliance),
+            votes: v.votes,
+            percent: Number(v.percentage.toFixed(2)),
+          }));
+
+          yearBlock.generalBooths = (el.boothPerformance || []).map((p) => ({
+            alliance: p.alliance,
+            color: getAllianceColor(p.alliance),
+            winner: p.winner,
+            runnerUp: p.runnerUp,
+            third: p.third,
+          }));
+        }
+
+        return yearBlock;
+      });
+
+    const payload = {
+      template: "combined",
+      localbody: analysis.localbody.name,
+      district: analysis.localbody.districtName || "",
+      showVotes: true,
+      showPercent: true,
+      years: yearsPayload,
+    };
+
+    try {
+      const res = await fetch("http://localhost:4000/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Poster backend failed");
+
+      const data = await res.json();
+      // Backend returns { image: "<base64>" }
+      setPosterImage(data.image);
+    } catch (err) {
+      console.error(err);
+      alert("Poster generation failed");
+    }
+
+    setPosterLoading(false);
+  };
+
+  /* -------- RENDER -------- */
+
   return (
     <div style={{ padding: 24, color: "white" }}>
-      <h2 style={{ marginBottom: 16 }}>Localbody Analysis</h2>
+      <h2 style={{ marginBottom: 8 }}>Localbody Election Analysis</h2>
+      <p style={{ marginBottom: 20, opacity: 0.8, fontSize: 14 }}>
+        Compare alliance performance across Localbody (2015, 2020) and General
+        Election (2024) for the selected localbody.
+      </p>
 
-      {/* DISTRICT */}
-      <div style={{ marginBottom: 16 }}>
-        <label>District</label>
-        <select
-          value={selectedDistrict}
-          onChange={(e) => {
-            setSelectedDistrict(e.target.value);
-            setSelectedLocalbody("");
-            setPartyVotes([]);
-            setAllianceVotes([]);
-          }}
-          style={{ width: "100%", padding: 8, marginTop: 4 }}
-        >
-          <option value="">Select District</option>
-          {districts.map((d) => (
-            <option key={d.districtCode} value={d.name}>
-              {d.districtCode} - {d.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* LOCALBODY */}
-      <div style={{ marginBottom: 16 }}>
-        <label>Localbody</label>
-        {loadingLb ? (
-          <p>Loading localbodies…</p>
-        ) : (
-          <select
-            value={selectedLocalbody}
-            onChange={(e) => setSelectedLocalbody(e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4 }}
-          >
-            <option value="">Select Localbody</option>
-            {localbodies.map((lb) => (
-              <option key={lb.id} value={lb.id}>
-                {lb.name} ({lb.type})
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {/* YEAR + LOAD */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-        <div>
-          <label>Year</label>
-          <input
-            type="number"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            style={{ padding: 8, marginLeft: 8, width: 100 }}
-          />
-        </div>
-        <button
-          onClick={loadAnalysis}
-          disabled={!selectedLocalbody || loadingAnalysis}
-          style={{
-            padding: "8px 16px",
-            background: "#0d6efd",
-            color: "white",
-            borderRadius: 6,
-          }}
-        >
-          {loadingAnalysis ? "Loading…" : "Load Analysis"}
-        </button>
-      </div>
-
-      {errorMsg && <p style={{ color: "salmon" }}>{errorMsg}</p>}
-
-      {/* GRID LAYOUT */}
-      {/* ANALYSIS CONTENT IN 2-COLUMN GRID */}
+      {/* TOP FILTER BAR */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "420px 1fr",
-          gap: 24,
-          alignItems: "start",
-          marginTop: 20,
+          gridTemplateColumns: "1.5fr 2fr 1.5fr",
+          gap: 16,
+          marginBottom: 20,
         }}
       >
-        {/* LEFT COLUMN */}
+        {/* DISTRICT */}
         <div>
-          {/* PARTY TABLE */}
-          {partyVotes.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <h3>Party-wise Votes</h3>
-              <table
-                style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", marginTop: 8 }}
-              >
-                <thead>
-                  <tr>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      Party
-                    </th>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      Alliance
-                    </th>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      Votes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {partyVotes.map((p, idx) => (
-                    <tr key={idx}>
-                      <td style={{ padding: 6 }}>{p.partyName}</td>
-                      <td style={{ padding: 6 }}>{p.allianceName}</td>
-                      <td style={{ padding: 6 }} align="right">
-                        {p.votes}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <label style={labelStyle}>District</label>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => {
+              setSelectedDistrict(e.target.value);
+              setSelectedLocalbody("");
+              setAnalysis(null);
+              setDetailed(null);
+              setPosterImage(null);
+            }}
+            style={selectStyle}
+          >
+            <option value="">Select District</option>
+            {districts.map((d) => (
+              <option key={d.districtCode} value={d.name}>
+                {d.districtCode} - {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* LOCALBODY */}
+        <div>
+          <label style={labelStyle}>Localbody</label>
+          {loadingLb ? (
+            <div style={{ paddingTop: 8 }}>Loading localbodies…</div>
+          ) : (
+            <select
+              value={selectedLocalbody}
+              onChange={(e) => {
+                setSelectedLocalbody(e.target.value);
+                setAnalysis(null);
+                setDetailed(null);
+                setPosterImage(null);
+              }}
+              style={selectStyle}
+            >
+              <option value="">Select Localbody</option>
+              {localbodies.map((lb) => (
+                <option key={lb.id} value={lb.id}>
+                  {lb.name} ({lb.type})
+                </option>
+              ))}
+            </select>
           )}
+        </div>
 
-          {/* ALLIANCE TABLE */}
-          {allianceVotes.length > 0 && (() => {
-
-            const totalVotes = allianceVotes.reduce((sum, a) => sum + a.votes, 0);
-
-            return (
-              <div>
-                <h3>Alliance-wise Votes</h3>
-
-                <table
+        {/* YEARS + LOAD BUTTON */}
+        <div>
+          <label style={labelStyle}>Election Years</label>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 8,
+              marginTop: 4,
+            }}
+          >
+            {AVAILABLE_YEARS.map((y) => {
+              const active = selectedYears.includes(y);
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => toggleYear(y)}
                   style={{
-                    width: "100%",
-                    tableLayout: "fixed",
-                    borderCollapse: "collapse",
-                    marginTop: 8,
-                    fontSize: 14,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: active ? "1px solid #0d6efd" : "1px solid #555",
+                    background: active ? "#0d6efd33" : "transparent",
+                    color: active ? "#fff" : "#ddd",
+                    fontSize: 12,
+                    cursor: "pointer",
                   }}
                 >
-                  <thead>
-                    <tr>
-                      <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                        Alliance
-                      </th>
-                      <th
-                        style={{ borderBottom: "1px solid #555", padding: 6 }}
-                        align="right"
-                      >
-                        Votes
-                      </th>
-                      <th
-                        style={{ borderBottom: "1px solid #555", padding: 6 }}
-                        align="right"
-                      >
-                        %
-                      </th>
-                    </tr>
-                  </thead>
+                  {y}
+                </button>
+              );
+            })}
+          </div>
 
-                  <tbody>
-                    {allianceVotes.map((a, idx) => {
-                      const name = a.alliance?.name ?? "Unaligned / Others";
-                      const color = a.alliance?.color ?? "#888";
-
-                      const pct = totalVotes
-                        ? ((a.votes / totalVotes) * 100).toFixed(2)
-                        : "0.00";
-
-                      return (
-                        <tr key={idx}>
-                          <td style={{ padding: 6 }}>
-                            <div style={{ display: "flex", alignItems: "center" }}>
-                              <div
-                                style={{
-                                  width: 12,
-                                  height: 12,
-                                  borderRadius: "50%",
-                                  background: color,
-                                  marginRight: 8,
-                                }}
-                              ></div>
-                              {name}
-                            </div>
-                          </td>
-
-                          <td style={{ padding: 6 }} align="right">
-                            {a.votes}
-                          </td>
-
-                          <td style={{ padding: 6 }} align="right">
-                            {pct}%
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })()}
-
-
+          <button
+            onClick={loadAnalysis}
+            disabled={!selectedLocalbody || loadingAnalysis}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 6,
+              border: "none",
+              background: loadingAnalysis ? "#444" : "#0d6efd",
+              color: "#fff",
+              cursor:
+                !selectedLocalbody || loadingAnalysis
+                  ? "not-allowed"
+                  : "pointer",
+              fontSize: 14,
+            }}
+          >
+            {loadingAnalysis ? "Loading…" : "Run Analysis"}
+          </button>
         </div>
+      </div>
 
-        {/* RIGHT COLUMN */}
-        <div>
-          {/* BOOTH TABLE */}
-          {boothTable.length > 0 && (
-            <div>
-              <h3>Booth-wise Alliance Breakdown</h3>
-              <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      PS No
-                    </th>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      Booth Name
-                    </th>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      LDF
-                    </th>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      UDF
-                    </th>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      NDA
-                    </th>
-                    <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                      OTH
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {boothTable.map((b) => (
-                    <tr key={b.boothId}>
-                      <td style={{ padding: 6 }}>{b.psNumber}</td>
-                      <td
-                          title={b.boothName}
+      {errorMsg && (
+        <p style={{ color: "salmon", marginBottom: 12 }}>{errorMsg}</p>
+      )}
+
+      {/* ANALYSIS CARDS + POSTER + DETAILED TABLES */}
+      {analysis && (
+        <div style={{ marginTop: 16 }}>
+          {/* Localbody header */}
+          <div
+            style={{
+              marginBottom: 16,
+              padding: 12,
+              borderRadius: 8,
+              background: "#1f2933",
+              border: "1px solid #2f3b4a",
+            }}
+          >
+            <div style={{ fontSize: 13, opacity: 0.75 }}>
+              {analysis.localbody.districtName}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 600 }}>
+              {analysis.localbody.name}{" "}
+              <span style={{ fontSize: 13, opacity: 0.7 }}>
+                ({analysis.localbody.type})
+              </span>
+            </div>
+          </div>
+
+          {/* Grid of elections */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 16,
+            }}
+          >
+            {Object.values(analysis.elections)
+              .sort((a, b) => a.year - b.year)
+              .map((el) => {
+                const isLocalbody = el.type === "LOCALBODY";
+                const isGE = el.type === "GE";
+                const badgeColor =
+                  el.type === "LOCALBODY"
+                    ? "#059669"
+                    : el.type === "GE"
+                    ? "#3b82f6"
+                    : "#f59e0b";
+
+                return (
+                  <div
+                    key={el.year}
+                    style={{
+                      background: "#111827",
+                      borderRadius: 10,
+                      padding: 16,
+                      border: "1px solid #1f2937",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.35)",
+                    }}
+                  >
+                    {/* Header */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <div>
+                        <div
                           style={{
-                            padding: 6,
-                            maxWidth: 200,
-                            overflow: "hidden",
-                            whiteSpace: "nowrap",
-                            textOverflow: "ellipsis",
+                            fontSize: 13,
+                            opacity: 0.8,
+                            marginBottom: 2,
                           }}
                         >
-                          {b.boothName}
-                        </td>
-                      <td style={{ padding: 6 }} align="right">
-                        {b.LDF}
-                      </td>
-                      <td style={{ padding: 6 }} align="right">
-                        {b.UDF}
-                      </td>
-                      <td style={{ padding: 6 }} align="right">
-                        {b.NDA}
-                      </td>
-                      <td style={{ padding: 6 }} align="right">
-                        {b.OTH}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          {el.label}
+                        </div>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 18,
+                          }}
+                        >
+                          {el.year}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          padding: "3px 10px",
+                          borderRadius: 999,
+                          fontSize: 11,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          backgroundColor: badgeColor,
+                        }}
+                      >
+                        {el.type}
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    {isLocalbody && (
+                      <>
+                        {renderVoteShareTable(
+                          el.voteShare || [],
+                          "Ward-wise Alliance Vote Share"
+                        )}
+
+                        {renderPerformanceTable(
+                          el.wardPerformance,
+                          "Ward Performance (Alliance-wise)",
+                          {
+                            win: "# Wins",
+                            second: "# 2nd",
+                            third: "# 3rd",
+                          }
+                        )}
+                      </>
+                    )}
+
+                    {isGE && (
+                      <>
+                        {renderVoteShareTable(
+                          el.boothVoteShare || [],
+                          "Booth-wise Alliance Vote Share"
+                        )}
+
+                        {renderPerformanceTable(
+                          el.boothPerformance,
+                          "Booth Performance (Alliance-wise)",
+                          {
+                            win: "#1 Rank",
+                            second: "#2 Rank",
+                            third: "#3 Rank",
+                          }
+                        )}
+
+                        {(!el.boothVoteShare ||
+                          el.boothVoteShare.length === 0) &&
+                          (!el.boothPerformance ||
+                            el.boothPerformance.length === 0) && (
+                            <p
+                              style={{
+                                fontSize: 13,
+                                opacity: 0.7,
+                                marginTop: 8,
+                              }}
+                            >
+                              No booth-level data available for this election.
+                            </p>
+                          )}
+                      </>
+                    )}
+
+                    {/* NOTES BOX */}
+                    <textarea
+                      placeholder={`Notes for ${el.year}…`}
+                      value={notes[el.year] || ""}
+                      onChange={(e) =>
+                        setNotes({ ...notes, [el.year]: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        marginTop: 10,
+                        padding: 8,
+                        borderRadius: 6,
+                        background: "#1e293b",
+                        border: "1px solid #334155",
+                        color: "white",
+                        minHeight: 70,
+                        fontSize: 13,
+                      }}
+                    />
+
+                    {!isLocalbody && !isGE && (
+                      <p style={{ fontSize: 13, opacity: 0.7 }}>
+                        No renderer defined for type: {el.type}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* GENERATE POSTER BUTTON */}
+          <div style={{ marginTop: 30, textAlign: "center" }}>
+            <button
+              onClick={generatePoster}
+              disabled={posterLoading}
+              style={{
+                padding: "12px 20px",
+                background: "#0d6efd",
+                color: "white",
+                borderRadius: 8,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 16,
+                fontWeight: 600,
+              }}
+            >
+              {posterLoading ? "Generating Poster…" : "Generate Combined Poster"}
+            </button>
+          </div>
+
+          {/* POSTER PREVIEW */}
+          {posterImage && (
+            <div style={{ marginTop: 20, textAlign: "center" }}>
+              <h3>Poster Preview</h3>
+              <img
+                src={`data:image/png;base64,${posterImage}`}
+                alt="Poster"
+                style={{
+                  maxWidth: "100%",
+                  border: "1px solid #333",
+                  borderRadius: 10,
+                  marginTop: 10,
+                }}
+              />
             </div>
           )}
 
-          {/* RANK SUMMARY */}
-          {boothTable.length > 0 && (() => {
-            const summary: any = {
-              LDF: { first: 0, second: 0, third: 0 },
-              UDF: { first: 0, second: 0, third: 0 },
-              NDA: { first: 0, second: 0, third: 0 },
-              OTH: { first: 0, second: 0, third: 0 },
-            };
+          {/* DETAILED TABLES (WARDS + BOOTHS, PER YEAR) */}
+          <div style={{ marginTop: 40 }}>
+            <h3 style={{ marginBottom: 12 }}>Detailed Ward / Booth Results</h3>
 
-            boothTable.forEach((b) => {
-              const arr = [
-                ["LDF", b.LDF],
-                ["UDF", b.UDF],
-                ["NDA", b.NDA],
-                ["OTH", b.OTH],
-              ];
-              arr.sort((a, b) => b[1] - a[1]);
+            {loadingDetailed && (
+              <p style={{ fontSize: 13, opacity: 0.7 }}>
+                Loading detailed results…
+              </p>
+            )}
 
-              if (arr[0]) summary[arr[0][0]].first++;
-              if (arr[1]) summary[arr[1][0]].second++;
-              if (arr[2]) summary[arr[2][0]].third++;
-            });
-
-            return (
-              <div style={{ marginTop: 32 }}>
-                <h3>Alliance-wise Booth Ranking Summary</h3>
-                <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                        Alliance
-                      </th>
-                      <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                        #1 Rank
-                      </th>
-                      <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                        #2 Rank
-                      </th>
-                      <th style={{ borderBottom: "1px solid #555", padding: 6 }}>
-                        #3 Rank
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {["LDF", "UDF", "NDA", "OTH"].map((al) => (
-                      <tr key={al}>
-                        <td style={{ padding: 6 }}>{al}</td>
-                        <td style={{ padding: 6 }} align="right">
-                          {summary[al].first}
-                        </td>
-                        <td style={{ padding: 6 }} align="right">
-                          {summary[al].second}
-                        </td>
-                        <td style={{ padding: 6 }} align="right">
-                          {summary[al].third}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })()}
+            {!loadingDetailed && detailed && (
+              <DetailedResultsTabs
+                detailed={detailed}
+                allianceColors={ALLIANCE_COLORS}
+                formatPct={formatPct}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
+/* ========= DETAILED RESULTS TABS COMPONENT ========= */
+
+type DetailedResultsTabsProps = {
+  detailed: DetailedResponse;
+  allianceColors: Record<string, string>;
+  formatPct: (v: number) => string;
+};
+
+function DetailedResultsTabs({
+  detailed,
+  allianceColors,
+  formatPct,
+}: DetailedResultsTabsProps) {
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const years = Object.values(detailed).sort((a, b) => a.year - b.year);
+
+  if (years.length === 0) {
+    return (
+      <p style={{ fontSize: 13, opacity: 0.7 }}>
+        No detailed ward/booth data available.
+      </p>
+    );
+  }
+
+  const activeYear = years[Math.min(activeIdx, years.length - 1)];
+  const isLocalbody = activeYear.type === "LOCALBODY";
+  const labelId = isLocalbody ? "Ward" : "Booth";
+
+  const rows = (isLocalbody
+    ? activeYear.wards || []
+    : activeYear.booths || []) as (WardDetailRow | BoothDetailRow)[];
+
+  // Determine alliance order from first row
+  let allianceOrder: string[] = [];
+  if (rows.length > 0) {
+    allianceOrder = rows[0].alliances
+      .slice()
+      .sort((a, b) => b.votes - a.votes)
+      .map((a) => a.alliance);
+  }
+
+  const getAllianceColor = (name: string | null | undefined) => {
+    if (!name) return allianceColors.OTH;
+    const key = name.toUpperCase();
+    return allianceColors[key] || allianceColors.OTH;
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: 16,
+        borderRadius: 10,
+        background: "#020617",
+        border: "1px solid #1f2937",
+      }}
+    >
+      {/* Year tabs */}
+      <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {years.map((y, idx) => {
+          const active = idx === activeIdx;
+          return (
+            <button
+              key={y.year}
+              type="button"
+              onClick={() => setActiveIdx(idx)}
+              style={{
+                padding: "4px 10px",
+                borderRadius: 999,
+                border: active ? "1px solid #0d6efd" : "1px solid #555",
+                background: active ? "#0d6efd33" : "transparent",
+                color: active ? "#fff" : "#ddd",
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              {y.year} {y.type === "GE" ? "GE" : ""}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Active year table */}
+      {rows.length === 0 ? (
+        <p style={{ fontSize: 13, opacity: 0.7 }}>
+          No {isLocalbody ? "ward" : "booth"} data available for {activeYear.year}.
+        </p>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              tableLayout: "auto",
+              fontSize: 13,
+              minWidth: 600,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={thStyleLeft}>{labelId} #</th>
+                <th style={thStyleLeft}>{labelId} Name</th>
+
+                {allianceOrder.map((a) => (
+                  <React.Fragment key={a}>
+                    <th style={thStyleRight}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          gap: 4,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            background: getAllianceColor(a),
+                            display: "inline-block",
+                          }}
+                        />
+                        {a} Votes
+                      </div>
+                    </th>
+                    <th style={thStyleRight}>{a} %</th>
+                  </React.Fragment>
+                ))}
+
+                <th style={thStyleRight}>Total</th>
+                <th style={thStyleLeft}>Winner</th>
+                <th style={thStyleRight}>Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => {
+                const num =
+                  (row as WardDetailRow).wardNum ??
+                  (row as BoothDetailRow).boothNum ??
+                  null;
+                const name =
+                  (row as WardDetailRow).wardName ??
+                  (row as BoothDetailRow).boothName ??
+                  "";
+
+                return (
+                  <tr key={idx}>
+                    <td style={tdStyleLeft}>{num}</td>
+                    <td style={tdStyleLeft}>{name}</td>
+
+                    {allianceOrder.map((a) => {
+                      const found = row.alliances.find(
+                        (x) => x.alliance === a
+                      );
+                      const votes = found?.votes ?? 0;
+                      const pct = found?.percentage ?? 0;
+                      return (
+                        <React.Fragment key={a}>
+                          <td style={tdStyleRight}>
+                            {votes.toLocaleString("en-IN")}
+                          </td>
+                          <td style={tdStyleRight}>{formatPct(pct)}</td>
+                        </React.Fragment>
+                      );
+                    })}
+
+                    <td style={tdStyleRight}>
+                      {row.total.toLocaleString("en-IN")}
+                    </td>
+                    <td style={tdStyleLeft}>{row.winner || "-"}</td>
+                    <td style={tdStyleRight}>
+                      {row.margin != null ? row.margin : "-"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ========= SMALL STYLE HELPERS ========= */
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 13,
+  opacity: 0.85,
+};
+
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "6px 8px",
+  marginTop: 4,
+  borderRadius: 6,
+  border: "1px solid #374151",
+  background: "#020617",
+  color: "#f9fafb",
+  fontSize: 14,
+};
+
+const thStyleLeft: React.CSSProperties = {
+  borderBottom: "1px solid #374151",
+  padding: 6,
+  textAlign: "left",
+  fontWeight: 500,
+};
+
+const thStyleRight: React.CSSProperties = {
+  borderBottom: "1px solid #374151",
+  padding: 6,
+  textAlign: "right",
+  fontWeight: 500,
+};
+
+const tdStyleLeft: React.CSSProperties = {
+  padding: 6,
+  borderBottom: "1px solid #111827",
+  textAlign: "left",
+};
+
+const tdStyleRight: React.CSSProperties = {
+  padding: 6,
+  borderBottom: "1px solid #111827",
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+};
