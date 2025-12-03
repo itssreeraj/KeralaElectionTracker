@@ -173,6 +173,10 @@ export default function LocalbodyAnalysisTab() {
   const [detailed, setDetailed] = useState<DetailedResponse | null>(null);
   const [loadingDetailed, setLoadingDetailed] = useState(false);
 
+  const [selectedType, setSelectedType] = useState<string>("");
+  const [lbSearch, setLbSearch] = useState<string>(""); // localbody text search
+
+
   /* -------- LOAD DISTRICTS -------- */
 
   useEffect(() => {
@@ -206,7 +210,26 @@ export default function LocalbodyAnalysisTab() {
           )}`
         );
         const data = await res.json();
-        setLocalbodies(Array.isArray(data) ? data : []);
+        const rawList = Array.isArray(data) ? data : [];
+
+        let filteredList = rawList;
+
+        // filter by type if selected
+        if (selectedType) {
+          filteredList = filteredList.filter(
+            (lb: any) => lb.type.toLowerCase() === selectedType.toLowerCase()
+          );
+        }
+
+        // filter by search text
+        if (lbSearch.trim() !== "") {
+          const q = lbSearch.toLowerCase();
+          filteredList = filteredList.filter((lb: any) =>
+            lb.name.toLowerCase().includes(q)
+          );
+        }
+
+        setLocalbodies(filteredList);
       } catch (e) {
         console.error("Error loading localbodies", e);
         setLocalbodies([]);
@@ -214,7 +237,7 @@ export default function LocalbodyAnalysisTab() {
       setLoadingLb(false);
     };
     loadLocalbodies();
-  }, [backend, selectedDistrict]);
+  }, [backend, selectedDistrict, selectedType, lbSearch]);
 
   /* -------- HELPERS -------- */
 
@@ -560,11 +583,60 @@ export default function LocalbodyAnalysisTab() {
           </select>
         </div>
 
+        {/* LOCALBODY TYPE */}
+        <div>
+          <label style={labelStyle}>Type</label>
+          <select
+            value={selectedType}
+            onChange={(e) => {
+              setSelectedType(e.target.value);
+              setAnalysis(null);
+              setDetailed(null);
+              setPosterImage(null);
+              // Reload list when type changes
+            }}
+            style={selectStyle}
+          >
+            <option value="">All Types</option>
+            <option value="Municipality">Municipality</option>
+            <option value="Corporation">Corporation</option>
+            <option value="Gramapanchayath">Gramapanchayath</option>
+            <option value="BlockPanchayath">Block Panchayath</option>
+            <option value="DistrictPanchayath">District Panchayath</option>
+          </select>
+        </div>
+
+
         {/* LOCALBODY */}
         <div>
           <label style={labelStyle}>Localbody</label>
+
+          {/* SEARCH BOX */}
+          <input
+            type="text"
+            placeholder="Search localbody\u2026"
+            value={lbSearch}
+            onChange={(e) => {
+              setLbSearch(e.target.value);
+              setAnalysis(null);
+              setDetailed(null);
+              setPosterImage(null);
+            }}
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              marginTop: 4,
+              marginBottom: 6,
+              borderRadius: 6,
+              border: "1px solid #374151",
+              background: "#020617",
+              color: "#f9fafb",
+              fontSize: 14,
+            }}
+          />
+
           {loadingLb ? (
-            <div style={{ paddingTop: 8 }}>Loading localbodies…</div>
+            <div style={{ paddingTop: 8 }}>Loading localbodies\u2026</div>
           ) : (
             <select
               value={selectedLocalbody}
@@ -584,10 +656,11 @@ export default function LocalbodyAnalysisTab() {
               ))}
             </select>
           )}
+
         </div>
 
         {/* YEARS + LOAD BUTTON */}
-        <div>
+        <div style={{ marginBottom: 20 }}>
           <label style={labelStyle}>Election Years</label>
           <div
             style={{
