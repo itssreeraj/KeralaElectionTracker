@@ -514,7 +514,7 @@ export default function LocalbodyAnalysisTab() {
 
     const payload = {
       template: "combined",
-      localbody: analysis.localbody.name,
+      localbody: `${analysis.localbody.name} (${analysis.localbody.type})`,
       district: analysis.localbody.districtName || "",
       showVotes: true,
       showPercent: true,
@@ -600,9 +600,9 @@ export default function LocalbodyAnalysisTab() {
             <option value="">All Types</option>
             <option value="Municipality">Municipality</option>
             <option value="Corporation">Corporation</option>
-            <option value="Gramapanchayath">Gramapanchayath</option>
-            <option value="BlockPanchayath">Block Panchayath</option>
-            <option value="DistrictPanchayath">District Panchayath</option>
+            <option value="grama_panchayath">Gramapanchayath</option>
+            <option value="block_panchayath">Block Panchayath</option>
+            <option value="district_panchayath">District Panchayath</option>
           </select>
         </div>
 
