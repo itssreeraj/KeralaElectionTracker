@@ -1,14 +1,22 @@
 package com.keralavotes.election.controller;
 
 import com.keralavotes.election.dto.LocalbodyAllianceVotesDto;
+import com.keralavotes.election.dto.LocalbodyAnalysisResponse;
 import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
+import com.keralavotes.election.dto.details.LocalbodyDetailYearDataDto;
 import com.keralavotes.election.repository.BoothVotesRepository;
+import com.keralavotes.election.service.AnalysisDetailService;
+import com.keralavotes.election.service.LocalbodyElectionAnalysisService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/admin/analysis")
 @RequiredArgsConstructor
@@ -17,6 +25,8 @@ public class AnalyticsController {
 
     private final BoothVotesRepository boothVotesRepo;
     private final EntityManager em;
+    private final LocalbodyElectionAnalysisService analysisService;
+    private final AnalysisDetailService detailService;
 
     /* =====================================================
             UI EXPECTED ENDPOINTS — FIXED
@@ -129,5 +139,43 @@ public class AnalyticsController {
                 .setParameter("year", year)
                 .getResultList();
     }
+
+    /**
+     * Unified endpoint:
+     * GET /api/admin/analysis/localbody/{id}?years=2015,2020,2024
+     */
+    @GetMapping("/localbody/{id}")
+    public LocalbodyAnalysisResponse analyzeLocalbody(
+            @PathVariable("id") Long localbodyId,
+            @RequestParam(value = "years", required = false) String years
+    ) {
+        log.info("Unified Localbody Analysis: id={} years={}", localbodyId, years);
+
+        List<Integer> yearList = null;
+
+        if (years != null && !years.isBlank()) {
+            yearList = Arrays.stream(years.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Integer::valueOf)
+                    .toList();
+        }
+
+        return analysisService.analyzeLocalbody(localbodyId, yearList);
+    }
+
+    @GetMapping("/localbody/{lbId}/details")
+    public Map<Integer, LocalbodyDetailYearDataDto> getDetailedResults(
+            @PathVariable Long lbId,
+            @RequestParam("years") String yearsCsv
+    ) {
+        List<Integer> years =
+                Arrays.stream(yearsCsv.split(","))
+                        .map(Integer::parseInt)
+                        .toList();
+
+        return analysisService.analyzeLocalbodyDetails(lbId, years);
+    }
+
 
 }
