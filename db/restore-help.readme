@@ -1,0 +1,3 @@
+CREATE USER keralavotes WITH PASSWORD 'keralavotes';
+CREATE DATABASE keralavotes OWNER keralavotes;
+
