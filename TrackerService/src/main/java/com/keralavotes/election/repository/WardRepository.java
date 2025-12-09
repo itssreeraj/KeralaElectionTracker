@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface WardRepository extends JpaRepository<Ward, Long> {
     List<Ward> findByLocalbody_Id(Long localbodyId);
     Optional<Ward> findByLocalbodyIdAndWardNum(Long localbodyId, Integer wardNum);
+
+    List<Ward> findByLocalbodyId(Long id);
 }

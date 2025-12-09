@@ -1,6 +1,8 @@
 package com.keralavotes.election.controller;
 
 import com.keralavotes.election.dto.LocalbodyAnalysisResponse;
+import com.keralavotes.election.dto.details.AllianceAnalysisResponse;
+import com.keralavotes.election.service.AllianceAnalysisService;
 import com.keralavotes.election.service.LocalbodyElectionAnalysisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,7 @@ import java.util.List;
 public class LocalbodyAnalysisController {
 
     private final LocalbodyElectionAnalysisService analysisService;
+    private final AllianceAnalysisService allianceAnalysisService;
 
     /**
      * Example:
@@ -27,5 +30,21 @@ public class LocalbodyAnalysisController {
             @RequestParam(value = "years", required = false) List<Integer> years
     ) {
         return analysisService.analyzeLocalbody(localbodyId, years);
+    }
+
+    /**
+     * Example:
+     * GET /api/admin/analysis/alliance?district=KOTTAYAM&lbType=grama_panchayath&electionType=LOCALBODY&alliance=LDF&margin=10
+     */
+    @GetMapping("/analysis/alliance")
+    public AllianceAnalysisResponse analyzeAlliance(
+            @RequestParam int district,
+            @RequestParam String type,
+            @RequestParam String alliance,
+            @RequestParam int year,
+            @RequestParam(defaultValue = "10") int swing,
+            @RequestParam(required = false) Long localbodyId
+    ) {
+        return allianceAnalysisService.analyze(district, type, alliance, year, swing, localbodyId);
     }
 }

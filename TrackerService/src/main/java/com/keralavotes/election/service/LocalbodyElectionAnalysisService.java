@@ -1,6 +1,8 @@
 package com.keralavotes.election.service;
 
 import com.keralavotes.election.dto.*;
+import com.keralavotes.election.dto.details.AllianceAnalysisResponse;
+import com.keralavotes.election.dto.details.AllianceLocalbodySummaryDto;
 import com.keralavotes.election.dto.details.AllianceVoteDetailDto;
 import com.keralavotes.election.dto.details.BoothDetailRowDto;
 import com.keralavotes.election.dto.details.LocalbodyDetailYearDataDto;

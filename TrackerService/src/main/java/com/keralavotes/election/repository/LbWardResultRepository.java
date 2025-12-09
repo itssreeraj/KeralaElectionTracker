@@ -11,4 +11,6 @@ public interface LbWardResultRepository extends JpaRepository<LbWardResult, Inte
     Optional<LbWardResult> findByWardIdAndCandidateIdAndElectionYear(Integer wardId, Integer candidateId, Integer electionYear);
 
     List<LbWardResult> findByElectionYearAndCandidateIdIn(int year, Set<Integer> candIds);
+
+    List<LbWardResult> findByElectionYearAndWardIdIn(int year, Set<Long> wardIds);
 }
