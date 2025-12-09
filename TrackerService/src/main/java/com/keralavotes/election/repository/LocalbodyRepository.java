@@ -27,5 +27,18 @@ public interface LocalbodyRepository extends JpaRepository<Localbody, Long> {
     """)
     List<Localbody> findByDistrictNameIgnoreCase(@Param("districtName") String districtName);
 
+    @Query("""
+        SELECT lb
+        FROM Localbody lb
+        WHERE UPPER(lb.district.name) = UPPER(:districtName)
+          AND UPPER(lb.type) = UPPER(:type)
+        ORDER BY lb.name
+    """)
+    List<Localbody> findByDistrictNameAndTypeIgnoreCase(String districtName, String type);
+
     Optional<Localbody> findByNameAndType(String localbodyName, String localbodyType);
+
+    List<Localbody> findByDistrict_DistrictCodeAndTypeIgnoreCase(int district, String type);
+
+    List<Localbody> findByDistrict_DistrictCode(int district);
 }

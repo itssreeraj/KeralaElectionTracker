@@ -11,4 +11,6 @@ public interface LbCandidateRepository extends JpaRepository<LbCandidate, Intege
     List<LbCandidate> findByLocalbodyIdAndElectionYear(Long localbodyId, Integer electionYear);
     Optional<LbCandidate> findByNameAndLocalbodyIdAndElectionYear(String name, Long localbodyId, Integer electionYear);
     Optional<LbCandidate> findByLocalbodyIdAndElectionYearAndNameAndPartyId(int lbId, int year, String name, Integer partyId);
+
+    List<LbCandidate> findByElectionYear(int year);
 }

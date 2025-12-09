@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import React, { useState } from "react";
 import LocalbodyAnalysisTab from "@/components/LocalbodyAnalysisTab";
+import AllianceAnalysisTab from "@/components/AllianceAnalysisTab";
 
 export default function HomePage() {
+  const [tab, setTab] = useState<"localbody" | "alliance">("localbody");
+
   return (
     <div style={{ minHeight: "100vh", background: "#0b0f19", color: "white" }}>
-      {/* ====== TOP NAVBAR ====== */}
+      {/* NAVBAR */}
       <nav
         style={{
           width: "100%",
@@ -18,10 +22,8 @@ export default function HomePage() {
           alignItems: "center",
           position: "sticky",
           top: 0,
-          zIndex: 20,
         }}
       >
-        {/* LEFT SIDE \u2014 APP TITLE */}
         <div
           style={{
             fontSize: 20,
@@ -30,10 +32,9 @@ export default function HomePage() {
             color: "#e5e7eb",
           }}
         >
-          Kerala Votes - Analysis
+          Kerala Votes – Analysis
         </div>
 
-        {/* RIGHT SIDE \u2014 ADMIN LOGIN */}
         <Link
           href="/admin/login"
           style={{
@@ -44,58 +45,52 @@ export default function HomePage() {
             textDecoration: "none",
             fontSize: 14,
             fontWeight: 600,
-            border: "1px solid #1e3a8a",
           }}
         >
           Admin Login
         </Link>
       </nav>
 
-      {/* ====== MAIN CONTENT ====== */}
-      <main
-        style={{
-          maxWidth: 1400,
-          margin: "0 auto",
-          padding: "32px 24px 80px 24px",
-        }}
-      >
-        {/* PAGE HEADER */}
-        <h1
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            marginBottom: 12,
-            color: "#f3f4f6",
-          }}
-        >
-          Localbody Election Analysis
-        </h1>
+      {/* MAIN */}
+      <main style={{ maxWidth: 1400, margin: "0 auto", padding: 32 }}>
+        <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+          <button
+            onClick={() => setTab("localbody")}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 8,
+              background: tab === "localbody" ? "#2563eb" : "#1f2937",
+              color: "white",
+              border: "1px solid #374151",
+            }}
+          >
+            Localbody Analysis
+          </button>
 
-        <p
-          style={{
-            fontSize: 15,
-            opacity: 0.85,
-            marginBottom: 32,
-            maxWidth: 700,
-            lineHeight: 1.6,
-          }}
-        >
-          Select a district and localbody to compare alliance performance across
-          multiple election years. Generate export-ready posters and view
-          detailed ward/booth performance data.
-        </p>
+          <button
+            onClick={() => setTab("alliance")}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 8,
+              background: tab === "alliance" ? "#2563eb" : "#1f2937",
+              color: "white",
+              border: "1px solid #374151",
+            }}
+          >
+            Alliance Target Analysis
+          </button>
+        </div>
 
-        {/* ===== ANALYSIS TOOL ===== */}
         <div
           style={{
             background: "#111827",
             padding: 24,
             borderRadius: 12,
             border: "1px solid #1f2937",
-            boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
           }}
         >
-          <LocalbodyAnalysisTab />
+          {tab === "localbody" && <LocalbodyAnalysisTab />}
+          {tab === "alliance" && <AllianceAnalysisTab />}
         </div>
       </main>
     </div>
