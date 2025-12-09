@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {AllianceAnalysisResults} from "./AllianceAnalysisResults";
 
-const labelStyle: React.CSSProperties = { fontSize: 13, opacity: 0.85 };
+/* ======= Shared Styles ======= */
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 13,
+  opacity: 0.85,
+};
+
 const selectStyle: React.CSSProperties = {
   width: "100%",
   padding: "6px 8px",
@@ -26,6 +31,59 @@ const LOCALBODY_TYPES = [
   { value: "district_panchayath", label: "District Panchayath" },
 ];
 
+/* ======= TYPES ======= */
+
+type AllianceBreakdown = {
+  localbodyId: number;
+  localbodyName: string;
+  wardsWon: number;
+  wardsWinnable: number;
+  boothsWon: number | null;
+  boothsWinnable: number | null;
+};
+
+type AllianceAnalysisResponse = {
+  district: string;
+  type: string;
+  alliance: string;
+  year: number;
+  swingPercent: number;
+  localbodyCount: number;
+  wardsWon: number;
+  wardsWinnable: number;
+  boothsWon: number | null;
+  boothsWinnable: number | null;
+  breakdown: AllianceBreakdown[];
+};
+
+type AllianceVoteDetail = {
+  alliance: string;
+  votes: number;
+  percentage: number;
+};
+
+type WardDetailRow = {
+  wardNum: number;
+  wardName: string;
+  alliances: AllianceVoteDetail[];
+  totalVotes: number;
+  winnerAlliance: string | null;
+  marginVotes: number | null;
+  winnable: boolean;
+  gapPercent: number | null;
+};
+
+type LocalbodyWardDetailsResponse = {
+  localbodyId: number;
+  localbodyName: string;
+  year: number;
+  totalWards: number;
+  majorityNeeded: number;
+  wards: WardDetailRow[];
+};
+
+/* ========= MAIN COMPONENT ========= */
+
 export default function AllianceAnalysisTab() {
   const backend =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
@@ -46,7 +104,8 @@ export default function AllianceAnalysisTab() {
   const [swing, setSwing] = useState<number>(10);
 
   const [loadingLB, setLoadingLB] = useState(false);
-  const [analysis, setAnalysis] = useState(false);
+
+  const [analysis, setAnalysis] = useState<AllianceAnalysisResponse | null>(null);
 
   /* ====== Load Districts ====== */
   useEffect(() => {
@@ -83,7 +142,7 @@ export default function AllianceAnalysisTab() {
 
       if (selectedType) {
         lbList = lbList.filter(
-          (lb) => lb.type.toLowerCase() === selectedType.toLowerCase()
+          (lb: any) => lb.type.toLowerCase() === selectedType.toLowerCase()
         );
       }
 
@@ -121,7 +180,7 @@ export default function AllianceAnalysisTab() {
 
     try {
       const res = await fetch(url);
-      const data = await res.json();
+      const data = (await res.json()) as AllianceAnalysisResponse;
       console.log("Alliance Analysis Response:", data);
       setAnalysis(data);
     } catch (err) {
@@ -136,7 +195,7 @@ export default function AllianceAnalysisTab() {
         Alliance-Based Analysis
       </h2>
 
-      {/* GRID */}
+      {/* FILTER GRID */}
       <div
         style={{
           display: "grid",
@@ -156,6 +215,7 @@ export default function AllianceAnalysisTab() {
               const dist = districts.find((d) => d.districtCode === code);
               setSelectedDistrictName(dist?.name || "");
               setSelectedLocalbody("");
+              setAnalysis(null);
             }}
             style={selectStyle}
           >
@@ -176,6 +236,7 @@ export default function AllianceAnalysisTab() {
             onChange={(e) => {
               setSelectedType(e.target.value);
               setSelectedLocalbody("");
+              setAnalysis(null);
             }}
             style={selectStyle}
           >
@@ -195,7 +256,10 @@ export default function AllianceAnalysisTab() {
           ) : (
             <select
               value={selectedLocalbody}
-              onChange={(e) => setSelectedLocalbody(e.target.value)}
+              onChange={(e) => {
+                setSelectedLocalbody(e.target.value);
+                setAnalysis(null);
+              }}
               style={selectStyle}
             >
               <option value="">All Localbodies</option>
@@ -213,7 +277,10 @@ export default function AllianceAnalysisTab() {
           <label style={labelStyle}>Alliance</label>
           <select
             value={selectedAlliance}
-            onChange={(e) => setSelectedAlliance(e.target.value)}
+            onChange={(e) => {
+              setSelectedAlliance(e.target.value);
+              setAnalysis(null);
+            }}
             style={selectStyle}
           >
             <option value="">Select Alliance</option>
@@ -242,14 +309,24 @@ export default function AllianceAnalysisTab() {
         {/* Year Toggle */}
         <div>
           <label style={labelStyle}>Election Year</label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 6,
+            }}
+          >
             {AVAILABLE_YEARS.map((y) => {
               const active = selectedYear === y;
               return (
                 <button
                   key={y}
                   type="button"
-                  onClick={() => toggleYear(y)}
+                  onClick={() => {
+                    setSelectedYear((prev) => (prev === y ? null : y));
+                    setAnalysis(null);
+                  }}
                   style={{
                     padding: "4px 10px",
                     borderRadius: 999,
@@ -284,8 +361,389 @@ export default function AllianceAnalysisTab() {
         Run Alliance Analysis
       </button>
 
-      {analysis && <AllianceAnalysisResults result={analysis} />}
-
+      {/* RESULTS */}
+      {analysis && (
+        <AllianceAnalysisResults
+          backend={backend}
+          result={analysis}
+        />
+      )}
     </div>
   );
 }
+
+/* ========= RESULTS COMPONENT ========= */
+
+function AllianceAnalysisResults({
+  backend,
+  result,
+}: {
+  backend: string;
+  result: AllianceAnalysisResponse;
+}) {
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [wardDetails, setWardDetails] = useState<
+    Record<number, LocalbodyWardDetailsResponse>
+  >({});
+  const [loadingDetails, setLoadingDetails] = useState<Set<number>>(new Set());
+
+  const isGE = result.year === 2019 || result.year === 2024;
+
+  const toggleExpand = async (lbId: number) => {
+    const newSet = new Set(expanded);
+    if (expanded.has(lbId)) {
+      newSet.delete(lbId);
+      setExpanded(newSet);
+      return;
+    }
+
+    newSet.add(lbId);
+    setExpanded(newSet);
+
+    // if already loaded, don't fetch again
+    if (wardDetails[lbId]) return;
+
+    const loadSet = new Set(loadingDetails);
+    loadSet.add(lbId);
+    setLoadingDetails(loadSet);
+
+    try {
+      const params = new URLSearchParams({
+        year: String(result.year),
+        alliance: result.alliance,
+        swing: String(result.swingPercent),
+      });
+
+      const res = await fetch(
+        `${backend}/localbody/analysis/${lbId}/ward-details?${params.toString()}`
+      );
+      const data = (await res.json()) as LocalbodyWardDetailsResponse;
+      setWardDetails((prev) => ({ ...prev, [lbId]: data }));
+    } catch (e) {
+      console.error("Error loading ward details", e);
+    }
+
+    loadSet.delete(lbId);
+    setLoadingDetails(newSet);
+  };
+
+  // Rank localbodies
+  const ranked = result.breakdown
+    .slice()
+    .sort(
+      (a, b) =>
+        b.wardsWon - a.wardsWon ||
+        b.wardsWinnable - a.wardsWinnable
+    );
+
+  const getVerdict = (lbId: number) => {
+    const d = wardDetails[lbId];
+    const lb = result.breakdown.find((x) => x.localbodyId === lbId);
+    if (!lb || !d) return "-";
+
+    const total = d.totalWards;
+    const majority = d.majorityNeeded;
+    const won = lb.wardsWon;
+    const winnable = lb.wardsWinnable;
+
+    if (won >= majority) return "Majority";
+    if (won + winnable >= majority) return "Possible with swing";
+    return "Hard";
+  };
+
+  return (
+    <div style={{ marginTop: 30 }}>
+      {/* Summary */}
+      <div
+        style={{
+          background: "#1f2937",
+          border: "1px solid #374151",
+          borderRadius: 8,
+          padding: 16,
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 4 }}>
+          District {result.district} • {result.type}
+        </div>
+
+        <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>
+          Alliance: {result.alliance}
+        </div>
+
+        <div style={{ fontSize: 14, opacity: 0.9 }}>
+          <strong>Year:</strong> {result.year} &nbsp;&nbsp;|&nbsp;&nbsp;
+          <strong>Swing:</strong> {result.swingPercent}% &nbsp;&nbsp;|&nbsp;&nbsp;
+          <strong>Localbodies:</strong> {result.localbodyCount}
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={summaryBoxStyle}>
+            <div style={summaryLabel}>Wards Won</div>
+            <div style={summaryValue}>{result.wardsWon}</div>
+          </div>
+          <div style={summaryBoxStyle}>
+            <div style={summaryLabel}>Wards Winnable</div>
+            <div style={summaryValue}>{result.wardsWinnable}</div>
+          </div>
+          {isGE && (
+            <>
+              <div style={summaryBoxStyle}>
+                <div style={summaryLabel}>Booths Won</div>
+                <div style={summaryValue}>{result.boothsWon ?? "-"}</div>
+              </div>
+              <div style={summaryBoxStyle}>
+                <div style={summaryLabel}>Booths Winnable</div>
+                <div style={summaryValue}>{result.boothsWinnable ?? "-"}</div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Ranked table */}
+      <div
+        style={{
+          background: "#020617",
+          border: "1px solid #1f2937",
+          borderRadius: 10,
+          padding: 16,
+          marginBottom: 20,
+        }}
+      >
+        <h3 style={{ marginBottom: 12, fontSize: 16 }}>Localbody Ranking</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: 13,
+              minWidth: 680,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={thCell}>Rank</th>
+                <th style={thCellLeft}>Localbody</th>
+                <th style={thCell}>Wards Won</th>
+                <th style={thCell}>Winnable</th>
+                <th style={thCell}>Total Wards</th>
+                <th style={thCell}>Majority</th>
+                <th style={thCellLeft}>Verdict</th>
+                <th style={thCell}>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranked.map((lb, idx) => {
+                const details = wardDetails[lb.localbodyId];
+                const total = details?.totalWards ?? "-";
+                const majority = details?.majorityNeeded ?? "-";
+                const isExpanded = expanded.has(lb.localbodyId);
+                const isLoading = loadingDetails.has(lb.localbodyId);
+
+                return (
+                  <React.Fragment key={lb.localbodyId}>
+                    <tr>
+                      <td style={tdCell}>{idx + 1}</td>
+                      <td style={tdCellLeft}>{lb.localbodyName}</td>
+                      <td style={tdCell}>{lb.wardsWon}</td>
+                      <td style={tdCell}>{lb.wardsWinnable}</td>
+                      <td style={tdCell}>{total}</td>
+                      <td style={tdCell}>{majority}</td>
+                      <td style={tdCellLeft}>
+                        {details ? getVerdict(lb.localbodyId) : "-"}
+                      </td>
+                      <td style={tdCell}>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(lb.localbodyId)}
+                          style={{
+                            padding: "2px 8px",
+                            fontSize: 12,
+                            borderRadius: 999,
+                            border: "1px solid #4b5563",
+                            background: isExpanded ? "#0d6efd33" : "transparent",
+                            color: "#e5e7eb",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {isLoading
+                            ? "Loading..."
+                            : isExpanded
+                            ? "Hide"
+                            : "Show"}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Expanded row with ward table */}
+                    {isExpanded && details && (
+                      <tr>
+                        <td colSpan={8} style={{ padding: 10 }}>
+                          <LocalbodyWardDetailsTable details={details} />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ========= WARD DETAILS TABLE ========= */
+
+function LocalbodyWardDetailsTable({
+  details,
+}: {
+  details: LocalbodyWardDetailsResponse;
+}) {
+  const rows = details.wards;
+
+  return (
+    <div
+      style={{
+        background: "#020617",
+        borderRadius: 8,
+        border: "1px solid #1f2937",
+        padding: 12,
+      }}
+    >
+      <div
+        style={{
+          marginBottom: 8,
+          fontSize: 14,
+          fontWeight: 600,
+        }}
+      >
+        {details.localbodyName} – Ward Details ({details.year}) | Total:{" "}
+        {details.totalWards}, Majority: {details.majorityNeeded}
+      </div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: 12,
+            minWidth: 700,
+          }}
+        >
+          <thead>
+            <tr>
+              <th style={thCell}>Ward #</th>
+              <th style={thCellLeft}>Ward Name</th>
+              <th style={thCellLeft}>Winner</th>
+              <th style={thCell}>Winner Votes</th>
+              <th style={thCell}>Margin</th>
+              <th style={thCellLeft}>Top 3 Alliances (Votes, %)</th>
+              <th style={thCell}>Winnable?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((w, idx) => {
+              const sortedAlliances = w.alliances
+                .slice()
+                .sort((a, b) => b.votes - a.votes);
+              const top3 = sortedAlliances.slice(0, 3);
+              const winnerVotes = sortedAlliances[0]?.votes ?? 0;
+
+              return (
+                <tr key={idx}>
+                  <td style={tdCell}>{w.wardNum}</td>
+                  <td style={tdCellLeft}>{w.wardName}</td>
+                  <td style={tdCellLeft}>{w.winnerAlliance ?? "-"}</td>
+                  <td style={tdCell}>
+                    {winnerVotes
+                      ? winnerVotes.toLocaleString("en-IN")
+                      : "-"}
+                  </td>
+                  <td style={tdCell}>
+                    {w.marginVotes != null
+                      ? w.marginVotes.toLocaleString("en-IN")
+                      : "-"}
+                  </td>
+                  <td style={tdCellLeft}>
+                    {top3.length === 0
+                      ? "-"
+                      : top3
+                          .map(
+                            (a) =>
+                              `${a.alliance} ${a.votes.toLocaleString(
+                                "en-IN"
+                              )} (${a.percentage.toFixed(2)}%)`
+                          )
+                          .join(", ")}
+                  </td>
+                  <td style={tdCell}>
+                    {w.winnable ? "Yes" : "No"}
+                    {w.gapPercent != null &&
+                      ` (${w.gapPercent.toFixed(1)}%)`}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ========= SMALL STYLE HELPERS ========= */
+
+const summaryBoxStyle: React.CSSProperties = {
+  background: "#111827",
+  border: "1px solid #2f3b4a",
+  borderRadius: 8,
+  padding: "10px 14px",
+  minWidth: 120,
+  textAlign: "center",
+};
+
+const summaryLabel: React.CSSProperties = {
+  fontSize: 11,
+  textTransform: "uppercase",
+  letterSpacing: 0.6,
+  opacity: 0.75,
+};
+
+const summaryValue: React.CSSProperties = {
+  fontSize: 18,
+  fontWeight: 600,
+};
+
+const thCell: React.CSSProperties = {
+  borderBottom: "1px solid #374151",
+  padding: 6,
+  textAlign: "center",
+  fontWeight: 500,
+};
+
+const thCellLeft: React.CSSProperties = {
+  ...thCell,
+  textAlign: "left",
+};
+
+const tdCell: React.CSSProperties = {
+  padding: 6,
+  borderBottom: "1px solid #111827",
+  textAlign: "center",
+  fontVariantNumeric: "tabular-nums",
+};
+
+const tdCellLeft: React.CSSProperties = {
+  ...tdCell,
+  textAlign: "left",
+};

@@ -2,6 +2,7 @@ package com.keralavotes.election.service;
 
 import com.keralavotes.election.dto.AllianceDto;
 import com.keralavotes.election.dto.details.AllianceAnalysisResponse;
+import com.keralavotes.election.dto.details.LocalbodyWardDetailsResponse;
 import com.keralavotes.election.entity.*;
 import com.keralavotes.election.repository.*;
 import jakarta.persistence.EntityManager;
@@ -11,6 +12,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.summingInt;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @Service
 @RequiredArgsConstructor
@@ -133,7 +139,7 @@ public class AllianceAnalysisService {
                                 wardResultRepo.findByElectionYearAndWardIdIn(year, wardIds);
 
             Map<Integer, List<LbWardResult>> wardGroups = results.stream()
-                    .collect(Collectors.groupingBy(LbWardResult::getWardId));
+                    .collect(groupingBy(LbWardResult::getWardId));
 
             int win = 0, winnable = 0;
 
@@ -254,6 +260,154 @@ public class AllianceAnalysisService {
                         a.getColor()  // color
                 ))
                 .toList();
+    }
+
+    public LocalbodyWardDetailsResponse getWardDetails(
+            Long localbodyId,
+            String alliance,
+            int year,
+            int swingPercent
+    ) {
+        Localbody lb = localbodyRepo.findById(localbodyId)
+                .orElseThrow(() -> new IllegalArgumentException("Localbody not found: " + localbodyId));
+
+        // candidates & their alliances
+        List<LbCandidate> candidates =
+                candidateRepo.findByLocalbodyIdAndElectionYear(lb.getId(), year);
+
+        Map<Integer, String> candidateAlliance = new HashMap<>();
+        for (LbCandidate c : candidates) {
+            Party p = c.getPartyId() == null
+                    ? null
+                    : partyRepo.findById(c.getPartyId()).orElse(null);
+            String a = (p == null || p.getAlliance() == null)
+                    ? "OTH"
+                    : p.getAlliance().getName();
+            candidateAlliance.put(c.getId(), a.toUpperCase());
+        }
+
+        // wards for this localbody
+        List<Ward> wards = wardRepo.findByLocalbodyId(lb.getId());
+        Map<Long, Ward> wardById = wards.stream()
+                .collect(toMap(Ward::getId, w -> w));
+
+        Set<Long> wardIds = wardById.keySet();
+
+        if (wardIds.isEmpty()) {
+            return LocalbodyWardDetailsResponse.builder()
+                    .localbodyId(lb.getId())
+                    .localbodyName(lb.getName())
+                    .year(year)
+                    .totalWards(0)
+                    .majorityNeeded(0)
+                    .wards(Collections.emptyList())
+                    .build();
+        }
+
+        // ward results
+        List<LbWardResult> results =
+                wardResultRepo.findByElectionYearAndWardIdIn(year, wardIds);
+
+        Map<Long, List<LbWardResult>> wardGroups = results.stream()
+                .collect(groupingBy(r -> r.getWardId().longValue()));
+
+        List<LocalbodyWardDetailsResponse.WardRow> wardRows = new ArrayList<>();
+
+        for (Map.Entry<Long, List<LbWardResult>> entry : wardGroups.entrySet()) {
+            Long wardId = entry.getKey();
+            List<LbWardResult> wardVotes = entry.getValue();
+
+            Ward ward = wardById.get(wardId);
+            if (ward == null) {
+                continue;
+            }
+
+            // sort descending by votes
+            wardVotes.sort((a, b) -> Integer.compare(b.getVotes(), a.getVotes()));
+
+            int totalVotes = wardVotes.stream()
+                    .mapToInt(LbWardResult::getVotes)
+                    .sum();
+
+            LbWardResult winnerRes = wardVotes.get(0);
+            String winnerAlliance = candidateAlliance.get(winnerRes.getCandidateId());
+            if (winnerAlliance == null) winnerAlliance = "OTH";
+
+            // build alliance votes list
+            List<LocalbodyWardDetailsResponse.AllianceVotes> allianceVotesList =
+                    wardVotes.stream()
+                            .collect(groupingBy(
+                                    r -> candidateAlliance.getOrDefault(r.getCandidateId(), "OTH"),
+                                    summingInt(LbWardResult::getVotes)
+                            ))
+                            .entrySet()
+                            .stream()
+                            .map(e -> {
+                                String a = e.getKey();
+                                int v = e.getValue();
+                                double pct = totalVotes == 0 ? 0.0 : (v * 100.0) / totalVotes;
+                                return LocalbodyWardDetailsResponse.AllianceVotes.builder()
+                                        .alliance(a)
+                                        .votes(v)
+                                        .percentage(pct)
+                                        .build();
+                            })
+                            .sorted((a, b) -> Integer.compare(b.getVotes(), a.getVotes()))
+                            .collect(toList());
+
+            // find target alliance result
+            Optional<LocalbodyWardDetailsResponse.AllianceVotes> oursOpt =
+                    allianceVotesList.stream()
+                            .filter(av -> av.getAlliance().equalsIgnoreCase(alliance))
+                            .findFirst();
+
+            boolean winnable = false;
+            Double gapPct = null;
+            Integer marginVotes = null;
+
+            if (winnerAlliance.equalsIgnoreCase(alliance)) {
+                // already won
+                marginVotes = null; // you can compute if you want vs #2
+                winnable = true;   // or true but you already count it as win
+            } else if (oursOpt.isPresent()) {
+                LocalbodyWardDetailsResponse.AllianceVotes ours = oursOpt.get();
+                int winnerVotes = allianceVotesList.get(0).getVotes();
+                int gap = winnerVotes - ours.getVotes();
+                marginVotes = gap;
+                gapPct = winnerVotes == 0 ? 0.0 : (gap * 100.0) / winnerVotes;
+                if (gapPct <= swingPercent) {
+                    winnable = true;
+                }
+            }
+
+            LocalbodyWardDetailsResponse.WardRow row =
+                    LocalbodyWardDetailsResponse.WardRow.builder()
+                            .wardNum(ward.getWardNum()) // adjust getter as per your entity
+                            .wardName(ward.getWardName())
+                            .alliances(allianceVotesList)
+                            .totalVotes(totalVotes)
+                            .winnerAlliance(winnerAlliance)
+                            .marginVotes(marginVotes)
+                            .winnable(winnable)
+                            .gapPercent(gapPct)
+                            .build();
+
+            wardRows.add(row);
+        }
+
+        int totalWards = wards.size();
+        int majority = (totalWards / 2) + 1;
+
+        return LocalbodyWardDetailsResponse.builder()
+                .localbodyId(lb.getId())
+                .localbodyName(lb.getName())
+                .year(year)
+                .totalWards(totalWards)
+                .majorityNeeded(majority)
+                .wards(wardRows.stream()
+                        .sorted(Comparator.comparingInt(LocalbodyWardDetailsResponse.WardRow::getWardNum))
+                        .collect(toList()))
+                .build();
     }
 }
 

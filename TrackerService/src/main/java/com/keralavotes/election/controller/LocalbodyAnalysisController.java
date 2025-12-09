@@ -2,6 +2,7 @@ package com.keralavotes.election.controller;
 
 import com.keralavotes.election.dto.LocalbodyAnalysisResponse;
 import com.keralavotes.election.dto.details.AllianceAnalysisResponse;
+import com.keralavotes.election.dto.details.LocalbodyWardDetailsResponse;
 import com.keralavotes.election.service.AllianceAnalysisService;
 import com.keralavotes.election.service.LocalbodyElectionAnalysisService;
 import lombok.RequiredArgsConstructor;
@@ -46,5 +47,15 @@ public class LocalbodyAnalysisController {
             @RequestParam(required = false) Long localbodyId
     ) {
         return allianceAnalysisService.analyze(district, type, alliance, year, swing, localbodyId);
+    }
+
+    @GetMapping("/analysis/{localbodyId}/ward-details")
+    public LocalbodyWardDetailsResponse getWardDetails(
+            @PathVariable Long localbodyId,
+            @RequestParam int year,
+            @RequestParam String alliance,
+            @RequestParam(name = "swing", defaultValue = "10") int swingPercent
+    ) {
+        return allianceAnalysisService.getWardDetails(localbodyId, alliance, year, swingPercent);
     }
 }
