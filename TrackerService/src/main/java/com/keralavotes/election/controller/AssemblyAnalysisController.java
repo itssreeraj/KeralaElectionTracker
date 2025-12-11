@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -69,5 +70,26 @@ public class AssemblyAnalysisController {
     public AssemblyConstituency findByAcCode(@RequestParam int acCode) {
         return assemblyRepository.findByAcCode(acCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "acCode not found"));
+    }
+
+
+    /**
+     * Analyze assembly by acCode.
+     * includeTypes - optional CSV list of localbody types to include, e.g. "grama_panchayath,Municipality"
+     */
+    @GetMapping("/assembly-by-id")
+    public AssemblyAnalysisResponseDto analyzeByAcCode(
+            @RequestParam Integer acCode,
+            @RequestParam Integer year,
+            @RequestParam(required = false) String includeTypes
+    ) {
+        List<String> types = null;
+        if (includeTypes != null && !includeTypes.isBlank()) {
+            types = Arrays.stream(includeTypes.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        }
+        return assemblyAnalysisService.analyzeByAcCode(acCode, year, types);
     }
 }

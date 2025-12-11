@@ -66,4 +66,12 @@ public class AssemblyAnalysisResponseDto {
         private String winner;
         private Integer margin;
     }
+
+    // small helper used internally
+    @Data
+    public static class PerformanceCounts {
+        private int winner = 0;
+        private int runnerUp = 0;
+        private int third = 0;
+    }
 }

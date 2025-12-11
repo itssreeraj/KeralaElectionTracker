@@ -27,4 +27,11 @@ public interface WardRepository extends JpaRepository<Ward, Long> {
     void assignAssemblyToWards(@Param("ac") AssemblyConstituency ac,
                                @Param("wardIds") List<Long> wardIds);
 
+    // Reverse lookup: wards mapped to an AC for a delimitation year
+    List<Ward> findByAc_AcCodeAndDelimitationYear(Integer acCode, Integer delimitationYear);
+
+    // Same but restrict by localbody type(s)
+    List<Ward> findByAc_AcCodeAndDelimitationYearAndLocalbody_TypeIn(
+            Integer acCode, Integer delimitationYear, List<String> types);
+
 }

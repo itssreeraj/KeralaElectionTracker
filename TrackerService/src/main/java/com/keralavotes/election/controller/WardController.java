@@ -1,6 +1,7 @@
 package com.keralavotes.election.controller;
 
 import com.keralavotes.election.dto.WardAssemblyAssignRequest;
+import com.keralavotes.election.dto.WardDto;
 import com.keralavotes.election.entity.Ward;
 import com.keralavotes.election.repository.WardRepository;
 import com.keralavotes.election.service.WardAssemblyService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -46,5 +48,42 @@ public class WardController {
 
         wardAssemblyService.assignToAssembly(req.getAcCode(), req.getWardIds());
         return ResponseEntity.ok(Map.of("status", "success"));
+    }
+
+    /**
+     * Reverse lookup: wards that are assigned to a given assembly (acCode), for a delimitation year.
+     * Optional query param types=grama_panchayath,Municipality etc to limit to certain localbody types.
+     */
+    @GetMapping("/by-assembly")
+    public List<WardDto> wardsByAssembly(
+            @RequestParam Integer acCode,
+            @RequestParam Integer delimitationYear,
+            @RequestParam(required = false) String types
+    ) {
+        List<Ward> wards;
+        if (types == null || types.isBlank()) {
+            wards = wardRepository.findByAc_AcCodeAndDelimitationYear(acCode, delimitationYear);
+        } else {
+            List<String> typeList = Arrays.stream(types.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            wards = wardRepository.findByAc_AcCodeAndDelimitationYearAndLocalbody_TypeIn(
+                    acCode, delimitationYear, typeList);
+        }
+
+        // convert to DTO to avoid lazy load issues or circular refs in JSON
+        return wards.stream()
+                .map(w -> new WardDto(
+                        w.getId(),
+                        w.getWardNum(),
+                        w.getWardName(),
+                        w.getLocalbody() != null ? w.getLocalbody().getId() : null,
+                        w.getLocalbody() != null ? w.getLocalbody().getName() : null,
+                        w.getLocalbody() != null ? w.getLocalbody().getType() : null,
+                        w.getDelimitationYear(),
+                        w.getAc() != null ? w.getAc().getAcCode() : null
+                ))
+                .toList();
     }
 }
