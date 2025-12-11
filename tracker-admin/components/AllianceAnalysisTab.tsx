@@ -40,6 +40,11 @@ type AllianceBreakdown = {
   wardsWinnable: number;
   boothsWon: number | null;
   boothsWinnable: number | null;
+
+  // NEW back-end fields
+  totalWards: number;
+  majorityNeeded: number;
+  verdict: string; // "MAJORITY", "POSSIBLE_WITH_SWING", "HARD"
 };
 
 type AllianceAnalysisResponse = {
@@ -82,7 +87,124 @@ type LocalbodyWardDetailsResponse = {
   wards: WardDetailRow[];
 };
 
-/* ========= MAIN COMPONENT ========= */
+/* ======= SMALL STYLE HELPERS ======= */
+
+const thCell: React.CSSProperties = {
+  borderBottom: "1px solid #374151",
+  padding: 6,
+  textAlign: "center",
+  fontWeight: 500,
+};
+
+const thCellLeft: React.CSSProperties = {
+  ...thCell,
+  textAlign: "left",
+};
+
+const tdCell: React.CSSProperties = {
+  padding: 6,
+  borderBottom: "1px solid #111827",
+  textAlign: "center",
+  fontVariantNumeric: "tabular-nums",
+};
+
+const tdCellLeft: React.CSSProperties = {
+  ...tdCell,
+  textAlign: "left",
+};
+
+const summaryBoxStyle: React.CSSProperties = {
+  background: "#111827",
+  border: "1px solid #2f3b4a",
+  borderRadius: 8,
+  padding: "10px 14px",
+  minWidth: 120,
+  textAlign: "center",
+};
+
+const summaryLabel: React.CSSProperties = {
+  fontSize: 11,
+  textTransform: "uppercase",
+  letterSpacing: 0.6,
+  opacity: 0.75,
+};
+
+const summaryValue: React.CSSProperties = {
+  fontSize: 18,
+  fontWeight: 600,
+};
+
+/* ======= BADGES ======= */
+
+function VerdictBadge({ verdict }: { verdict: string }) {
+  const key = verdict?.toUpperCase() || "";
+
+  let color = "#4b5563";
+  let text = "UNKNOWN";
+
+  if (key === "MAJORITY") {
+    color = "#16a34a";
+    text = "MAJORITY";
+  } else if (key === "POSSIBLE_WITH_SWING") {
+    color = "#f59e0b";
+    text = "POSSIBLE WITH SWING";
+  } else if (key === "HARD") {
+    color = "#dc2626";
+    text = "HARD";
+  }
+
+  return (
+    <span
+      style={{
+        padding: "2px 8px",
+        borderRadius: 20,
+        fontSize: 11,
+        fontWeight: 600,
+        background: color + "33",
+        border: `1px solid ${color}`,
+        color,
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+type WardStatus = "WON" | "WINNABLE" | "HARD";
+
+function WardStatusBadge({ status }: { status: WardStatus }) {
+  let color = "#4b5563";
+  let label = status;
+
+  if (status === "WON") {
+    color = "#16a34a";
+    label = "WON";
+  } else if (status === "WINNABLE") {
+    color = "#f59e0b";
+    label = "WINNABLE";
+  } else if (status === "HARD") {
+    color = "#dc2626";
+    label = "HARD";
+  }
+
+  return (
+    <span
+      style={{
+        padding: "2px 8px",
+        borderRadius: 20,
+        fontSize: 11,
+        fontWeight: 600,
+        background: color + "33",
+        border: `1px solid ${color}`,
+        color,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+/* ========= MAIN TAB ========= */
 
 export default function AllianceAnalysisTab() {
   const backend =
@@ -100,28 +222,28 @@ export default function AllianceAnalysisTab() {
 
   const [selectedAlliance, setSelectedAlliance] = useState("");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-
   const [swing, setSwing] = useState<number>(10);
 
   const [loadingLB, setLoadingLB] = useState(false);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
 
   const [analysis, setAnalysis] = useState<AllianceAnalysisResponse | null>(null);
 
-  /* ====== Load Districts ====== */
+  /* Load districts */
   useEffect(() => {
     fetch(`${backend}/admin/districts`)
       .then((r) => r.json())
       .then((data) => setDistricts(Array.isArray(data) ? data : []));
   }, [backend]);
 
-  /* ====== Load Alliances ====== */
+  /* Load alliances */
   useEffect(() => {
     fetch(`${backend}/public/alliances`)
       .then((r) => r.json())
       .then((data) => setAlliances(Array.isArray(data) ? data : []));
   }, []);
 
-  /* ====== Load Localbodies ====== */
+  /* Load localbodies on district/type change */
   useEffect(() => {
     if (!selectedDistrictCode || !selectedDistrictName) {
       setLocalbodies([]);
@@ -130,35 +252,37 @@ export default function AllianceAnalysisTab() {
 
     const load = async () => {
       setLoadingLB(true);
-
-      const res = await fetch(
-        `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
-          selectedDistrictName
-        )}`
-      );
-
-      const list = await res.json();
-      let lbList = Array.isArray(list) ? list : [];
-
-      if (selectedType) {
-        lbList = lbList.filter(
-          (lb: any) => lb.type.toLowerCase() === selectedType.toLowerCase()
+      try {
+        const res = await fetch(
+          `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+            selectedDistrictName
+          )}`
         );
-      }
+        const list = await res.json();
+        let lbList = Array.isArray(list) ? list : [];
 
-      setLocalbodies(lbList);
-      setLoadingLB(false);
+        if (selectedType) {
+          lbList = lbList.filter(
+            (lb: any) => lb.type.toLowerCase() === selectedType.toLowerCase()
+          );
+        }
+
+        setLocalbodies(lbList);
+      } finally {
+        setLoadingLB(false);
+      }
     };
 
     load();
   }, [backend, selectedDistrictCode, selectedDistrictName, selectedType]);
 
-  /* ====== YEAR SELECTOR ====== */
-  const toggleYear = (y: number) => {
-    setSelectedYear((prev) => (prev === y ? null : y));
+  /* Year toggle */
+  const toggleYear = (year: number) => {
+    setSelectedYear((prev) => (prev === year ? null : year));
+    setAnalysis(null);
   };
 
-  /* ====== Run Analysis ====== */
+  /* Run Alliance Analysis */
   const runAnalysis = async () => {
     if (!selectedDistrictCode || !selectedAlliance || !selectedYear) {
       alert("Please fill all required fields");
@@ -178,6 +302,8 @@ export default function AllianceAnalysisTab() {
     const url = `${backend}/localbody/analysis/alliance?${params.toString()}`;
     console.log("Calling:", url);
 
+    setLoadingAnalysis(true);
+    setAnalysis(null);
     try {
       const res = await fetch(url);
       const data = (await res.json()) as AllianceAnalysisResponse;
@@ -186,6 +312,8 @@ export default function AllianceAnalysisTab() {
     } catch (err) {
       console.error("Error running analysis:", err);
       alert("Failed to run analysis");
+    } finally {
+      setLoadingAnalysis(false);
     }
   };
 
@@ -210,7 +338,14 @@ export default function AllianceAnalysisTab() {
           <select
             value={selectedDistrictCode ?? ""}
             onChange={(e) => {
-              const code = Number(e.target.value);
+              const code = Number(e.target.value || "0");
+              if (!code) {
+                setSelectedDistrictCode(null);
+                setSelectedDistrictName("");
+                setSelectedLocalbody("");
+                setAnalysis(null);
+                return;
+              }
               setSelectedDistrictCode(code);
               const dist = districts.find((d) => d.districtCode === code);
               setSelectedDistrictName(dist?.name || "");
@@ -292,7 +427,7 @@ export default function AllianceAnalysisTab() {
           </select>
         </div>
 
-        {/* Swing % */}
+        {/* Swing */}
         <div>
           <label style={labelStyle}>Swing %</label>
           <input
@@ -306,7 +441,7 @@ export default function AllianceAnalysisTab() {
           />
         </div>
 
-        {/* Year Toggle */}
+        {/* Year buttons */}
         <div>
           <label style={labelStyle}>Election Year</label>
           <div
@@ -323,10 +458,7 @@ export default function AllianceAnalysisTab() {
                 <button
                   key={y}
                   type="button"
-                  onClick={() => {
-                    setSelectedYear((prev) => (prev === y ? null : y));
-                    setAnalysis(null);
-                  }}
+                  onClick={() => toggleYear(y)}
                   style={{
                     padding: "4px 10px",
                     borderRadius: 999,
@@ -345,34 +477,32 @@ export default function AllianceAnalysisTab() {
         </div>
       </div>
 
-      {/* ANALYZE BUTTON */}
+      {/* Run Button */}
       <button
         onClick={runAnalysis}
+        disabled={loadingAnalysis}
         style={{
           padding: "10px 18px",
-          background: "#2563eb",
+          background: loadingAnalysis ? "#4b5563" : "#2563eb",
           borderRadius: 6,
           fontWeight: 600,
           color: "white",
           border: "1px solid #1d4ed8",
-          cursor: "pointer",
+          cursor: loadingAnalysis ? "not-allowed" : "pointer",
         }}
       >
-        Run Alliance Analysis
+        {loadingAnalysis ? "Running..." : "Run Alliance Analysis"}
       </button>
 
-      {/* RESULTS */}
+      {/* Results */}
       {analysis && (
-        <AllianceAnalysisResults
-          backend={backend}
-          result={analysis}
-        />
+        <AllianceAnalysisResults backend={backend} result={analysis} />
       )}
     </div>
   );
 }
 
-/* ========= RESULTS COMPONENT ========= */
+/* ========= RESULTS + RANKING ========= */
 
 function AllianceAnalysisResults({
   backend,
@@ -389,23 +519,33 @@ function AllianceAnalysisResults({
 
   const isGE = result.year === 2019 || result.year === 2024;
 
+  const ranked = result.breakdown
+    .slice()
+    .sort(
+      (a, b) =>
+        b.wardsWon - a.wardsWon ||
+        b.wardsWinnable - a.wardsWinnable
+    );
+
   const toggleExpand = async (lbId: number) => {
-    const newSet = new Set(expanded);
-    if (expanded.has(lbId)) {
-      newSet.delete(lbId);
-      setExpanded(newSet);
-      return;
-    }
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(lbId)) {
+        next.delete(lbId);
+      } else {
+        next.add(lbId);
+      }
+      return next;
+    });
 
-    newSet.add(lbId);
-    setExpanded(newSet);
-
-    // if already loaded, don't fetch again
+    // if details already loaded, don't fetch again
     if (wardDetails[lbId]) return;
 
-    const loadSet = new Set(loadingDetails);
-    loadSet.add(lbId);
-    setLoadingDetails(loadSet);
+    setLoadingDetails((prev) => {
+      const next = new Set(prev);
+      next.add(lbId);
+      return next;
+    });
 
     try {
       const params = new URLSearchParams({
@@ -421,34 +561,13 @@ function AllianceAnalysisResults({
       setWardDetails((prev) => ({ ...prev, [lbId]: data }));
     } catch (e) {
       console.error("Error loading ward details", e);
+    } finally {
+      setLoadingDetails((prev) => {
+        const next = new Set(prev);
+        next.delete(lbId);
+        return next;
+      });
     }
-
-    loadSet.delete(lbId);
-    setLoadingDetails(newSet);
-  };
-
-  // Rank localbodies
-  const ranked = result.breakdown
-    .slice()
-    .sort(
-      (a, b) =>
-        b.wardsWon - a.wardsWon ||
-        b.wardsWinnable - a.wardsWinnable
-    );
-
-  const getVerdict = (lbId: number) => {
-    const d = wardDetails[lbId];
-    const lb = result.breakdown.find((x) => x.localbodyId === lbId);
-    if (!lb || !d) return "-";
-
-    const total = d.totalWards;
-    const majority = d.majorityNeeded;
-    const won = lb.wardsWon;
-    const winnable = lb.wardsWinnable;
-
-    if (won >= majority) return "Majority";
-    if (won + winnable >= majority) return "Possible with swing";
-    return "Hard";
   };
 
   return (
@@ -542,9 +661,6 @@ function AllianceAnalysisResults({
             </thead>
             <tbody>
               {ranked.map((lb, idx) => {
-                const details = wardDetails[lb.localbodyId];
-                const total = details?.totalWards ?? "-";
-                const majority = details?.majorityNeeded ?? "-";
                 const isExpanded = expanded.has(lb.localbodyId);
                 const isLoading = loadingDetails.has(lb.localbodyId);
 
@@ -555,10 +671,14 @@ function AllianceAnalysisResults({
                       <td style={tdCellLeft}>{lb.localbodyName}</td>
                       <td style={tdCell}>{lb.wardsWon}</td>
                       <td style={tdCell}>{lb.wardsWinnable}</td>
-                      <td style={tdCell}>{total}</td>
-                      <td style={tdCell}>{majority}</td>
+                      <td style={tdCell}>
+                        {lb.totalWards ?? "-"}
+                      </td>
+                      <td style={tdCell}>
+                        {lb.majorityNeeded ?? "-"}
+                      </td>
                       <td style={tdCellLeft}>
-                        {details ? getVerdict(lb.localbodyId) : "-"}
+                        {lb.verdict && <VerdictBadge verdict={lb.verdict} />}
                       </td>
                       <td style={tdCell}>
                         <button
@@ -583,11 +703,13 @@ function AllianceAnalysisResults({
                       </td>
                     </tr>
 
-                    {/* Expanded row with ward table */}
-                    {isExpanded && details && (
+                    {isExpanded && wardDetails[lb.localbodyId] && (
                       <tr>
                         <td colSpan={8} style={{ padding: 10 }}>
-                          <LocalbodyWardDetailsTable details={details} />
+                          <LocalbodyWardDetailsTable
+                            details={wardDetails[lb.localbodyId]}
+                            alliance={result.alliance}
+                          />
                         </td>
                       </tr>
                     )}
@@ -606,8 +728,10 @@ function AllianceAnalysisResults({
 
 function LocalbodyWardDetailsTable({
   details,
+  alliance,
 }: {
   details: LocalbodyWardDetailsResponse;
+  alliance: string;
 }) {
   const rows = details.wards;
 
@@ -648,7 +772,7 @@ function LocalbodyWardDetailsTable({
               <th style={thCell}>Winner Votes</th>
               <th style={thCell}>Margin</th>
               <th style={thCellLeft}>Top 3 Alliances (Votes, %)</th>
-              <th style={thCell}>Winnable?</th>
+              <th style={thCellLeft}>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -658,6 +782,18 @@ function LocalbodyWardDetailsTable({
                 .sort((a, b) => b.votes - a.votes);
               const top3 = sortedAlliances.slice(0, 3);
               const winnerVotes = sortedAlliances[0]?.votes ?? 0;
+
+              let status: WardStatus = "HARD";
+              if (
+                w.winnerAlliance &&
+                w.winnerAlliance.toUpperCase() === alliance.toUpperCase()
+              ) {
+                status = "WON";
+              } else if (w.winnable) {
+                status = "WINNABLE";
+              } else {
+                status = "HARD";
+              }
 
               return (
                 <tr key={idx}>
@@ -686,10 +822,13 @@ function LocalbodyWardDetailsTable({
                           )
                           .join(", ")}
                   </td>
-                  <td style={tdCell}>
-                    {w.winnable ? "Yes" : "No"}
-                    {w.gapPercent != null &&
-                      ` (${w.gapPercent.toFixed(1)}%)`}
+                  <td style={tdCellLeft}>
+                    <WardStatusBadge status={status} />
+                    {w.gapPercent != null && status !== "WON" && (
+                      <span style={{ marginLeft: 6, opacity: 0.8 }}>
+                        ({w.gapPercent.toFixed(1)}%)
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
@@ -700,50 +839,3 @@ function LocalbodyWardDetailsTable({
     </div>
   );
 }
-
-/* ========= SMALL STYLE HELPERS ========= */
-
-const summaryBoxStyle: React.CSSProperties = {
-  background: "#111827",
-  border: "1px solid #2f3b4a",
-  borderRadius: 8,
-  padding: "10px 14px",
-  minWidth: 120,
-  textAlign: "center",
-};
-
-const summaryLabel: React.CSSProperties = {
-  fontSize: 11,
-  textTransform: "uppercase",
-  letterSpacing: 0.6,
-  opacity: 0.75,
-};
-
-const summaryValue: React.CSSProperties = {
-  fontSize: 18,
-  fontWeight: 600,
-};
-
-const thCell: React.CSSProperties = {
-  borderBottom: "1px solid #374151",
-  padding: 6,
-  textAlign: "center",
-  fontWeight: 500,
-};
-
-const thCellLeft: React.CSSProperties = {
-  ...thCell,
-  textAlign: "left",
-};
-
-const tdCell: React.CSSProperties = {
-  padding: 6,
-  borderBottom: "1px solid #111827",
-  textAlign: "center",
-  fontVariantNumeric: "tabular-nums",
-};
-
-const tdCellLeft: React.CSSProperties = {
-  ...tdCell,
-  textAlign: "left",
-};

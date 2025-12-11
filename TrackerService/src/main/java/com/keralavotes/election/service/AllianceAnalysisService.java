@@ -175,6 +175,23 @@ public class AllianceAnalysisService {
 
             out.setWardsWon(win);
             out.setWardsWinnable(winnable);
+
+            // NEW: total wards & majority
+            int totalWards = wards.size();
+            int majority = (totalWards / 2) + 1;
+            out.setTotalWards(totalWards);
+            out.setMajorityNeeded(majority);
+
+            // NEW: verdict at LB level
+            String verdict;
+            if (win >= majority) {
+                verdict = "MAJORITY";
+            } else if (win + winnable >= majority) {
+                verdict = "POSSIBLE_WITH_SWING";
+            } else {
+                verdict = "HARD";
+            }
+            out.setVerdict(verdict);
         }
 
         // ======== GE ANALYSIS (BOOTH BASED) ========
