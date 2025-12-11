@@ -1,3 +1,9 @@
 CREATE USER keralavotes WITH PASSWORD 'keralavotes';
 CREATE DATABASE keralavotes OWNER keralavotes;
 
+
+========New column=======
+ALTER TABLE ward ADD COLUMN ac_code INTEGER REFERENCES assembly_constituency(ac_code);
+
+ALTER TABLE ward
+ADD CONSTRAINT ward_ac_fk FOREIGN KEY (ac_code) REFERENCES assembly_constituency(ac_code);
