@@ -50,6 +50,8 @@ const TIER_OPTIONS = [
   { id: "Corporation", label: "Corporation" },
 ];
 
+const ANALYSIS_YEARS = [2010, 2015, 2019, 2020, 2024, 2025];
+
 export default function AssemblyAnalysisTab() {
   /* ------------------ STATE ------------------ */
   const [selectedAc, setSelectedAc] = useState<{ acCode: number; name: string } | null>(null);
@@ -127,12 +129,30 @@ export default function AssemblyAnalysisTab() {
         {/* YEAR */}
         <div>
           <label style={{ fontSize: 13, opacity: 0.85 }}>Year</label>
-          <input
-            type="number"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            style={smallInput}
-          />
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+            {ANALYSIS_YEARS.map((y) => {
+              const active = year === y;
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setYear(y)}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: active ? "1px solid #0d6efd" : "1px solid #555",
+                    background: active ? "#0d6efd33" : "transparent",
+                    color: active ? "#fff" : "#ddd",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  {y}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* TIER SELECTOR */}

@@ -38,7 +38,7 @@ export default function HomePage() {
         </div>
 
         <Link
-          href="/admin/login"
+          href="/login"
           style={{
             padding: "8px 16px",
             borderRadius: 6,

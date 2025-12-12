@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 
+const DELIM_YEARS = [2009, 2010, 2025];
+
 /* ============================================================
     UI TAB: Ward → Assembly Mapping
    ============================================================ */
@@ -226,8 +228,18 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
           <input
             value={lbSearch}
             onChange={(e) => setLbSearch(e.target.value)}
-            placeholder="Type to filter..."
-            style={selectStyle}
+            placeholder="Search localbody…"
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              marginTop: 6,
+              marginBottom: 6,
+              borderRadius: 6,
+              border: "1px solid #374151",
+              background: "#020617",
+              color: "#f9fafb",
+              fontSize: 14,
+            }}
           />
         </div>
 
@@ -251,14 +263,31 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
         {/* DELIMITATION YEAR */}
         <div>
           <label>Delimitation Year</label>
-          <input
-            type="number"
-            value={delimitationYear}
-            onChange={(e) => setDelimitationYear(Number(e.target.value))}
-            style={selectStyle}
-            placeholder="e.g. 2020"
-          />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+            {DELIM_YEARS.map((y) => {
+              const active = delimitationYear === y;
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setDelimitationYear(active ? "" : y)}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: active ? "1px solid #0d6efd" : "1px solid #555",
+                    background: active ? "#0d6efd33" : "transparent",
+                    color: active ? "#fff" : "#ddd",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  {y}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
 
         {/* LOAD WARDS BUTTON */}
         <div style={{ gridColumn: "1 / span 2", marginTop: 10 }}>
