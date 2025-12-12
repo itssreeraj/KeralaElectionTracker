@@ -39,9 +39,61 @@ type AssemblyAnalysisResponse = {
 
 const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
 
+/* Alliance color map */
+const ALLIANCE_COLORS: Record<string, string> = {
+  LDF: "#e11d48",
+  UDF: "#2563eb",
+  NDA: "#facc15",
+  SDPI: "#16a34a",
+  IND: "#9ca3af",
+  OTH: "#6b7280",
+};
+
+/* Alliance badge (Option B, inline compact) */
+function AllianceBadge({
+  alliance,
+  votes,
+  pct,
+}: {
+  alliance: string;
+  votes: number;
+  pct: number;
+}) {
+  const color = ALLIANCE_COLORS[alliance] || ALLIANCE_COLORS.OTH;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        height: 20,               // FIXED height so it doesn't expand row
+        lineHeight: "20px",      // align text vertically
+        fontSize: 12,
+        whiteSpace: "nowrap",
+        marginRight: 8,
+      }}
+    >
+      <span
+        style={{
+          width: 10,
+          height: 10,
+          display: "inline-block",
+          borderRadius: "50%",
+          background: color,
+          flex: "0 0 10px",
+        }}
+      />
+      <span style={{ fontWeight: 600 }}>{alliance}</span>
+      <span style={{ color: "#cbd5e1", marginLeft: 6 }}>
+        {votes.toLocaleString("en-IN")} ({pct.toFixed(2)}%)
+      </span>
+    </span>
+  );
+}
+
 /* -------------------------------------------------------
           TIER OPTIONS FOR ANALYSIS
-   ------------------------------------------------------- */
+------------------------------------------------------- */
 const TIER_OPTIONS = [
   { id: "grama_panchayath", label: "Grama Panchayath (GP)" },
   { id: "block_panchayath", label: "Block Panchayath (BP)" },
@@ -53,7 +105,6 @@ const TIER_OPTIONS = [
 const ANALYSIS_YEARS = [2010, 2015, 2019, 2020, 2024, 2025];
 
 export default function AssemblyAnalysisTab() {
-  /* ------------------ STATE ------------------ */
   const [selectedAc, setSelectedAc] = useState<{ acCode: number; name: string } | null>(null);
   const [year, setYear] = useState<number>(2024);
   const [selectedTiers, setSelectedTiers] = useState<string[]>([
@@ -65,20 +116,16 @@ export default function AssemblyAnalysisTab() {
   const [analysis, setAnalysis] = useState<AssemblyAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
-  /* ------------------ AC Selection ------------------ */
   const onSelectAc = (ac: { acCode: number; name: string }) => {
     setSelectedAc(ac);
     setAnalysis(null);
   };
 
-  /* ------------------ Toggle Tier ------------------ */
-  const toggleTier = (tier: string) => {
+  const toggleTier = (tier: string) =>
     setSelectedTiers((prev) =>
       prev.includes(tier) ? prev.filter((x) => x !== tier) : [...prev, tier]
     );
-  };
 
-  /* ------------------ Run Analysis ------------------ */
   const runAnalysis = async () => {
     if (!selectedAc) return alert("Select an assembly");
 
@@ -97,10 +144,9 @@ export default function AssemblyAnalysisTab() {
     try {
       const res = await fetch(`${backend}/analysis/assembly-by-id?${params.toString()}`);
       if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
-      setAnalysis(data);
-    } catch (e) {
-      console.error(e);
+      setAnalysis(await res.json());
+    } catch (err) {
+      console.error(err);
       alert("Failed to load assembly analysis");
     } finally {
       setLoading(false);
@@ -109,7 +155,7 @@ export default function AssemblyAnalysisTab() {
 
   /* ===================================================
                       RENDER
-     =================================================== */
+  =================================================== */
   return (
     <div style={{ padding: 20, color: "white" }}>
       <h2 style={{ fontSize: 22, marginBottom: 12 }}>Assembly Analysis</h2>
@@ -118,25 +164,22 @@ export default function AssemblyAnalysisTab() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 140px 280px 140px",
+          gridTemplateColumns: "1fr 180px 280px 120px",
           gap: 12,
           marginBottom: 20,
         }}
       >
-        {/* AC SELECTOR */}
         <AssemblySelector backend={backend} onSelectAc={onSelectAc} />
 
-        {/* YEAR */}
+        {/* YEAR Toggle Buttons */}
         <div>
           <label style={{ fontSize: 13, opacity: 0.85 }}>Year</label>
-
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
             {ANALYSIS_YEARS.map((y) => {
               const active = year === y;
               return (
                 <button
                   key={y}
-                  type="button"
                   onClick={() => setYear(y)}
                   style={{
                     padding: "4px 10px",
@@ -158,7 +201,6 @@ export default function AssemblyAnalysisTab() {
         {/* TIER SELECTOR */}
         <div>
           <label style={{ fontSize: 13, opacity: 0.85 }}>Localbody Types</label>
-
           <div
             style={{
               marginTop: 6,
@@ -168,10 +210,7 @@ export default function AssemblyAnalysisTab() {
             }}
           >
             {TIER_OPTIONS.map((t) => (
-              <label
-                key={t.id}
-                style={{ display: "flex", alignItems: "center", fontSize: 12, gap: 6 }}
-              >
+              <label key={t.id} style={{ fontSize: 12, display: "flex", gap: 6 }}>
                 <input
                   type="checkbox"
                   checked={selectedTiers.includes(t.id)}
@@ -191,20 +230,20 @@ export default function AssemblyAnalysisTab() {
             style={{
               padding: "8px 12px",
               background: loading ? "#444" : "#0d6efd",
-              color: "white",
+              color: "#fff",
               borderRadius: 6,
               border: "none",
               cursor: !selectedAc || loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Loading…" : "Run"}
+            {loading ? "Loading…" : "Run Analysis"}
           </button>
         </div>
       </div>
 
       {/* ------------------------------------------------
                    ANALYSIS OUTPUT
-         ------------------------------------------------ */}
+      ------------------------------------------------ */}
       {analysis && (
         <div>
           {/* HEADER CARD */}
@@ -219,34 +258,38 @@ export default function AssemblyAnalysisTab() {
 
           {/* VOTE SHARE */}
           <h3 style={{ marginBottom: 8 }}>Assembly Vote Share</h3>
-          <ResponsiveTable>
-            <thead>
-              <tr>
-                <th>Alliance</th>
-                <th style={{ textAlign: "right" }}>Votes</th>
-                <th style={{ textAlign: "right" }}>Share</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analysis.overallVoteShare.map((v) => (
-                <tr key={v.alliance}>
-                  <td>{v.alliance}</td>
-                  <td style={{ textAlign: "right" }}>{v.votes.toLocaleString("en-IN")}</td>
-                  <td style={{ textAlign: "right" }}>{v.percentage.toFixed(2)}%</td>
+          <div style={{ maxWidth: 480 }}>
+            <ResponsiveTable>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left" }}>Alliance</th>
+                  <th style={{ textAlign: "right" }}>Votes</th>
+                  <th style={{ textAlign: "right" }}>Share</th>
                 </tr>
-              ))}
-            </tbody>
-          </ResponsiveTable>
+              </thead>
+              <tbody>
+                {analysis.overallVoteShare.map((v) => (
+                  <tr key={v.alliance}>
+                    <td>
+                      <AllianceBadge alliance={v.alliance} votes={v.votes} pct={v.percentage} />
+                    </td>
+                    <td style={{ textAlign: "right" }}>{v.votes.toLocaleString("en-IN")}</td>
+                    <td style={{ textAlign: "right" }}>{v.percentage.toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </ResponsiveTable>
+          </div>
 
           {/* LOCALBODIES TABLE */}
           <h3 style={{ marginTop: 20, marginBottom: 8 }}>Localbodies Considered</h3>
           <ResponsiveTable>
             <thead>
               <tr>
-                <th>Localbody</th>
-                <th style={{ textAlign: "center" }}>Wards</th>
-                <th style={{ textAlign: "right" }}>Top Alliances</th>
-                <th>Details</th>
+                <th style={{ textAlign: "left" }}>Localbody</th>
+                <th style={{ textAlign: "left" }}>Wards</th>
+                <th style={{ textAlign: "left" }}>Top Alliances</th>
+                <th style={{ textAlign: "left" }}>Details</th>
               </tr>
             </thead>
             <tbody>
@@ -256,41 +299,40 @@ export default function AssemblyAnalysisTab() {
             </tbody>
           </ResponsiveTable>
 
-          {/* WARD TABLE (FLAT) */}
+          {/* WARDS TABLE */}
           <h3 style={{ marginTop: 20 }}>Wards (All)</h3>
           <ResponsiveTable>
             <thead>
               <tr>
-                <th>Ward #</th>
-                <th>Name</th>
-                <th>Localbody</th>
+                <th style={{ textAlign: "left" }}>Ward #</th>
+                <th style={{ textAlign: "left" }}>Name</th>
+                <th style={{ textAlign: "left" }}>Localbody</th>
                 <th style={{ textAlign: "right" }}>Total</th>
-                <th>Winner</th>
+                <th style={{ textAlign: "left" }}>Winner</th>
                 <th style={{ textAlign: "right" }}>Margin</th>
-                <th>Top Alliances</th>
+                <th style={{ textAlign: "left" }}>Top Alliances</th>
               </tr>
             </thead>
             <tbody>
-              {analysis.wards.map((w) => {
-                const top = w.alliances
-                  .slice(0, 3)
-                  .map(
-                    (a) => `${a.alliance} ${a.votes.toLocaleString("en-IN")} (${a.percentage.toFixed(2)}%)`
-                  )
-                  .join(", ");
+              {analysis.wards.map((w) => (
+                <tr key={w.wardId}>
+                  <td style={tdCell}>{w.wardNum}</td>
+                  <td style={tdCell}>{w.wardName}</td>
+                  <td style={tdCell}>{w.localbodyName}</td>
+                  <td style={{ ...tdCell, textAlign: "right" }}>{w.total.toLocaleString("en-IN")}</td>
+                  <td style={tdCell}>{w.winner ?? "-"}</td>
+                  <td style={{ ...tdCell, textAlign: "right" }}>{w.margin ?? "-"}</td>
 
-                return (
-                  <tr key={w.wardId}>
-                    <td>{w.wardNum}</td>
-                    <td>{w.wardName}</td>
-                    <td>{w.localbodyName}</td>
-                    <td style={{ textAlign: "right" }}>{w.total.toLocaleString("en-IN")}</td>
-                    <td>{w.winner ?? "-"}</td>
-                    <td style={{ textAlign: "right" }}>{w.margin ?? "-"}</td>
-                    <td>{top}</td>
-                  </tr>
-                );
-              })}
+                  {/* IMPORTANT: badges are inline-flex, fixed height, wrapped in a flex container */}
+                  <td style={tdCell}>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                      {w.alliances.slice(0, 3).map((a) => (
+                        <AllianceBadge key={a.alliance} alliance={a.alliance} votes={a.votes} pct={a.percentage} />
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </ResponsiveTable>
         </div>
@@ -301,30 +343,33 @@ export default function AssemblyAnalysisTab() {
 
 /* ==========================================================
       LOCALBODY EXPANDABLE ROW
-   ========================================================== */
+========================================================== */
 function LocalbodyRow({ lb, wardsAll }: { lb: LocalbodySummary; wardsAll: WardRow[] }) {
   const [expanded, setExpanded] = useState(false);
-  const lbWards = wardsAll.filter((w) => w.localbodyId == lb.localbodyId);
+  const lbWards = wardsAll.filter((w) => w.localbodyId === lb.localbodyId);
 
   return (
     <>
       <tr>
-        <td>
-          {lb.localbodyName}
-          <span style={{ color: "#999", marginLeft: 6 }}>({lb.localbodyType})</span>
+        <td style={tdCell}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ fontWeight: 700 }}>{lb.localbodyName}</div>
+            <div style={{ color: "#9ca3af", fontSize: 12 }}>({lb.localbodyType})</div>
+          </div>
         </td>
-        <td style={{ textAlign: "center" }}>{lb.wardsCount}</td>
-        <td style={{ textAlign: "right" }}>
-          {lb.voteShare
-            .slice(0, 4)
-            .map((v) => `${v.alliance} ${v.votes.toLocaleString("en-IN")} (${v.percentage.toFixed(2)}%)`)
-            .join(" • ")}
+
+        <td style={tdCell}>{lb.wardsCount}</td>
+
+        <td style={tdCell}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            {lb.voteShare.slice(0, 4).map((v) => (
+              <AllianceBadge key={v.alliance} alliance={v.alliance} votes={v.votes} pct={v.percentage} />
+            ))}
+          </div>
         </td>
-        <td>
-          <button
-            onClick={() => setExpanded((prev) => !prev)}
-            style={expandButton}
-          >
+
+        <td style={tdCell}>
+          <button onClick={() => setExpanded(!expanded)} style={expandButton}>
             {expanded ? "Hide" : "Show"}
           </button>
         </td>
@@ -332,41 +377,38 @@ function LocalbodyRow({ lb, wardsAll }: { lb: LocalbodySummary; wardsAll: WardRo
 
       {expanded && (
         <tr>
-          <td colSpan={4} style={{ padding: 10 }}>
-            <div style={{ background: "#1b2234", padding: 8, borderRadius: 6 }}>
+          <td colSpan={4} style={{ padding: 12 }}>
+            <div style={{ background: "#1b2234", padding: 12, borderRadius: 6 }}>
               <h4 style={{ marginBottom: 8 }}>{lb.localbodyName} — Wards</h4>
 
               <ResponsiveTable>
                 <thead>
                   <tr>
-                    <th>Ward #</th>
-                    <th>Name</th>
+                    <th style={{ textAlign: "left" }}>Ward #</th>
+                    <th style={{ textAlign: "left" }}>Name</th>
                     <th style={{ textAlign: "right" }}>Total</th>
-                    <th>Winner</th>
+                    <th style={{ textAlign: "left" }}>Winner</th>
                     <th style={{ textAlign: "right" }}>Margin</th>
-                    <th>Top Alliances</th>
+                    <th style={{ textAlign: "left" }}>Top Alliances</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lbWards.map((w) => {
-                    const top = w.alliances
-                      .slice(0, 3)
-                      .map(
-                        (a) =>
-                          `${a.alliance} ${a.votes.toLocaleString("en-IN")} (${a.percentage.toFixed(2)}%)`
-                      )
-                      .join(", ");
-                    return (
-                      <tr key={w.wardId}>
-                        <td>{w.wardNum}</td>
-                        <td>{w.wardName}</td>
-                        <td style={{ textAlign: "right" }}>{w.total.toLocaleString("en-IN")}</td>
-                        <td>{w.winner ?? "-"}</td>
-                        <td style={{ textAlign: "right" }}>{w.margin ?? "-"}</td>
-                        <td>{top}</td>
-                      </tr>
-                    );
-                  })}
+                  {lbWards.map((w) => (
+                    <tr key={w.wardId}>
+                      <td style={tdCell}>{w.wardNum}</td>
+                      <td style={tdCell}>{w.wardName}</td>
+                      <td style={{ ...tdCell, textAlign: "right" }}>{w.total.toLocaleString("en-IN")}</td>
+                      <td style={tdCell}>{w.winner ?? "-"}</td>
+                      <td style={{ ...tdCell, textAlign: "right" }}>{w.margin ?? "-"}</td>
+                      <td style={tdCell}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                          {w.alliances.slice(0, 3).map((a) => (
+                            <AllianceBadge key={a.alliance} alliance={a.alliance} votes={a.votes} pct={a.percentage} />
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </ResponsiveTable>
             </div>
@@ -378,18 +420,13 @@ function LocalbodyRow({ lb, wardsAll }: { lb: LocalbodySummary; wardsAll: WardRo
 }
 
 /* ==========================================================
-      SMALL STYLE HELPERS
-   ========================================================== */
+      STYLE HELPERS
+========================================================== */
 
-const smallInput: React.CSSProperties = {
-  width: "100%",
-  padding: "6px 8px",
-  marginTop: 6,
-  borderRadius: 6,
-  border: "1px solid #374151",
-  background: "#020617",
-  color: "#f9fafb",
-  fontSize: 14,
+const tdCell: React.CSSProperties = {
+  padding: "8px 12px",
+  borderBottom: "1px solid #1f2937",
+  verticalAlign: "middle", // ensures cells align vertically centered
 };
 
 const expandButton: React.CSSProperties = {
@@ -415,6 +452,12 @@ function ResponsiveTable({ children }: any) {
       >
         {children}
       </table>
+      <style>{`
+        /* force vertical alignment & consistent padding for headers/cells */
+        table th, table td { vertical-align: middle; padding: 8px 12px; }
+        table thead th { color: #e6edf3; font-weight: 600; text-align: left; }
+        table tbody td { color: #e6edf3; }
+      `}</style>
     </div>
   );
 }
