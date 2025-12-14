@@ -34,4 +34,9 @@ public interface WardRepository extends JpaRepository<Ward, Long> {
     List<Ward> findByAc_AcCodeAndDelimitationYearAndLocalbody_TypeIn(
             Integer acCode, Integer delimitationYear, List<String> types);
 
+    Optional<Ward> findByWardDetailsId(String wardDetailsId);
+
+    List<Ward> findByDelimitationYear(int year);
+
+    List<Ward> findByDelimitationYearAndLocalbody_TypeIn(int year, List<String> includeTypes);
 }

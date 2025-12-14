@@ -115,6 +115,7 @@ export default function AssemblyAnalysisTab() {
 
   const [analysis, setAnalysis] = useState<AssemblyAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"assembly" | "state">("assembly");
 
   const onSelectAc = (ac: { acCode: number; name: string }) => {
     setSelectedAc(ac);
@@ -127,31 +128,42 @@ export default function AssemblyAnalysisTab() {
     );
 
   const runAnalysis = async () => {
-    if (!selectedAc) return alert("Select an assembly");
+    if (mode === "assembly" && !selectedAc) {
+      return alert("Select an assembly");
+    }
 
-    const params = new URLSearchParams({
-      acCode: String(selectedAc.acCode),
-      year: String(year),
-    });
+    const params = new URLSearchParams();
+    params.append("year", String(year));
 
     if (selectedTiers.length > 0) {
       params.append("includeTypes", selectedTiers.join(","));
+    }
+
+    let url = "";
+
+    if (mode === "assembly") {
+      params.append("acCode", String(selectedAc!.acCode));
+      url = `${backend}/analysis/assembly-by-id?${params.toString()}`;
+    } else {
+      // STATE MODE
+      url = `${backend}/analysis/state?${params.toString()}`;
     }
 
     setLoading(true);
     setAnalysis(null);
 
     try {
-      const res = await fetch(`${backend}/analysis/assembly-by-id?${params.toString()}`);
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed");
       setAnalysis(await res.json());
     } catch (err) {
       console.error(err);
-      alert("Failed to load assembly analysis");
+      alert("Failed to load analysis");
     } finally {
       setLoading(false);
     }
   };
+
 
   /* ===================================================
                       RENDER
@@ -159,6 +171,38 @@ export default function AssemblyAnalysisTab() {
   return (
     <div style={{ padding: 20, color: "white" }}>
       <h2 style={{ fontSize: 22, marginBottom: 12 }}>Assembly Analysis</h2>
+
+      {/* MODE SWITCH */}
+      <div style={{ marginBottom: 12, display: "flex", gap: 12 }}>
+        <button
+          onClick={() => setMode("assembly")}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 6,
+            border: mode === "assembly" ? "1px solid #0d6efd" : "1px solid #555",
+            background: mode === "assembly" ? "#0d6efd33" : "transparent",
+            color: "#fff",
+            cursor: "pointer"
+          }}
+        >
+          Assembly
+        </button>
+
+        <button
+          onClick={() => setMode("state")}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 6,
+            border: mode === "state" ? "1px solid #0d6efd" : "1px solid #555",
+            background: mode === "state" ? "#0d6efd33" : "transparent",
+            color: "#fff",
+            cursor: "pointer"
+          }}
+        >
+          State
+        </button>
+      </div>
+
 
       {/* ---------- INPUTS GRID ---------- */}
       <div
@@ -169,7 +213,10 @@ export default function AssemblyAnalysisTab() {
           marginBottom: 20,
         }}
       >
-        <AssemblySelector backend={backend} onSelectAc={onSelectAc} />
+        <div style={{ opacity: mode === "state" ? 0.3 : 1, pointerEvents: mode === "state" ? "none" : "auto" }}>
+          <AssemblySelector backend={backend} onSelectAc={onSelectAc} />
+        </div>
+
 
         {/* YEAR Toggle Buttons */}
         <div>
@@ -226,14 +273,16 @@ export default function AssemblyAnalysisTab() {
         <div style={{ display: "flex", alignItems: "end" }}>
           <button
             onClick={runAnalysis}
-            disabled={!selectedAc || loading}
+            disabled={(mode === "assembly" && !selectedAc) || loading}
             style={{
               padding: "8px 12px",
               background: loading ? "#444" : "#0d6efd",
               color: "#fff",
               borderRadius: 6,
               border: "none",
-              cursor: !selectedAc || loading ? "not-allowed" : "pointer",
+              cursor: ((mode === "assembly" && !selectedAc) || loading)
+                ? "not-allowed"
+                : "pointer",
             }}
           >
             {loading ? "Loading…" : "Run Analysis"}

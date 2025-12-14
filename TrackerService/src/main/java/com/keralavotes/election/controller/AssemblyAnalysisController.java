@@ -92,4 +92,19 @@ public class AssemblyAnalysisController {
         }
         return assemblyAnalysisService.analyzeByAcCode(acCode, year, types);
     }
+
+    @GetMapping("/analysis/state")
+    public AssemblyAnalysisResponseDto analyzeState(
+            @RequestParam int year,
+            @RequestParam(required = false) String includeTypes
+    ) {
+        List<String> types = null;
+        if (includeTypes != null && !includeTypes.isBlank()) {
+            types = Arrays.stream(includeTypes.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        }
+        return assemblyAnalysisService.analyzeState(year, types);
+    }
 }

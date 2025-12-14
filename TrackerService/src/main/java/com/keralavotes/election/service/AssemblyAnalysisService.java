@@ -392,5 +392,144 @@ public class AssemblyAnalysisService {
 
         return resp;
     }
+
+    @Transactional
+    public AssemblyAnalysisResponseDto analyzeState(int year, List<String> includeTypes) {
+
+        // 1) Load all wards for this year (optionally filter by types)
+        List<Ward> wards;
+        if (includeTypes == null || includeTypes.isEmpty()) {
+            wards = wardRepository.findByDelimitationYear(year);
+        } else {
+            List<String> includeTypeList = includeTypes.stream()
+                    .map(String::toLowerCase)
+                    .toList();
+            wards = wardRepository.findByDelimitationYearAndLocalbody_TypeIn(year, includeTypeList);
+        }
+
+        if (wards == null) wards = List.of();
+
+        Set<Long> wardIds = wards.stream()
+                .map(Ward::getId)
+                .collect(Collectors.toSet());
+
+        // 2) Load results
+        List<LbWardResult> results =
+                wardResultRepository.findByElectionYearAndWardIdIn(year, wardIds);
+
+        // 3) Build candidate -> alliance map
+        List<Integer> candidateIds = results.stream()
+                .map(LbWardResult::getCandidateId)
+                .collect(Collectors.toList());
+
+        List<LbCandidate> candidates = candidateRepository.findByIdIn(candidateIds);
+
+        Map<Integer, String> candidateAlliance = new HashMap<>();
+        for (LbCandidate c : candidates) {
+            String alliance = "OTH";
+            if (c.getPartyId() != null) {
+                Party p = partyRepository.findById(c.getPartyId()).orElse(null);
+                if (p != null && p.getAlliance() != null) {
+                    alliance = p.getAlliance().getName();
+                }
+            }
+            candidateAlliance.put(c.getId(), alliance);
+        }
+
+        // 4) Group results by ward
+        Map<Long, List<LbWardResult>> wardGrouped =
+                results.stream().collect(Collectors.groupingBy(r -> r.getWardId().longValue()));
+
+        // For UI
+        List<AssemblyAnalysisResponseDto.WardRow> wardRows = new ArrayList<>();
+
+        // Alliance vote totals across the whole state
+        Map<String, Long> stateVoteMap = new HashMap<>();
+
+        // 5) Per-ward calculations
+        for (Ward w : wards) {
+
+            List<LbWardResult> wardVotes = wardGrouped.getOrDefault(w.getId(), List.of());
+
+            Map<String, Long> allianceVotes = new HashMap<>();
+            int totalVotes = 0;
+
+            for (LbWardResult rv : wardVotes) {
+                int v = rv.getVotes();
+                totalVotes += v;
+
+                String ali = candidateAlliance.getOrDefault(rv.getCandidateId(), "OTH");
+                allianceVotes.merge(ali, (long) v, Long::sum);
+            }
+
+            List<Map.Entry<String, Long>> sorted =
+                    allianceVotes.entrySet().stream()
+                            .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                            .toList();
+
+            String winner = sorted.isEmpty() ? null : sorted.get(0).getKey();
+            Integer margin = (sorted.size() > 1)
+                    ? (int) (sorted.get(0).getValue() - sorted.get(1).getValue())
+                    : null;
+
+            // Add to state-level votes
+            allianceVotes.forEach((a, v) -> stateVoteMap.merge(a, v, Long::sum));
+
+            // Prepare DTO alliances
+            int finalTotalVotes = totalVotes;
+            List<AssemblyAnalysisResponseDto.AllianceVoteShare> allianceList =
+                    allianceVotes.entrySet().stream()
+                            .map(e -> AssemblyAnalysisResponseDto.AllianceVoteShare.builder()
+                                    .alliance(e.getKey())
+                                    .votes(e.getValue())
+                                    .percentage(finalTotalVotes == 0 ? 0.0 : (e.getValue() * 100.0) / finalTotalVotes)
+                                    .build())
+                            .sorted((a, b) -> Long.compare(b.getVotes(), a.getVotes()))
+                            .toList();
+
+            wardRows.add(
+                    AssemblyAnalysisResponseDto.WardRow.builder()
+                            .wardId(w.getId())
+                            .wardNum(w.getWardNum())
+                            .wardName(w.getWardName())
+                            .localbodyId(w.getLocalbody() != null ? w.getLocalbody().getId() : null)
+                            .localbodyName(w.getLocalbody() != null ? w.getLocalbody().getName() : null)
+                            .alliances(allianceList)
+                            .total(totalVotes)
+                            .winner(winner)
+                            .margin(margin)
+                            .build()
+            );
+        }
+
+        // 6) Compute state overall vote share
+        long totalStateVotes = stateVoteMap.values().stream().mapToLong(Long::longValue).sum();
+
+        List<AssemblyAnalysisResponseDto.AllianceVoteShare> overallVoteShare =
+                stateVoteMap.entrySet().stream()
+                        .map(e -> AssemblyAnalysisResponseDto.AllianceVoteShare.builder()
+                                .alliance(e.getKey())
+                                .votes(e.getValue())
+                                .percentage(totalStateVotes == 0 ? 0.0 :
+                                        (e.getValue() * 100.0) / totalStateVotes)
+                                .build())
+                        .sorted((a, b) -> Long.compare(b.getVotes(), a.getVotes()))
+                        .toList();
+
+        // 7) Build a fake "localbodies" summary or leave empty (UI doesn't require)
+        // For now: empty list
+        List<AssemblyAnalysisResponseDto.LocalbodySummary> localbodies = List.of();
+
+        // 8) Final response
+        return AssemblyAnalysisResponseDto.builder()
+                .acName("Kerala State")
+                .year(year)
+                .totalWards(wardRows.size())
+                .overallVoteShare(overallVoteShare)
+                .localbodies(localbodies)
+                .wards(wardRows)
+                .build();
+    }
+
 }
 
