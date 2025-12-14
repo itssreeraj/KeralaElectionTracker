@@ -4,9 +4,10 @@ import Link from "next/link";
 import React, { useState } from "react";
 import LocalbodyAnalysisTab from "@/components/LocalbodyAnalysisTab";
 import AllianceAnalysisTab from "@/components/AllianceAnalysisTab";
+import AssemblyAnalysisTab from "@/components/AssemblyAnalysisTab";
 
 export default function HomePage() {
-  const [tab, setTab] = useState<"localbody" | "alliance">("localbody");
+  const [tab, setTab] = useState<"localbody" | "alliance" | "assembly">("localbody");
 
   return (
     <div style={{ minHeight: "100vh", background: "#0b0f19", color: "white" }}>
@@ -22,6 +23,7 @@ export default function HomePage() {
           alignItems: "center",
           position: "sticky",
           top: 0,
+          zIndex: 10,
         }}
       >
         <div
@@ -36,7 +38,7 @@ export default function HomePage() {
         </div>
 
         <Link
-          href="/admin/login"
+          href="/login"
           style={{
             padding: "8px 16px",
             borderRadius: 6,
@@ -53,6 +55,7 @@ export default function HomePage() {
 
       {/* MAIN */}
       <main style={{ maxWidth: 1400, margin: "0 auto", padding: 32 }}>
+        {/* TABS */}
         <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
           <button
             onClick={() => setTab("localbody")}
@@ -62,6 +65,7 @@ export default function HomePage() {
               background: tab === "localbody" ? "#2563eb" : "#1f2937",
               color: "white",
               border: "1px solid #374151",
+              cursor: "pointer",
             }}
           >
             Localbody Analysis
@@ -75,12 +79,29 @@ export default function HomePage() {
               background: tab === "alliance" ? "#2563eb" : "#1f2937",
               color: "white",
               border: "1px solid #374151",
+              cursor: "pointer",
             }}
           >
             Alliance Target Analysis
           </button>
+
+          {/* NEW: Assembly Analysis Tab */}
+          <button
+            onClick={() => setTab("assembly")}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 8,
+              background: tab === "assembly" ? "#2563eb" : "#1f2937",
+              color: "white",
+              border: "1px solid #374151",
+              cursor: "pointer",
+            }}
+          >
+            Assembly Analysis
+          </button>
         </div>
 
+        {/* CONTENT PANEL */}
         <div
           style={{
             background: "#111827",
@@ -91,6 +112,7 @@ export default function HomePage() {
         >
           {tab === "localbody" && <LocalbodyAnalysisTab />}
           {tab === "alliance" && <AllianceAnalysisTab />}
+          {tab === "assembly" && <AssemblyAnalysisTab />}
         </div>
       </main>
     </div>

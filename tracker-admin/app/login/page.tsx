@@ -11,8 +11,10 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
+    console.log("Submitting", { username, password });
     const res = await fetch("/api/login", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
 
@@ -29,6 +31,7 @@ export default function LoginPage() {
 
       <form onSubmit={onSubmit} style={{ marginTop: 20 }}>
         <input
+          name="username"
           type="text"
           placeholder="Username"
           style={inputStyle}
@@ -36,6 +39,7 @@ export default function LoginPage() {
           onChange={(e) => setUsername(e.target.value)}
         />
         <input
+          name="password"
           type="password"
           placeholder="Password"
           style={inputStyle}
