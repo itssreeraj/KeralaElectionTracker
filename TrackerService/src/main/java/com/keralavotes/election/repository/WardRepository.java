@@ -39,4 +39,12 @@ public interface WardRepository extends JpaRepository<Ward, Long> {
     List<Ward> findByDelimitationYear(int year);
 
     List<Ward> findByDelimitationYearAndLocalbody_TypeIn(int year, List<String> includeTypes);
+
+    List<Ward> findByDelimitationYearAndLocalbody_District_DistrictCode(int year, Integer districtCode);
+
+    List<Ward> findByDelimitationYearAndLocalbody_District_DistrictCodeAndLocalbody_TypeInIgnoreCase(int year, Integer districtCode, List<String> includeTypes);
+
+    List<Ward> findByDelimitationYearAndLocalbody_TypeInIgnoreCase(int year, List<String> includeTypes);
+
+    List<Ward> findByAc_AcCodeAndDelimitationYearAndLocalbody_TypeInIgnoreCase(Integer acCode, int year, List<String> includeTypes);
 }

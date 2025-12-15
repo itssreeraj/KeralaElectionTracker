@@ -21,40 +21,6 @@ public class AssemblyAnalysisController {
     private final AssemblyAnalysisService assemblyAnalysisService;
     private final AssemblyConstituencyRepository assemblyRepository;
 
-    /**
-     * Preferred: call by DB id
-     */
-    @GetMapping("/analysis/assembly-by-id")
-    public AssemblyAnalysisResponseDto analyzeById(
-            @RequestParam Integer acCode,
-            @RequestParam int year
-    ) {
-        return assemblyAnalysisService.analyzeByAcCode(acCode, year);
-    }
-
-    /**
-     * Flexible resolver (UI can pass acCode or lsCode or districtCode). This attempts to resolve and
-     * returns the assembly analysis if acCode resolves to an AC. If multiple ACs exist for lsCode
-     * or district, the UI must pick one and call by-id.
-     */
-    @GetMapping("/analysis/assembly")
-    public AssemblyAnalysisResponseDto analyzeFlexible(
-            @RequestParam(required = false) String acName,
-            @RequestParam(required = false) String lsCode,
-            @RequestParam(required = false) Integer districtCode,
-            @RequestParam(required = true) Integer year
-    ) {
-        if (acName != null && !acName.isBlank()) {
-            AssemblyConstituency ac = assemblyRepository.findByName(acName);
-            if (ac == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "acCode not found");
-            return assemblyAnalysisService.analyzeByAcCode(ac.getAcCode(), year);
-        }
-
-        // If lsCode or districtCode given, return error instructing UI to select exact AC (or optionally return aggregated)
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Please pass acCode or call the /admin endpoints to select an assembly id and call /analysis/assembly-by-id");
-    }
-
     // Admin helper to list ACs by district or LS
     @GetMapping("/admin/assemblies/by-district")
     public List<AssemblyConstituency> listByDistrict(@RequestParam Integer districtCode) {
@@ -83,13 +49,7 @@ public class AssemblyAnalysisController {
             @RequestParam Integer year,
             @RequestParam(required = false) String includeTypes
     ) {
-        List<String> types = null;
-        if (includeTypes != null && !includeTypes.isBlank()) {
-            types = Arrays.stream(includeTypes.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-        }
+        List<String> types = parseTypes(includeTypes);
         return assemblyAnalysisService.analyzeByAcCode(acCode, year, types);
     }
 
@@ -98,13 +58,26 @@ public class AssemblyAnalysisController {
             @RequestParam int year,
             @RequestParam(required = false) String includeTypes
     ) {
-        List<String> types = null;
-        if (includeTypes != null && !includeTypes.isBlank()) {
-            types = Arrays.stream(includeTypes.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-        }
+        List<String> types = parseTypes(includeTypes);
         return assemblyAnalysisService.analyzeState(year, types);
+    }
+
+    @GetMapping("/analysis/district")
+    public AssemblyAnalysisResponseDto analyzeDistrict(
+            @RequestParam Integer districtCode,
+            @RequestParam Integer year,
+            @RequestParam(required = false) String includeTypes
+    ) {
+        List<String> types = parseTypes(includeTypes);
+        return assemblyAnalysisService.analyzeByDistrict(districtCode, year, types);
+    }
+
+    private List<String> parseTypes(String includeTypes) {
+        if (includeTypes == null || includeTypes.isBlank()) return null;
+        return Arrays.stream(includeTypes.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toLowerCase)
+                .toList();
     }
 }
