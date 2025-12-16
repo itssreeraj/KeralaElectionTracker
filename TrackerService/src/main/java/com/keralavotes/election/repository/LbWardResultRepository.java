@@ -1,15 +1,15 @@
 package com.keralavotes.election.repository;
 
 import com.keralavotes.election.entity.LbWardResult;
+import com.keralavotes.election.model.VoteRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public interface LbWardResultRepository extends JpaRepository<LbWardResult, Integer> {
     Optional<LbWardResult> findByWardIdAndCandidateIdAndElectionYear(Integer wardId, Integer candidateId, Integer electionYear);
@@ -36,6 +36,34 @@ public interface LbWardResultRepository extends JpaRepository<LbWardResult, Inte
             @Param("acCode") Integer acCode,
             @Param("districtCode") Integer districtCode,
             @Param("types") List<String> types
+    );
+
+    @Query(value = """
+        SELECT
+            w.id            AS wardId,
+            w.ward_num      AS wardNum,
+            w.ward_name     AS wardName,
+            lb.id           AS localbodyId,
+            lb.name         AS localbodyName,
+            lb.type         AS localbodyType,
+            lb.district_code AS districtCode,
+            c.party_id      AS partyId,
+            r.votes         AS votes
+        FROM lb_ward_results r
+        JOIN ward w ON w.id = r.ward_id
+        JOIN localbody lb ON lb.id = w.localbody_id
+        JOIN lb_candidate c ON c.id = r.candidate_id
+        WHERE r.election_year = :year
+          AND (:acCode IS NULL OR w.ac_code = :acCode)
+          AND (:districtCode IS NULL OR lb.district_code = :districtCode)
+          AND (:types IS NULL OR lower(lb.type) = ANY(:types))
+        """,
+            nativeQuery = true)
+    Stream<VoteRow> streamVotes(
+            @Param("year") int year,
+            @Param("acCode") Integer acCode,
+            @Param("districtCode") Integer districtCode,
+            @Param("types") String[] types
     );
 
 }
