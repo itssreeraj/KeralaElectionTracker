@@ -10,6 +10,7 @@ import com.keralavotes.election.entity.Alliance;
 import com.keralavotes.election.entity.Candidate;
 import com.keralavotes.election.entity.LoksabhaConstituency;
 import com.keralavotes.election.entity.Party;
+import com.keralavotes.election.model.PartyAllianceAdminRow;
 import com.keralavotes.election.repository.AllianceRepository;
 import com.keralavotes.election.repository.CandidateRepository;
 import com.keralavotes.election.repository.LoksabhaConstituencyRepository;
@@ -37,11 +38,12 @@ public class PartyAllianceAdminController {
     private final PartyAllianceAdminService service;
 
     @GetMapping("/party-alliance")
-    public List<PartyAllianceMappingDto> getMappings(
+    public List<PartyAllianceAdminRow> getMappings(
             @RequestParam int year,
             @RequestParam ElectionType type
     ) {
-        return service.getMappings(year, type);
+        //return service.getMappings(year, type);
+        return service.getAllMappings(year, type);
     }
 
     @PostMapping("/party-alliance")

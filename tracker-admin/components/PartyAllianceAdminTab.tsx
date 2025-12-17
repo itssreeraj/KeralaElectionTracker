@@ -12,10 +12,10 @@ type MappingRow = {
 };
 
 type Alliance = {
-  id?: number;
-  code?: string;
+  id: number;        // REQUIRED
   name: string;
   color?: string;
+
 };
 
 type RowState = {
@@ -31,14 +31,31 @@ const TYPES = ["LOCALBODY", "ASSEMBLY", "LOKSABHA"];
 
 /* ===================== COMPONENT ===================== */
 export default function PartyAllianceAdminTab() {
-  const [year, setYear] = useState(2025);
-  const [type, setType] = useState("LOCALBODY");
+    const [year, setYear] = useState(2025);
+    const [type, setType] = useState("LOCALBODY");
 
-  const [rows, setRows] = useState<MappingRow[]>([]);
-  const [alliances, setAlliances] = useState<Alliance[]>([]);
-  const [rowState, setRowState] = useState<Record<number, RowState>>({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState<number | null>(null);
+    const [rows, setRows] = useState<MappingRow[]>([]);
+    const [alliances, setAlliances] = useState<Alliance[]>([]);
+    const [rowState, setRowState] = useState<Record<number, RowState>>({});
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState<number | null>(null);
+
+    const [newAllianceName, setNewAllianceName] = useState("");
+    const [newAllianceColor, setNewAllianceColor] = useState("");
+
+    const [newPartyName, setNewPartyName] = useState("");
+    const [newPartyShort, setNewPartyShort] = useState("");
+    const [newPartyAlliance, setNewPartyAlliance] = useState("");
+
+    const reloadMappings = () => {
+        setLoading(true);
+        fetch(`${backend}/admin/party-alliance?year=${year}&type=${type}`)
+            .then(r => r.json())
+            .then(setRows)
+            .finally(() => setLoading(false));
+    };
+
+
 
   /* ---------------- Load alliances ---------------- */
   useEffect(() => {
@@ -123,8 +140,10 @@ export default function PartyAllianceAdminTab() {
       type,
     });
 
-    await fetch(`${backend}/admin/party-alliance?${params.toString()}`, {
+    await fetch(`${backend}/admin/party-alliance`, {
       method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
     });
 
     // reflect saved value
@@ -173,6 +192,112 @@ export default function PartyAllianceAdminTab() {
           ))}
         </select>
       </div>
+
+        <h3>Add Alliance</h3>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <input
+                placeholder="Alliance name"
+                value={newAllianceName}
+                onChange={e => setNewAllianceName(e.target.value)}
+            />
+            <input
+                placeholder="Color (#hex)"
+                value={newAllianceColor}
+                onChange={e => setNewAllianceColor(e.target.value)}
+            />
+            <button
+                type="button"
+                onClick={async () => {
+                    await fetch(`${backend}/admin/alliances`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    },
+                    body: JSON.stringify({
+                        name: newAllianceName,
+                        color: newAllianceColor,
+                    }),
+                    });
+
+                    setNewAllianceName("");
+                    setNewAllianceColor("");
+
+                    const res = await fetch(`${backend}/public/alliances`);
+                    setAlliances(await res.json());
+                }}
+                >
+                Add
+            </button>
+        </div>
+
+        <h3>Add Party & Mapping</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8 }}>
+        <input
+            placeholder="Party name"
+            value={newPartyName}
+            onChange={e => setNewPartyName(e.target.value)}
+        />
+        <input
+            placeholder="Short name"
+            value={newPartyShort}
+            onChange={e => setNewPartyShort(e.target.value)}
+        />
+        <select
+          value={newPartyAlliance}
+          onChange={e => setNewPartyAlliance(e.target.value)}
+        >
+          <option value="">Alliance</option>
+          {alliances.map(a => {
+            const numericId = a.id ?? allianceNameToId.get(a.name) ?? null;
+            const key = numericId != null ? String(numericId) : a.code ?? a.name;
+            const val = numericId != null ? String(numericId) : "";
+            return (
+              <option key={key} value={val} disabled={numericId == null}>
+                {a.name}
+                {numericId == null ? " (no id)" : ""}
+              </option>
+            );
+          })}
+        </select>
+        <button
+            type="button"
+            onClick={async () => {
+                if (!newPartyName || !newPartyAlliance) {
+                alert("Party name and alliance are required");
+                return;
+                }
+
+                const payload = {
+                    partyName: newPartyName.trim(),
+                    partyShortName: newPartyShort.trim() || null,
+                    allianceId: Number(newPartyAlliance),
+                    electionYear: year,
+                    electionType: type,
+                };
+
+                console.log("Submitting payload:", payload);
+
+                // backend expects a JSON body for CreatePartyWithMappingRequest
+                await fetch(`${backend}/admin/party-with-mapping`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+                },
+                body: JSON.stringify(payload),
+                });
+
+                setNewPartyName("");
+                setNewPartyShort("");
+                setNewPartyAlliance("");
+
+                reloadMappings();
+            }}
+            >
+            Add
+        </button>
+    </div>
 
       {/* Table */}
       <div

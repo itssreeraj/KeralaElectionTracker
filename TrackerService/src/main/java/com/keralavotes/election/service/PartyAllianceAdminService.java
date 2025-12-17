@@ -6,6 +6,7 @@ import com.keralavotes.election.dto.PartyAllianceMappingDto;
 import com.keralavotes.election.entity.Alliance;
 import com.keralavotes.election.entity.Party;
 import com.keralavotes.election.entity.PartyAllianceMapping;
+import com.keralavotes.election.model.PartyAllianceAdminRow;
 import com.keralavotes.election.model.VoteRow;
 import com.keralavotes.election.model.WardAccumulator;
 import com.keralavotes.election.repository.AllianceRepository;
@@ -77,6 +78,10 @@ public class PartyAllianceAdminService {
         mapping.setElectionType(type);
 
         mappingRepo.save(mapping);
+    }
+
+    public List<PartyAllianceAdminRow> getAllMappings(int year, ElectionType type) {
+        return mappingRepo.findAllForAdmin(year, type);
     }
 }
 
