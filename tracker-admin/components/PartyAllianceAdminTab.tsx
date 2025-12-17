@@ -12,9 +12,10 @@ type MappingRow = {
 };
 
 type Alliance = {
-  id: number;        // REQUIRED
+  id?: number | null; // may be missing until normalized
   name: string;
-  color?: string;
+  code?: string | null;
+  color?: string | null;
 
 };
 
@@ -57,23 +58,44 @@ export default function PartyAllianceAdminTab() {
 
 
 
+  // normalize alliance objects from backend to a consistent shape
+  const normalizeAlliances = (arr: any[]) =>
+    arr.map(a => ({
+      id: a.id ?? a.allianceId ?? a.value ?? null,
+      name: a.name ?? a.label ?? a.code ?? String(a.id ?? a.allianceId ?? a.value ?? ""),
+      code: a.code ?? a.shortName ?? null,
+      color: a.color ?? a.colour ?? null,
+    }));
+
   /* ---------------- Load alliances ---------------- */
   useEffect(() => {
     fetch(`${backend}/public/alliances`)
       .then(r => r.json())
-      .then(data =>
-        // backend may return either an array or an object like { alliances: [...] }
-        setAlliances(Array.isArray(data) ? data : data?.alliances ?? [])
-      )
+      .then(data => {
+        const arr = Array.isArray(data) ? data : data?.alliances ?? [];
+        setAlliances(normalizeAlliances(arr));
+      })
       .catch(() => setAlliances([]));
   }, []);
 
   // map allianceName (from mappings) -> numeric allianceId
   const allianceNameToId = useMemo(() => {
     const m = new Map<string, number>();
+
+    // Prefer canonical data from `alliances` (public endpoint)
+    alliances.forEach(a => {
+      if (a.id != null) {
+        if (a.name) m.set(a.name, a.id as number);
+        if (a.code) m.set(a.code, a.id as number);
+        m.set(String(a.id), a.id as number);
+      }
+    });
+
+    // Also include mappings from `rows` (explicit existing mappings)
     rows.forEach(r => {
       if (r.allianceName && r.allianceId != null) m.set(r.allianceName, r.allianceId);
     });
+
     return m;
   }, [rows]);
 
@@ -126,10 +148,46 @@ export default function PartyAllianceAdminTab() {
       if (mapped != null) numeric = mapped;
     }
 
+    // If still non-numeric, try to find or create the alliance on the server
     if (!Number.isInteger(numeric)) {
-      alert("Cannot save: selected alliance has no numeric id on server");
-      return;
-    }
+        // try finding in the loaded `alliances` list (robust to different id/code fields)
+        const found = alliances.find(
+          a =>
+            a.name === key ||
+            a.code === key ||
+            String(a.id) === key
+        );
+        if (found && Number.isInteger(found.id)) {
+          numeric = found.id as number;
+        } else {
+          // create alliance on server (name only) and refresh alliances
+          try {
+            await fetch(`${backend}/admin/alliances`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              body: JSON.stringify({ name: key }),
+            });
+
+            const res = await fetch(`${backend}/public/alliances`);
+            const fresh = await res.json();
+            const freshArr = Array.isArray(fresh) ? fresh : fresh?.alliances ?? [];
+            const normalized = normalizeAlliances(freshArr);
+            setAlliances(normalized);
+
+            const created = normalized.find(
+              (a: any) => a.name === key || a.code === key || String(a.id) === key
+            );
+            if (created && Number.isInteger(created.id)) numeric = created.id;
+          } catch (e) {
+            // ignore and fall through to error below
+          }
+        }
+      }
+
+      if (!Number.isInteger(numeric)) {
+        alert("Cannot save: selected alliance has no numeric id on server");
+        return;
+      }
 
     setSaving(partyId);
 
@@ -224,7 +282,8 @@ export default function PartyAllianceAdminTab() {
                     setNewAllianceColor("");
 
                     const res = await fetch(`${backend}/public/alliances`);
-                    setAlliances(await res.json());
+                    const data = await res.json();
+                    setAlliances(Array.isArray(data) ? data : data?.alliances ?? []);
                 }}
                 >
                 Add
@@ -382,6 +441,7 @@ export default function PartyAllianceAdminTab() {
                                       {normalized.map(a => (
                                         <option key={a.key} value={a.key}>
                                           {a.label}
+                                          {a.numericId == null ? " (no id)" : ""}
                                         </option>
                                       ))}
                                     </select>
