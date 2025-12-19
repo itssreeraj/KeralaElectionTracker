@@ -28,19 +28,9 @@ public class AssemblyAnalysisService {
     ============================================================ */
 
     @Transactional
-    public AssemblyAnalysisResponseDto analyzeByAcCode(
-            Integer acCode,
-            int year,
-            List<String> includeTypes
-    ) {
-        return analyze(
-                year,
-                acCode,
-                null,
-                includeTypes,
-                ElectionType.ASSEMBLY,
-                "Assembly " + acCode
-        );
+    public AssemblyAnalysisResponseDto analyzeByAcCode(Integer acCode, int year, List<String> includeTypes) {
+        log.info("analyzeByAcCode called with acCode={}, year={}, includeTypes={}", acCode, year, includeTypes);
+        return analyze(year, acCode, null, includeTypes, ElectionType.LOCALBODY, "Assembly " + acCode);
     }
 
     @Transactional
@@ -79,15 +69,14 @@ public class AssemblyAnalysisService {
     ============================================================ */
 
     @Transactional
-    protected AssemblyAnalysisResponseDto analyze(
-            int year,
-            Integer acCode,
-            Integer districtCode,
-            List<String> includeTypes,
-            ElectionType electionType,
-            String scopeName
-    ) {
-
+    protected AssemblyAnalysisResponseDto analyze(int year,
+                                                  Integer acCode,
+                                                  Integer districtCode,
+                                                  List<String> includeTypes,
+                                                  ElectionType electionType,
+                                                  String scopeName) {
+        log.info("analyze called with year={}, acCode={}, districtCode={}, includeTypes={}, electionType={}, scopeName={}",
+                year, acCode, districtCode, includeTypes, electionType, scopeName);
         /* ------------------------------
            Load party → alliance mapping
         ------------------------------ */
@@ -99,6 +88,8 @@ public class AssemblyAnalysisService {
                                 m -> m.getParty().getId(),
                                 m -> m.getAlliance().getName()
                         ));
+        log.info("Loaded party-alliance mapping for year={} type={}: {} entries",
+                year, electionType, partyAlliance.size());
 
         if (partyAlliance.isEmpty()) {
             log.warn(
