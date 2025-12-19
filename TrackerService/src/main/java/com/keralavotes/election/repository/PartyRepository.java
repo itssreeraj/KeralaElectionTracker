@@ -1,6 +1,7 @@
 package com.keralavotes.election.repository;
 
 import com.keralavotes.election.entity.Party;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -10,4 +11,5 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
     Optional<Party> findByName(String name);
     Optional<Party> findByShortNameIgnoreCase(String shortName);
     List<Party> findAllByOrderByNameAsc();
+    Optional<Party> findByNameIgnoreCase(@NotBlank String partyName);
 }

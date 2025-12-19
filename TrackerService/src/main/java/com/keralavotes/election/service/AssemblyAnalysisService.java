@@ -1,322 +1,346 @@
 package com.keralavotes.election.service;
 
 import com.keralavotes.election.dto.AssemblyAnalysisResponseDto;
-import com.keralavotes.election.entity.*;
-import com.keralavotes.election.repository.*;
+import com.keralavotes.election.dto.ElectionType;
+import com.keralavotes.election.model.VoteRow;
+import com.keralavotes.election.model.WardAccumulator;
+import com.keralavotes.election.repository.PartyAllianceMappingRepository;
+import com.keralavotes.election.repository.LbWardResultRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AssemblyAnalysisService {
 
-    private final WardRepository wardRepository;
     private final LbWardResultRepository wardResultRepository;
-    private final LbCandidateRepository candidateRepository;
-    private final PartyRepository partyRepository;
-    private final LocalbodyRepository localbodyRepository;
+    private final PartyAllianceMappingRepository partyAllianceMappingRepository;
 
     /* ============================================================
-       ASSEMBLY ANALYSIS
+       PUBLIC ENTRY POINTS
     ============================================================ */
+
     @Transactional
-    public AssemblyAnalysisResponseDto analyzeByAcCode(
-            Integer acCode,
-            int year,
-            List<String> includeTypes
-    ) {
-
-        List<Ward> wards = (includeTypes == null || includeTypes.isEmpty())
-                ? wardRepository.findByAc_AcCodeAndDelimitationYear(acCode, year)
-                : wardRepository.findByAc_AcCodeAndDelimitationYearAndLocalbody_TypeInIgnoreCase(
-                acCode, year, includeTypes
-        );
-
-        List<LbWardResult> results =
-                wardResultRepository.findResultsByScope(
-                        year,
-                        year,
-                        acCode,
-                        null,
-                        normalizeTypes(includeTypes)
-                );
-
-        String name = wards.isEmpty() || wards.getFirst().getAc() == null
-                ? "Assembly " + acCode
-                : wards.getFirst().getAc().getName();
-
-        return buildAggregateResponse(wards, results, year, name);
+    public AssemblyAnalysisResponseDto analyzeByAcCode(Integer acCode, int year, List<String> includeTypes) {
+        log.info("analyzeByAcCode called with acCode={}, year={}, includeTypes={}", acCode, year, includeTypes);
+        return analyze(year, acCode, null, includeTypes, ElectionType.LOCALBODY, "Assembly " + acCode);
     }
 
-    /* ============================================================
-       DISTRICT ANALYSIS
-    ============================================================ */
     @Transactional
     public AssemblyAnalysisResponseDto analyzeByDistrict(
             Integer districtCode,
             int year,
             List<String> includeTypes
     ) {
-
-        List<Ward> wards = (includeTypes == null || includeTypes.isEmpty())
-                ? wardRepository.findByDelimitationYearAndLocalbody_District_DistrictCode(year, districtCode)
-                : wardRepository.findByDelimitationYearAndLocalbody_District_DistrictCodeAndLocalbody_TypeInIgnoreCase(
-                year, districtCode, includeTypes
-        );
-
-        List<LbWardResult> results =
-                wardResultRepository.findResultsByScope(
-                        year,
-                        year,
-                        null,
-                        districtCode,
-                        normalizeTypes(includeTypes)
-                );
-
-        return buildAggregateResponse(
-                wards,
-                results,
+        return analyze(
                 year,
+                null,
+                districtCode,
+                includeTypes,
+                ElectionType.LOCALBODY,
                 "District " + districtCode
         );
     }
 
-    /* ============================================================
-       STATE ANALYSIS
-    ============================================================ */
     @Transactional
     public AssemblyAnalysisResponseDto analyzeState(
             int year,
             List<String> includeTypes
     ) {
-
-        List<Ward> wards = (includeTypes == null || includeTypes.isEmpty())
-                ? wardRepository.findByDelimitationYear(year)
-                : wardRepository.findByDelimitationYearAndLocalbody_TypeInIgnoreCase(
-                year, includeTypes
-        );
-
-        List<LbWardResult> results =
-                wardResultRepository.findResultsByScope(
-                        year,
-                        year,
-                        null,
-                        null,
-                        normalizeTypes(includeTypes)
-                );
-
-        return buildAggregateResponse(
-                wards,
-                results,
+        return analyze(
                 year,
+                null,
+                null,
+                includeTypes,
+                ElectionType.LOCALBODY,
                 "Kerala State"
         );
     }
 
     /* ============================================================
-       CORE AGGREGATION ENGINE (SINGLE SOURCE OF TRUTH)
+       CORE ANALYSIS (SINGLE SOURCE OF TRUTH)
     ============================================================ */
-    protected AssemblyAnalysisResponseDto buildAggregateResponse(
-            List<Ward> wards,
-            List<LbWardResult> results,
-            int year,
-            String displayName
-    ) {
 
-        if (wards == null || wards.isEmpty()) {
-            return AssemblyAnalysisResponseDto.builder()
-                    .acName(displayName)
-                    .year(year)
-                    .totalWards(0)
-                    .overallVoteShare(List.of())
-                    .localbodies(List.of())
-                    .wards(List.of())
-                    .build();
-        }
-
+    @Transactional
+    protected AssemblyAnalysisResponseDto analyze(int year,
+                                                  Integer acCode,
+                                                  Integer districtCode,
+                                                  List<String> includeTypes,
+                                                  ElectionType electionType,
+                                                  String scopeName) {
+        log.info("analyze called with year={}, acCode={}, districtCode={}, includeTypes={}, electionType={}, scopeName={}",
+                year, acCode, districtCode, includeTypes, electionType, scopeName);
         /* ------------------------------
-           Candidate → Alliance map
+           Load party → alliance mapping
         ------------------------------ */
-        Map<Integer, String> candidateAlliance = new HashMap<>();
+        Map<Long, String> partyAlliance =
+                partyAllianceMappingRepository
+                        .findForYearAndType(year, electionType)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                m -> m.getParty().getId(),
+                                m -> m.getAlliance().getName()
+                        ));
+        log.info("Loaded party-alliance mapping for year={} type={}: {} entries",
+                year, electionType, partyAlliance.size());
 
-        for (LbCandidate c : candidateRepository.findByElectionYear(year)) {
-            String alliance = "OTH";
-            if (c.getPartyId() != null) {
-                Party p = partyRepository.findById(c.getPartyId()).orElse(null);
-                if (p != null && p.getAlliance() != null) {
-                    alliance = p.getAlliance().getName();
-                }
-            }
-            candidateAlliance.put(c.getId(), alliance);
-        }
-
-        /* ------------------------------
-           Group results by ward
-        ------------------------------ */
-        Map<Long, List<LbWardResult>> resultsByWard =
-                results.stream()
-                        .collect(Collectors.groupingBy(r -> r.getWardId().longValue()));
-
-        Map<String, Long> overallVotes = new HashMap<>();
-        List<AssemblyAnalysisResponseDto.WardRow> wardRows = new ArrayList<>();
-
-        /* ------------------------------
-           Per-ward aggregation
-        ------------------------------ */
-        for (Ward w : wards) {
-
-            List<LbWardResult> wardVotes =
-                    resultsByWard.getOrDefault(w.getId(), List.of());
-
-            Map<String, Long> allianceVotes = new HashMap<>();
-            int totalVotes = 0;
-
-            for (LbWardResult r : wardVotes) {
-                int v = r.getVotes();
-                totalVotes += v;
-
-                String alliance =
-                        candidateAlliance.getOrDefault(r.getCandidateId(), "OTH");
-
-                allianceVotes.merge(alliance, (long) v, Long::sum);
-                overallVotes.merge(alliance, (long) v, Long::sum);
-            }
-
-            List<Map.Entry<String, Long>> sorted =
-                    allianceVotes.entrySet().stream()
-                            .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
-                            .toList();
-
-            String winner = sorted.isEmpty() ? null : sorted.get(0).getKey();
-            Integer margin = sorted.size() > 1
-                    ? (int) (sorted.get(0).getValue() - sorted.get(1).getValue())
-                    : null;
-
-            int finalTotalVotes = totalVotes;
-
-            List<AssemblyAnalysisResponseDto.AllianceVoteShare> allianceShares =
-                    allianceVotes.entrySet().stream()
-                            .map(e -> AssemblyAnalysisResponseDto.AllianceVoteShare.builder()
-                                    .alliance(e.getKey())
-                                    .votes(e.getValue())
-                                    .percentage(finalTotalVotes == 0
-                                            ? 0.0
-                                            : (e.getValue() * 100.0 / finalTotalVotes))
-                                    .build())
-                            .sorted((a, b) -> Long.compare(b.getVotes(), a.getVotes()))
-                            .toList();
-
-            wardRows.add(
-                    AssemblyAnalysisResponseDto.WardRow.builder()
-                            .wardId(w.getId())
-                            .wardNum(w.getWardNum())
-                            .wardName(w.getWardName())
-                            .localbodyId(w.getLocalbody().getId())
-                            .localbodyName(w.getLocalbody().getName())
-                            .alliances(allianceShares)
-                            .total(totalVotes)
-                            .winner(winner)
-                            .margin(margin)
-                            .build()
+        if (partyAlliance.isEmpty()) {
+            log.warn(
+                    "No party-alliance mapping found for year={} type={}",
+                    year, electionType
             );
         }
 
         /* ------------------------------
-           Overall vote share
+           Accumulators
         ------------------------------ */
+        Map<Long, WardAccumulator> wardMap = new LinkedHashMap<>();
+        Map<String, Long> overallVotes = new HashMap<>();
+
+        /* ------------------------------
+           Stream votes (NO IN clause)
+        ------------------------------ */
+        try (Stream<VoteRow> stream =
+                     wardResultRepository.streamVotes(
+                             year,
+                             acCode,
+                             districtCode,
+                             normalizeTypes(includeTypes)
+                     )) {
+
+            stream.forEach(r -> {
+
+                String alliance =
+                        r.getPartyId() == null
+                                ? "OTH"
+                                : partyAlliance.getOrDefault(
+                                r.getPartyId(),
+                                "OTH"
+                        );
+
+                WardAccumulator acc =
+                        wardMap.computeIfAbsent(
+                                r.getWardId(),
+                                id -> new WardAccumulator(r)
+                        );
+
+                acc.add(alliance, r.getVotes());
+                overallVotes.merge(alliance, (long) r.getVotes(), Long::sum);
+            });
+        }
+
+        return buildDto(scopeName, year, wardMap, overallVotes);
+    }
+
+    /* ============================================================
+       DTO BUILDING
+    ============================================================ */
+
+    private AssemblyAnalysisResponseDto buildDto(
+            String name,
+            int year,
+            Map<Long, WardAccumulator> wardMap,
+            Map<String, Long> overallVotes
+    ) {
+
+    /* ------------------------------
+       Ward rows (SOURCE OF TRUTH)
+    ------------------------------ */
+        List<AssemblyAnalysisResponseDto.WardRow> wardRows =
+                wardMap.values().stream()
+                        .map(this::toWardRow)
+                        .sorted(Comparator.comparingInt(
+                                AssemblyAnalysisResponseDto.WardRow::getWardNum
+                        ))
+                        .toList();
+
+    /* ------------------------------
+       Overall vote share
+    ------------------------------ */
         long totalVotes =
                 overallVotes.values().stream().mapToLong(Long::longValue).sum();
 
-        List<AssemblyAnalysisResponseDto.AllianceVoteShare> overallVoteShare =
+        List<AssemblyAnalysisResponseDto.AllianceVoteShare> overall =
                 overallVotes.entrySet().stream()
                         .map(e -> AssemblyAnalysisResponseDto.AllianceVoteShare.builder()
                                 .alliance(e.getKey())
                                 .votes(e.getValue())
-                                .percentage(totalVotes == 0
-                                        ? 0.0
-                                        : (e.getValue() * 100.0 / totalVotes))
+                                .percentage(
+                                        totalVotes == 0 ? 0.0 :
+                                                (e.getValue() * 100.0 / totalVotes)
+                                )
                                 .build())
-                        .sorted((a, b) -> Long.compare(b.getVotes(), a.getVotes()))
+                        .sorted(Comparator.comparingLong(
+                                AssemblyAnalysisResponseDto.AllianceVoteShare::getVotes
+                        ).reversed())
                         .toList();
 
-        /* ------------------------------
-           Localbody aggregation (FIX)
-        ------------------------------ */
+    /* ------------------------------
+       Localbody summaries (DERIVED)
+    ------------------------------ */
+        List<AssemblyAnalysisResponseDto.LocalbodySummary> localbodies =
+                buildLocalbodies(wardRows);
+
+    /* ------------------------------
+       FINAL RESPONSE (ALL LEVELS)
+    ------------------------------ */
+        return AssemblyAnalysisResponseDto.builder()
+                .acName(name)
+                .year(year)
+                .totalWards(wardRows.size())
+                .overallVoteShare(overall)
+                .localbodies(localbodies)
+                .wards(wardRows)        // ✅ RESTORED
+                .build();
+    }
+
+
+    /* ============================================================
+       WARD CONVERSION
+    ============================================================ */
+
+    private AssemblyAnalysisResponseDto.WardRow toWardRow(
+            WardAccumulator w
+    ) {
+
+        int totalVotes = w.getTotalVotes();
+
+        if (totalVotes == 0) {
+            totalVotes = 1; // avoid divide-by-zero
+        }
+
+        int finalTotalVotes = totalVotes;
+        List<AssemblyAnalysisResponseDto.AllianceVoteShare> alliances =
+                w.getAllianceVotes().entrySet().stream()
+                        .map(e -> AssemblyAnalysisResponseDto.AllianceVoteShare.builder()
+                                .alliance(e.getKey())
+                                .votes(e.getValue())
+                                .percentage((e.getValue() * 100.0) / finalTotalVotes)
+                                .build())
+                        .sorted(Comparator.comparingLong(
+                                AssemblyAnalysisResponseDto.AllianceVoteShare::getVotes
+                        ).reversed())
+                        .toList();
+
+        String winner =
+                alliances.isEmpty()
+                        ? null
+                        : alliances.getFirst().getAlliance();
+
+        Integer margin = null;
+        if (alliances.size() > 1) {
+            margin =
+                    (int) (
+                            alliances.get(0).getVotes() -
+                                    alliances.get(1).getVotes()
+                    );
+        }
+
+        return AssemblyAnalysisResponseDto.WardRow.builder()
+                .wardId(w.getWardId())
+                .wardNum(w.getWardNum())
+                .wardName(w.getWardName())
+                .localbodyId(w.getLocalbodyId())
+                .localbodyName(w.getLocalbodyName())
+                .alliances(alliances)
+                .total(w.getTotalVotes())
+                .winner(winner)
+                .margin(margin)
+                .build();
+    }
+
+    /* ============================================================
+       HELPERS
+    ============================================================ */
+
+    private AssemblyAnalysisResponseDto emptyResponse(
+            String name,
+            int year
+    ) {
+        return AssemblyAnalysisResponseDto.builder()
+                .acName(name)
+                .year(year)
+                .totalWards(0)
+                .overallVoteShare(List.of())
+                .localbodies(List.of())
+                .wards(List.of())
+                .build();
+    }
+
+    private String[] normalizeTypes(List<String> types) {
+        if (types == null || types.isEmpty()) {
+            return null;
+        }
+        return types.stream()
+                .map(String::toLowerCase)
+                .toArray(String[]::new);
+    }
+
+    private List<AssemblyAnalysisResponseDto.LocalbodySummary> buildLocalbodies(
+            List<AssemblyAnalysisResponseDto.WardRow> wards
+    ) {
+
         Map<Long, List<AssemblyAnalysisResponseDto.WardRow>> byLocalbody =
-                wardRows.stream()
+                wards.stream()
                         .filter(w -> w.getLocalbodyId() != null)
                         .collect(Collectors.groupingBy(
                                 AssemblyAnalysisResponseDto.WardRow::getLocalbodyId
                         ));
 
-        List<AssemblyAnalysisResponseDto.LocalbodySummary> localbodies =
-                new ArrayList<>();
+        List<AssemblyAnalysisResponseDto.LocalbodySummary> result = new ArrayList<>();
 
         for (var entry : byLocalbody.entrySet()) {
 
             Long lbId = entry.getKey();
             List<AssemblyAnalysisResponseDto.WardRow> rows = entry.getValue();
-            Localbody lb = localbodyRepository.findById(lbId).orElse(null);
 
-            Map<String, Long> lbVotes = new HashMap<>();
+            Map<String, Long> votes = new HashMap<>();
 
-            rows.forEach(r ->
-                    r.getAlliances().forEach(a ->
-                            lbVotes.merge(
-                                    a.getAlliance(),
-                                    (long) a.getVotes(),
-                                    Long::sum
-                            )
+            rows.forEach(w ->
+                    w.getAlliances().forEach(a ->
+                            votes.merge(a.getAlliance(), (long) a.getVotes(), Long::sum)
                     )
             );
 
-            long lbTotalVotes =
-                    lbVotes.values().stream().mapToLong(Long::longValue).sum();
+            long totalVotes =
+                    votes.values().stream().mapToLong(Long::longValue).sum();
 
-            List<AssemblyAnalysisResponseDto.AllianceVoteShare> lbVoteShare =
-                    lbVotes.entrySet().stream()
+            List<AssemblyAnalysisResponseDto.AllianceVoteShare> voteShare =
+                    votes.entrySet().stream()
                             .map(e -> AssemblyAnalysisResponseDto.AllianceVoteShare.builder()
                                     .alliance(e.getKey())
                                     .votes(e.getValue())
-                                    .percentage(lbTotalVotes == 0
-                                            ? 0.0
-                                            : (e.getValue() * 100.0 / lbTotalVotes))
+                                    .percentage(
+                                            totalVotes == 0 ? 0.0 :
+                                                    (e.getValue() * 100.0 / totalVotes)
+                                    )
                                     .build())
-                            .sorted((a, b) -> Long.compare(b.getVotes(), a.getVotes()))
+                            .sorted(Comparator.comparingLong(
+                                    AssemblyAnalysisResponseDto.AllianceVoteShare::getVotes
+                            ).reversed())
                             .toList();
 
-            localbodies.add(
+            AssemblyAnalysisResponseDto.WardRow first = rows.getFirst();
+
+            result.add(
                     AssemblyAnalysisResponseDto.LocalbodySummary.builder()
                             .localbodyId(lbId)
-                            .localbodyName(lb != null ? lb.getName() : "Unknown")
-                            .localbodyType(lb != null ? lb.getType() : null)
+                            .localbodyName(first.getLocalbodyName())
                             .wardsCount(rows.size())
-                            .voteShare(lbVoteShare)
+                            .voteShare(voteShare)
                             .wardPerformance(List.of())
                             .build()
             );
         }
 
-        /* ------------------------------
-           FINAL RESPONSE
-        ------------------------------ */
-        return AssemblyAnalysisResponseDto.builder()
-                .acName(displayName)
-                .year(year)
-                .totalWards(wards.size())
-                .overallVoteShare(overallVoteShare)
-                .localbodies(localbodies)
-                .wards(wardRows)
-                .build();
+        return result;
     }
 
-    private List<String> normalizeTypes(List<String> types) {
-        return (types == null || types.isEmpty())
-                ? null
-                : types.stream().map(String::toLowerCase).toList();
-    }
 }

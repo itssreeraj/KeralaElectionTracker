@@ -11,6 +11,7 @@ import BoothManagerTab from "@/components/BoothManagerTab";
 import ReassignBoothsTab from "@/components/ReassignBoothsTab";
 import PartyMappingTab from "@/components/PartyMappingTab";
 import WardAssemblyMappingTab from "@/components/WardAssemblyMappingTab";
+import PartyAllianceAdminTab from "@/components/PartyAllianceAdminTab";
 
 // backend URL
 const backend =
@@ -24,6 +25,7 @@ const tabs: { key: string; label: string }[] = [
   { key: "reassign", label: "Reassign Booths" },
   { key: "party", label: "Party Mapping" },
   { key: "wardmap", label: "Ward Assembly Mapping" },
+  { key: "partyalliance", label: "Party Alliance Mapping" },
 ];
 
 export default function AdminPage() {
@@ -73,6 +75,7 @@ export default function AdminPage() {
         {tab === "reassign" && <ReassignBoothsTab backend={backend} />}
         {tab === "party" && <PartyMappingTab backend={backend} />}
         {tab === "wardmap" && <WardAssemblyMappingTab backend={backend} />}
+        {tab === "partyalliance" && <PartyAllianceAdminTab />}
       </div>
 
       {/* STYLES */}

@@ -5,6 +5,7 @@ import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.service.AssemblyAnalysisService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "*")
@@ -40,15 +42,14 @@ public class AssemblyAnalysisController {
 
 
     /**
-     * Analyze assembly by acCode.
-     * includeTypes - optional CSV list of localbody types to include, e.g. "grama_panchayath,Municipality"
+     * Analyze assembly by acCode for the included localbdy types of the assembly.
+     * includeTypes - optional list of localbody types to include, e.g. "grama_panchayath,Municipality"
      */
-    @GetMapping("/assembly-by-id")
-    public AssemblyAnalysisResponseDto analyzeByAcCode(
-            @RequestParam Integer acCode,
-            @RequestParam Integer year,
-            @RequestParam(required = false) String includeTypes
-    ) {
+    @GetMapping("/analysis/assembly-by-id")
+    public AssemblyAnalysisResponseDto analyzeByAcCode(@RequestParam Integer acCode,
+                                                       @RequestParam Integer year,
+                                                       @RequestParam(required = false) String includeTypes) {
+        log.info("analyzeByAcCode called with acCode={}, year={}, includeTypes={}", acCode, year, includeTypes);
         List<String> types = parseTypes(includeTypes);
         return assemblyAnalysisService.analyzeByAcCode(acCode, year, types);
     }
@@ -73,7 +74,10 @@ public class AssemblyAnalysisController {
     }
 
     private List<String> parseTypes(String includeTypes) {
-        if (includeTypes == null || includeTypes.isBlank()) return null;
+        if (includeTypes == null || includeTypes.isBlank()) {
+            log.info("No includeTypes provided, including all types");
+            return null;
+        }
         return Arrays.stream(includeTypes.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
