@@ -271,8 +271,8 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
             <option value="grama_panchayath">Grama Panchayath</option>
             <option value="block_panchayath">Block Panchayath</option>
             <option value="district_panchayath">District Panchayath</option>
-            <option value="Municipality">Municipality</option>
-            <option value="Corporation">Corporation</option>
+            <option value="municipality">Municipality</option>
+            <option value="corporation">Corporation</option>
           </select>
         </div>
 

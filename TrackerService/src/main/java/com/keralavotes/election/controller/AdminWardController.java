@@ -7,6 +7,7 @@ import com.keralavotes.election.entity.Ward;
 import com.keralavotes.election.repository.WardRepository;
 import com.keralavotes.election.service.WardAssemblyService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/admin/wards")
 @RequiredArgsConstructor
@@ -67,6 +69,7 @@ public class AdminWardController {
             List<String> typeList = Arrays.stream(types.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
+                    .map(String::toLowerCase)
                     .toList();
             wards = wardRepository.findByAc_AcCodeAndDelimitationYearAndLocalbody_TypeIn(
                     acCode, delimitationYear, typeList);
@@ -84,6 +87,18 @@ public class AdminWardController {
                         w.getDelimitationYear(),
                         w.getAc() != null ? w.getAc().getAcCode() : null
                 ))
+                .toList();
+    }
+
+    private List<String> parseTypes(String includeTypes) {
+        if (includeTypes == null || includeTypes.isBlank()) {
+            log.info("No includeTypes provided, including all types");
+            return null;
+        }
+        return Arrays.stream(includeTypes.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toLowerCase)
                 .toList();
     }
 }

@@ -70,6 +70,22 @@ const ALLIANCE_COLORS: Record<string, string> = {
   OTH: "#6b7280",
 };
 
+/* ===================== SHARED TABLE STYLES ===================== */
+const tdCell: React.CSSProperties = {
+  padding: "10px 12px",
+  borderBottom: "1px solid #1f2937",
+  verticalAlign: "top",
+};
+
+const thCell: React.CSSProperties = {
+  padding: "8px 12px",
+  borderBottom: "1px solid #1f2937",
+  textAlign: "left",
+  fontWeight: 600,
+  color: "#e5e7eb",
+  whiteSpace: "nowrap",
+};
+
 /* ===================== BADGE ===================== */
 function AllianceBadge({
   alliance,
@@ -173,20 +189,7 @@ export default function AssemblyAnalysisTab() {
     }
   };
 
-  const tdCell: React.CSSProperties = {
-    padding: "10px 12px",
-    borderBottom: "1px solid #1f2937",
-    verticalAlign: "top",
-  };
-
-  const thCell: React.CSSProperties = {
-    padding: "8px 12px",
-    borderBottom: "1px solid #1f2937",
-    textAlign: "left",
-    fontWeight: 600,
-    color: "#e5e7eb",
-    whiteSpace: "nowrap",
-  };
+  
 
 
   /* ===================== RENDER ===================== */
@@ -385,51 +388,11 @@ export default function AssemblyAnalysisTab() {
 
             <tbody>
               {analysis.localbodies.map((lb) => (
-                <tr>
-                  {/* Localbody */}
-                  <td style={tdCell}>
-                    <strong>{lb.localbodyName}</strong>
-                  </td>
-
-                  {/* Type */}
-                  <td style={tdCell}>{lb.localbodyType}</td>
-
-                  {/* Wards */}
-                  <td style={{ ...tdCell, textAlign: "right" }}>
-                    {lb.wardsCount}
-                  </td>
-
-                  {/* Alliance Performance */}
-                  <td style={tdCell}>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "nowrap",
-                        gap: 24,
-                        alignItems: "center",
-                        overflowX: "auto",
-                      }}
-                    >
-                      {lb.voteShare.map((v) => (
-                        <div
-                          key={v.alliance}
-                          style={{
-                            minWidth: 160,
-                            display: "flex",
-                            alignItems: "center",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          <AllianceBadge
-                            alliance={v.alliance}
-                            votes={v.votes}
-                            pct={v.percentage}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
+                <LocalbodyRow
+                  key={lb.localbodyId}
+                  lb={lb}
+                  wardsAll={analysis.wards}
+                />
               ))}
             </tbody>
           </ResponsiveTable>
@@ -453,43 +416,65 @@ function LocalbodyRow({
   return (
     <>
       <tr>
-        <td>
-          <b>{lb.localbodyName}</b> ({lb.localbodyType})
+        <td style={tdCell}>
+          <b>{lb.localbodyName}</b>
         </td>
-        <td>{lb.wardsCount}</td>
-        <td>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: 4,
-              paddingLeft: 6,
-            }}
-          >
-            {lb.voteShare.slice(0, 4).map((v) => (
-              <AllianceBadge
-                key={v.alliance}
-                alliance={v.alliance}
-                votes={v.votes}
-                pct={v.percentage}
-              />
-            ))}
+
+        <td style={tdCell}>{lb.localbodyType ?? "-"}</td>
+
+        <td style={{ ...tdCell, textAlign: "right" }}>{lb.wardsCount}</td>
+
+        <td style={tdCell}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", overflowX: "auto", flex: 1 }}>
+              {lb.voteShare.map((v) => (
+                <div
+                  key={v.alliance}
+                  style={{ minWidth: 140, display: "flex", alignItems: "center" }}
+                >
+                  <AllianceBadge
+                    alliance={v.alliance}
+                    votes={v.votes}
+                    pct={v.percentage}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div style={{ flex: "0 0 auto" }}>
+              <button
+                onClick={() => setExpanded(!expanded)}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  background: expanded ? "#374151" : "#0d6efd",
+                  color: "#fff",
+                  border: "none",
+                }}
+              >
+                {expanded ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
-        </td>
-        <td>
-          <button onClick={() => setExpanded(!expanded)}>
-            {expanded ? "Hide" : "Show"}
-          </button>
         </td>
       </tr>
 
       {expanded &&
         lbWards.map((w) => (
           <tr key={w.wardId}>
-            <td colSpan={4}>
-              {w.wardNum}. {w.wardName} —{" "}
-              <b>{w.winner ?? "-"}</b> ({w.total})
+            <td colSpan={4} style={tdCell}>
+              {w.wardNum}. {w.wardName} — <b>{w.winner ?? "-"}</b> ({w.total})
+              <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {w.alliances.map((a) => (
+                  <AllianceBadge
+                    key={a.alliance}
+                    alliance={a.alliance}
+                    votes={a.votes}
+                    pct={a.percentage}
+                  />
+                ))}
+              </div>
             </td>
           </tr>
         ))}
