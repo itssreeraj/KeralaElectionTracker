@@ -28,6 +28,7 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
   /* ---- Assembly mapped wards ---- */
   const [mappedWards, setMappedWards] = useState<any[]>([]);
   const [loadingMapped, setLoadingMapped] = useState(false);
+  const [expandedLbs, setExpandedLbs] = useState<Record<string, boolean>>({});
 
   /* =============================================================
       LOAD DISTRICTS
@@ -402,28 +403,41 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
                 </h4>
               )}
 
-              {Object.entries(lbs).map(([lbName, ws]: any) => (
-                <div key={lbName} style={{ marginTop: 10 }}>
-                  <strong>{lbName}</strong>
+              {Object.entries(lbs).map(([lbName, ws]: any) => {
+                const lbKey = `${type}::${lbName}`;
+                const expanded = !!expandedLbs[lbKey];
+                return (
+                  <div key={lbKey} style={{ marginTop: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <strong style={{ fontSize: 13 }}>{lbName}</strong>
+                        <span style={{ color: "#93c5fd", fontSize: 12 }}>{ws.length} wards</span>
+                      </div>
 
-                  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 6 }}>
-                    <thead>
-                      <tr>
-                        <th style={th}>Ward #</th>
-                        <th style={th}>Ward Name</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ws.map((w: any) => (
-                        <tr key={w.wardId}>
-                          <td style={td}>{w.wardNum}</td>
-                          <td style={td}>{w.wardName}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedLbs((p) => ({ ...p, [lbKey]: !p[lbKey] }))}
+                        style={{ ...tinyButton, padding: "4px 8px" }}
+                      >
+                        {expanded ? "Hide" : "Show"}
+                      </button>
+                    </div>
+
+                    {expanded && (
+                      <table style={compactTable}>
+                        <tbody>
+                          {ws.map((w: any) => (
+                            <tr key={w.id ?? w.wardId ?? w.wardNum}>
+                              <td style={compactTd}>{w.wardNum}</td>
+                              <td style={compactTd}>{w.wardName}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -456,6 +470,19 @@ const th: React.CSSProperties = {
 const td: React.CSSProperties = {
   padding: 6,
   borderBottom: "1px solid #111827",
+};
+
+const compactTable: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  marginTop: 6,
+  fontSize: 13,
+};
+
+const compactTd: React.CSSProperties = {
+  padding: "4px 6px",
+  borderBottom: "1px solid #111827",
+  fontSize: 13,
 };
 
 const blueButton: React.CSSProperties = {
