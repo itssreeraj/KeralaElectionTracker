@@ -1,5 +1,6 @@
 package com.keralavotes.election.repository;
 
+import com.keralavotes.election.dto.AssemblyMappedWardDto;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.Ward;
 import jakarta.transaction.Transactional;
@@ -12,12 +13,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface WardRepository extends JpaRepository<Ward, Long> {
-    List<Ward> findByLocalbody_Id(Long localbodyId);
-    Optional<Ward> findByLocalbodyIdAndWardNum(Long localbodyId, Integer wardNum);
 
     List<Ward> findByLocalbodyId(Long id);
-    List<Ward> findByAc_AcCode(Integer acCode);
-    long countByAc_AcCode(Long acCode);
 
     List<Ward> findByLocalbody_IdAndDelimitationYear(Long localbodyId, Integer delimitationYear);
 
@@ -36,15 +33,26 @@ public interface WardRepository extends JpaRepository<Ward, Long> {
 
     Optional<Ward> findByWardDetailsId(String wardDetailsId);
 
-    List<Ward> findByDelimitationYear(int year);
-
-    List<Ward> findByDelimitationYearAndLocalbody_TypeIn(int year, List<String> includeTypes);
-
-    List<Ward> findByDelimitationYearAndLocalbody_District_DistrictCode(int year, Integer districtCode);
-
-    List<Ward> findByDelimitationYearAndLocalbody_District_DistrictCodeAndLocalbody_TypeInIgnoreCase(int year, Integer districtCode, List<String> includeTypes);
-
-    List<Ward> findByDelimitationYearAndLocalbody_TypeInIgnoreCase(int year, List<String> includeTypes);
-
-    List<Ward> findByAc_AcCodeAndDelimitationYearAndLocalbody_TypeInIgnoreCase(Integer acCode, int year, List<String> includeTypes);
+    @Query("""
+        select new com.keralavotes.election.dto.AssemblyMappedWardDto(
+            w.id,
+            w.wardNum,
+            w.wardName,
+            lb.id,
+            lb.name,
+            lb.type
+        )
+        from Ward w
+        join w.localbody lb
+        join w.ac ac
+        where ac.acCode = :acCode
+          and w.delimitationYear = :year
+          and (:type is null or lb.type = :type)
+        order by lb.type, lb.name, w.wardNum
+    """)
+    List<AssemblyMappedWardDto> findMappedWardsByAssembly(
+            @Param("acCode") Integer acCode,
+            @Param("year") Integer year,
+            @Param("type") String type
+    );
 }

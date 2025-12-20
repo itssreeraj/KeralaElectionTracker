@@ -27,7 +27,7 @@ import java.util.List;
 @RequestMapping("/api/admin")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
-public class BoothController {
+public class AdminBoothController {
 
     private final PollingStationRepository psRepo;
     private final DistrictRepository districtRepo;

@@ -1,12 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const DELIM_YEARS = [2009, 2010, 2025];
-
-/* ============================================================
-    UI TAB: Ward → Assembly Mapping
-   ============================================================ */
 
 export default function WardAssemblyMappingTab({ backend }: { backend: string }) {
   /* --------------------- STATE --------------------- */
@@ -17,7 +13,7 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
   const [selectedAcCode, setSelectedAcCode] = useState<number | null>(null);
 
   const [localbodies, setLocalbodies] = useState<any[]>([]);
-  const [selectedType, setSelectedType] = useState("");              // GP/BP/DP/M/Corp filter
+  const [selectedType, setSelectedType] = useState("");
   const [lbSearch, setLbSearch] = useState("");
   const [selectedLocalbody, setSelectedLocalbody] = useState<number | null>(null);
 
@@ -29,6 +25,10 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
   const [selectedWardIds, setSelectedWardIds] = useState<number[]>([]);
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
 
+  /* ---- Assembly mapped wards ---- */
+  const [mappedWards, setMappedWards] = useState<any[]>([]);
+  const [loadingMapped, setLoadingMapped] = useState(false);
+
   /* =============================================================
       LOAD DISTRICTS
      ============================================================= */
@@ -39,37 +39,38 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
   }, [backend]);
 
   /* =============================================================
-      LOAD ASSEMBLIES (by District)
+      LOAD ASSEMBLIES
      ============================================================= */
   const loadAssemblies = async (code: number) => {
     const res = await fetch(`${backend}/admin/assemblies/by-district?districtCode=${code}`);
-    const data = await res.json();
-    setAssemblies(Array.isArray(data) ? data : []);
+    setAssemblies(await res.json());
   };
 
   /* =============================================================
-      LOAD LOCALBODIES (by District)
+      LOAD LOCALBODIES
      ============================================================= */
   const loadLocalbodies = async (dist: any) => {
-    if (!dist?.name) return;
-    const res = await fetch(`${backend}/admin/localbodies/by-district?name=${encodeURIComponent(dist.name)}`);
-    const data = await res.json();
-    setLocalbodies(Array.isArray(data) ? data : []);
+    const res = await fetch(
+      `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(dist.name)}`
+    );
+    setLocalbodies(await res.json());
   };
 
   /* =============================================================
-      FILTER LOCALBODIES
+      FILTER LOCALBODIES (for localbody-based ward load)
      ============================================================= */
   const filteredLocalbodies = useMemo(() => {
     let list = localbodies;
     if (selectedType) list = list.filter((lb: any) => lb.type === selectedType);
-    if (lbSearch.trim() !== "")
-      list = list.filter((lb: any) => lb.name.toLowerCase().includes(lbSearch.toLowerCase()));
+    if (lbSearch.trim())
+      list = list.filter((lb: any) =>
+        lb.name.toLowerCase().includes(lbSearch.toLowerCase())
+      );
     return list;
   }, [localbodies, selectedType, lbSearch]);
 
   /* =============================================================
-      LOAD WARDS FROM BACKEND
+      LOAD WARDS (LOCALBODY)
      ============================================================= */
   const loadWards = async () => {
     if (!selectedLocalbody || !delimitationYear) {
@@ -84,9 +85,8 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
       const res = await fetch(
         `${backend}/admin/wards/by-localbody?localbodyId=${selectedLocalbody}&delimitationYear=${delimitationYear}`
       );
-      const data = await res.json();
-      setWards(Array.isArray(data) ? data : []);
-    } catch (e) {
+      setWards(await res.json());
+    } catch {
       setWards([]);
     }
 
@@ -94,7 +94,52 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
   };
 
   /* =============================================================
-      WARD SELECTION (Click + Shift-Click)
+      LOAD WARDS (ASSEMBLY)
+      ✔ Localbody type filter applied SERVER-SIDE
+      ✔ Clears stale data on reload
+     ============================================================= */
+  const loadMappedWards = async () => {
+    if (!selectedAcCode || !delimitationYear) {
+      alert("Select assembly and delimitation year");
+      return;
+    }
+
+    setLoadingMapped(true);
+    setMappedWards([]); // IMPORTANT: clear stale data
+
+    const params = new URLSearchParams({
+      acCode: String(selectedAcCode),
+      delimitationYear: String(delimitationYear),
+    });
+
+    if (selectedType) {
+      params.append("types", selectedType);
+    }
+
+    try {
+      const res = await fetch(`${backend}/admin/wards/by-assembly?${params}`);
+      setMappedWards(await res.json());
+    } catch {
+      setMappedWards([]);
+    }
+
+    setLoadingMapped(false);
+  };
+
+  /* =============================================================
+      AUTO-RELOAD mapped wards when type changes (FIX)
+     ============================================================= */
+  useEffect(() => {
+    if (selectedAcCode && delimitationYear) {
+      setMappedWards([]);
+      loadMappedWards();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType]);
+
+
+  /* =============================================================
+      WARD SELECTION
      ============================================================= */
   const toggleWard = (wardId: number, index: number, shiftKey: boolean) => {
     if (shiftKey && lastClickedIndex !== null) {
@@ -114,32 +159,38 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
   const selectNone = () => setSelectedWardIds([]);
 
   /* =============================================================
-      ASSIGN WARDS → ASSEMBLY
+      ASSIGN WARDS
      ============================================================= */
   const assignWards = async () => {
-    if (!selectedAcCode) return alert("Select an Assembly");
-    if (!delimitationYear) return alert("Enter delimitation year");
-    if (selectedWardIds.length === 0) return alert("Select at least 1 ward");
+    if (!selectedAcCode || !delimitationYear || selectedWardIds.length === 0)
+      return alert("Missing selection");
 
-    const payload = {
-      wardIds: selectedWardIds,
-      acCode: selectedAcCode,
-      delimitationYear,
-    };
-
-    const res = await fetch(`${backend}/admin/wards/assign-assembly`, {
+    await fetch(`${backend}/admin/wards/assign-assembly`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        wardIds: selectedWardIds,
+        acCode: selectedAcCode,
+        delimitationYear,
+      }),
     });
 
-    if (!res.ok) {
-      alert("Failed to assign");
-    } else {
-      alert("Assigned successfully");
-      loadWards();
-    }
+    alert("Assigned successfully");
+    loadWards();
   };
+
+  /* =============================================================
+      GROUP ASSEMBLY-MAPPED WARDS (Type → Localbody)
+     ============================================================= */
+  const groupedMapped = useMemo(() => {
+    const map: any = {};
+    mappedWards.forEach((w) => {
+      map[w.localbodyType] ??= {};
+      map[w.localbodyType][w.localbodyName] ??= [];
+      map[w.localbodyType][w.localbodyName].push(w);
+    });
+    return map;
+  }, [mappedWards]);
 
   /* =============================================================
       UI
@@ -165,12 +216,11 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
             onChange={(e) => {
               const val = Number(e.target.value);
               setDistrictCode(val);
-
               setSelectedAcCode(null);
-              setAssemblies([]);
               setLocalbodies([]);
+              setAssemblies([]);
               setSelectedLocalbody(null);
-
+              setMappedWards([]); // reset
               const d = districts.find((x) => x.districtCode === val);
               if (d) {
                 loadAssemblies(val);
@@ -182,7 +232,7 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
             <option value="">Select District</option>
             {districts.map((d) => (
               <option key={d.districtCode} value={d.districtCode}>
-                {d.districtCode} - {d.name}
+                {d.name}
               </option>
             ))}
           </select>
@@ -193,19 +243,22 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
           <label>Assembly</label>
           <select
             value={selectedAcCode ?? ""}
-            onChange={(e) => setSelectedAcCode(Number(e.target.value))}
+            onChange={(e) => {
+              setSelectedAcCode(Number(e.target.value));
+              setMappedWards([]); // reset
+            }}
             style={selectStyle}
           >
             <option value="">Select Assembly</option>
             {assemblies.map((a) => (
               <option key={a.acCode} value={a.acCode}>
-                {a.name} ({a.acCode})
+                {a.name}
               </option>
             ))}
           </select>
         </div>
 
-        {/* LOCALBODY TYPE (filter GP/BP/DP + Municipality/Corporation) */}
+        {/* LOCALBODY TYPE */}
         <div>
           <label>Localbody Type</label>
           <select
@@ -229,17 +282,7 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
             value={lbSearch}
             onChange={(e) => setLbSearch(e.target.value)}
             placeholder="Search localbody…"
-            style={{
-              width: "100%",
-              padding: "6px 8px",
-              marginTop: 6,
-              marginBottom: 6,
-              borderRadius: 6,
-              border: "1px solid #374151",
-              background: "#020617",
-              color: "#f9fafb",
-              fontSize: 14,
-            }}
+            style={selectStyle}
           />
         </div>
 
@@ -263,45 +306,42 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
         {/* DELIMITATION YEAR */}
         <div>
           <label>Delimitation Year</label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
-            {DELIM_YEARS.map((y) => {
-              const active = delimitationYear === y;
-              return (
-                <button
-                  key={y}
-                  type="button"
-                  onClick={() => setDelimitationYear(active ? "" : y)}
-                  style={{
-                    padding: "4px 10px",
-                    borderRadius: 999,
-                    border: active ? "1px solid #0d6efd" : "1px solid #555",
-                    background: active ? "#0d6efd33" : "transparent",
-                    color: active ? "#fff" : "#ddd",
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  {y}
-                </button>
-              );
-            })}
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+            {DELIM_YEARS.map((y) => (
+              <button
+                key={y}
+                type="button"
+                onClick={() => setDelimitationYear(y)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  border:
+                    delimitationYear === y ? "1px solid #0d6efd" : "1px solid #555",
+                  background:
+                    delimitationYear === y ? "#0d6efd33" : "transparent",
+                  color: "#fff",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                {y}
+              </button>
+            ))}
           </div>
         </div>
 
-
-        {/* LOAD WARDS BUTTON */}
+        {/* ACTION BUTTONS */}
         <div style={{ gridColumn: "1 / span 2", marginTop: 10 }}>
-          <button
-            onClick={loadWards}
-            style={blueButton}
-            disabled={!selectedLocalbody || !delimitationYear}
-          >
+          <button onClick={loadWards} style={blueButton}>
             {loadingWards ? "Loading…" : "Load Wards"}
+          </button>
+          <button onClick={loadMappedWards} style={greenButton}>
+            {loadingMapped ? "Loading…" : "Load Assembly Mapped Wards"}
           </button>
         </div>
       </div>
 
-      {/* ---------------- WARDS TABLE ---------------- */}
+      {/* ---------------- LOCALBODY WARDS ---------------- */}
       {wards.length > 0 && (
         <div>
           <h3 style={{ marginBottom: 6 }}>Wards ({wards.length})</h3>
@@ -311,53 +351,81 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
             <button onClick={selectNone} style={tinyButton}>None</button>
           </div>
 
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-              <thead>
-                <tr>
-                  <th style={th}>#</th>
-                  <th style={th}>Ward #</th>
-                  <th style={th}>Name</th>
-                  <th style={th}>Delimitation</th>
-                  <th style={th}>Current AC</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {wards.map((w, idx) => {
-                  const selected = selectedWardIds.includes(w.id);
-                  return (
-                    <tr
-                      key={w.id}
-                      style={{
-                        background: selected ? "#0d6efd33" : "transparent",
-                        cursor: "pointer",
-                      }}
-                      onClick={(e) => toggleWard(w.id, idx, e.shiftKey)}
-                    >
-                      <td style={td}>
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={(e) => toggleWard(w.id, idx, e.shiftKey)}
-                        />
-                      </td>
-                      <td style={td}>{w.wardNum}</td>
-                      <td style={td}>{w.wardName || w.name}</td>
-                      <td style={td}>{w.delimitationYear}</td>
-                      <td style={td}>{w.acCode ?? "-"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={th}></th>
+                <th style={th}>Ward #</th>
+                <th style={th}>Name</th>
+                <th style={th}>Current AC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {wards.map((w, idx) => {
+                const selected = selectedWardIds.includes(w.id);
+                return (
+                  <tr
+                    key={w.id}
+                    style={{ background: selected ? "#0d6efd33" : "transparent" }}
+                    onClick={(e) => toggleWard(w.id, idx, e.shiftKey)}
+                  >
+                    <td style={td}>
+                      <input type="checkbox" checked={selected} readOnly />
+                    </td>
+                    <td style={td}>{w.wardNum}</td>
+                    <td style={td}>{w.wardName}</td>
+                    <td style={td}>{w.ac?.name ?? "-"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
           <div style={{ marginTop: 16 }}>
             <button onClick={assignWards} style={greenButton}>
-              Assign to Assembly ({selectedAcCode})
+              Assign Selected
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ---------------- ASSEMBLY MAPPED WARDS (TABLE VIEW) ---------------- */}
+      {Object.keys(groupedMapped).length > 0 && (
+        <div style={{ marginTop: 32 }}>
+          <h3>Wards Mapped to Assembly</h3>
+
+          {Object.entries(groupedMapped).map(([type, lbs]: any) => (
+            <div key={type} style={{ marginTop: 16 }}>
+              {!selectedType && (
+                <h4 style={{ color: "#93c5fd" }}>
+                  {type.replaceAll("_", " ").toUpperCase()}
+                </h4>
+              )}
+
+              {Object.entries(lbs).map(([lbName, ws]: any) => (
+                <div key={lbName} style={{ marginTop: 10 }}>
+                  <strong>{lbName}</strong>
+
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 6 }}>
+                    <thead>
+                      <tr>
+                        <th style={th}>Ward #</th>
+                        <th style={th}>Ward Name</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ws.map((w: any) => (
+                        <tr key={w.wardId}>
+                          <td style={td}>{w.wardNum}</td>
+                          <td style={td}>{w.wardName}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -365,7 +433,7 @@ export default function WardAssemblyMappingTab({ backend }: { backend: string })
 }
 
 /* =============================================================
-      STYLE HELPERS
+      STYLE HELPERS (UNCHANGED)
    ============================================================= */
 
 const selectStyle: React.CSSProperties = {
@@ -397,6 +465,7 @@ const blueButton: React.CSSProperties = {
   color: "white",
   border: "none",
   cursor: "pointer",
+  marginRight: 10,
 };
 
 const greenButton: React.CSSProperties = {

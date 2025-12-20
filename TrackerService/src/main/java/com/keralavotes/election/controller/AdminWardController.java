@@ -1,11 +1,11 @@
 package com.keralavotes.election.controller;
 
+import com.keralavotes.election.dto.AssemblyMappedWardDto;
 import com.keralavotes.election.dto.WardAssemblyAssignRequest;
 import com.keralavotes.election.dto.WardDto;
 import com.keralavotes.election.entity.Ward;
 import com.keralavotes.election.repository.WardRepository;
 import com.keralavotes.election.service.WardAssemblyService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -24,7 +24,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/wards")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-public class WardController {
+public class AdminWardController {
 
     private final WardAssemblyService wardAssemblyService;
     private final WardRepository wardRepository;
