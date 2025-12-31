@@ -1,6 +1,5 @@
 package com.keralavotes.election.controller;
 
-import com.keralavotes.election.dto.AssemblyMappedWardDto;
 import com.keralavotes.election.dto.WardAssemblyAssignRequest;
 import com.keralavotes.election.dto.WardDto;
 import com.keralavotes.election.entity.Ward;

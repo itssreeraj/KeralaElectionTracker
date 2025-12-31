@@ -32,5 +32,15 @@ public class LbWardResult {
 
     @Column(name = "election_year")
     private Integer electionYear;
-    // getters/setters
+
+    @Override
+    public String toString() {
+        return "LbWardResult{" +
+                "id=" + id +
+                ", wardId=" + wardId +
+                ", candidateId=" + candidateId +
+                ", votes=" + votes +
+                ", electionYear=" + electionYear +
+                '}';
+    }
 }

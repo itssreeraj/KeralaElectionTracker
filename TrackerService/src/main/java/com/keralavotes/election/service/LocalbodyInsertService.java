@@ -355,6 +355,8 @@ public class LocalbodyInsertService {
                 x.setElectionYear(electionYear);
                 x.setVotes(Integer.parseInt(rd.getCand_vote()));
                 newResults.add(x);
+                log.info("New result to insert for wardId= {}, candId= {} and election_year = {}",
+                        ward.getId(), cand.getId(), electionYear);
 
             } else {
                 existing.setVotes(Integer.parseInt(rd.getCand_vote()));
