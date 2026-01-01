@@ -4,6 +4,7 @@ import com.keralavotes.election.dto.AssemblyAnalysisResponseDto;
 import com.keralavotes.election.dto.ElectionType;
 import com.keralavotes.election.model.VoteRow;
 import com.keralavotes.election.model.WardAccumulator;
+import com.keralavotes.election.repository.LocalbodyRepository;
 import com.keralavotes.election.repository.PartyAllianceMappingRepository;
 import com.keralavotes.election.repository.LbWardResultRepository;
 import jakarta.transaction.Transactional;
@@ -22,6 +23,7 @@ public class AssemblyAnalysisService {
 
     private final LbWardResultRepository wardResultRepository;
     private final PartyAllianceMappingRepository partyAllianceMappingRepository;
+    private final LocalbodyRepository localbodyRepository;
 
     /* ============================================================
        PUBLIC ENTRY POINTS
@@ -329,17 +331,19 @@ public class AssemblyAnalysisService {
 
             AssemblyAnalysisResponseDto.WardRow first = rows.getFirst();
 
-            result.add(
-                    AssemblyAnalysisResponseDto.LocalbodySummary.builder()
-                            .localbodyId(lbId)
-                            .localbodyName(first.getLocalbodyName())
-                            .wardsCount(rows.size())
-                            .voteShare(voteShare)
-                            .wardPerformance(List.of())
-                            .build()
-            );
+            localbodyRepository.findById(lbId).ifPresent(lb -> {
+                result.add(
+                        AssemblyAnalysisResponseDto.LocalbodySummary.builder()
+                                .localbodyId(lbId)
+                                .localbodyName(lb.getName())
+                                .localbodyType(lb.getType())
+                                .wardsCount(rows.size())
+                                .voteShare(voteShare)
+                                .wardPerformance(List.of())
+                                .build()
+                );
+            });
         }
-
         return result;
     }
 
