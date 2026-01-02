@@ -1,0 +1,42 @@
+spring:
+  config:
+    activate:
+      on-profile: qa
+
+  server:
+    port: 8080
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/keralavotes
+    username: keralavotes
+    password: keralavotes
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate.format_sql: true
+  mongodb:
+    uri: mongodb://appuser:apppassword@localhost:27017/keralavotes?authSource=keralavotes
+    database: keralavotes
+    authentication-database: keralavotes
+
+  web:
+    cors:
+      allowed-origins: "http://localhost:3333"
+      allowed-methods: "*"
+      allowed-headers: "*"
+      allow-credentials: true
+
+logging:
+  level:
+    root: INFO
+    com.keralavotes: DEBUG
+  file:
+    name: logs/keralavotes.log
