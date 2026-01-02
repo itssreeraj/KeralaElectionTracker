@@ -24,7 +24,7 @@ type AllianceAnalysisResponse = {
 export function AllianceAnalysisResults({ result }: { result: AllianceAnalysisResponse }) {
   if (!result) return null;
 
-  const isGE = result.year === 2019 || result.year === 2024;
+  const isGE = result.year === 2014 || result.year === 2019 || result.year === 2024;
 
   return (
     <div style={{ marginTop: 30 }}>

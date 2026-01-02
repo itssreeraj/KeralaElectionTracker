@@ -76,7 +76,7 @@ public class AllianceAnalysisService {
         int totalWardsWon = 0, totalWardsWinnable = 0;
         int totalBoothsWon = 0, totalBoothsWinnable = 0;
 
-        boolean isGE = (year == 2024 || year == 2019);
+        boolean isGE = (year == 2024 || year == 2019 || year == 2014); // adjust as needed
 
 
         // ======== Run Localbody Loop ========

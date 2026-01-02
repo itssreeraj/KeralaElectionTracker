@@ -66,4 +66,33 @@ public interface LbWardResultRepository extends JpaRepository<LbWardResult, Inte
             @Param("types") String[] types
     );
 
+    @Query("""
+select
+  w.id as wardId,
+  w.wardNum as wardNum,
+  w.wardName as wardName,
+  lb.id as localbodyId,
+  lb.name as localbodyName,
+  ac.acCode as acCode,
+  p.id as partyId,
+  r.votes as votes
+from LbWardResult r,
+     Ward w,
+     Candidate c
+join w.localbody lb
+join w.ac ac
+join c.party p
+where w.id = r.wardId
+  and c.id = r.candidateId
+  and r.electionYear = :year
+  and (:districtCode is null or ac.district.districtCode = :districtCode)
+  and (:localbodyTypes is null or lower(lb.type) in :localbodyTypes)
+""")
+    Stream<VoteRow> streamVotesForAssemblyOverview(
+            int year,
+            Integer districtCode,
+            String[] localbodyTypes
+    );
+
+
 }
