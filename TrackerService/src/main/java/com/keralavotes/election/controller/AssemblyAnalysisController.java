@@ -1,9 +1,11 @@
 package com.keralavotes.election.controller;
 
 import com.keralavotes.election.dto.AssemblyAnalysisResponseDto;
+import com.keralavotes.election.dto.AssemblyOverviewResponseDto;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.service.AssemblyAnalysisService;
+import com.keralavotes.election.service.AssemblyOverviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,7 @@ public class AssemblyAnalysisController {
 
     private final AssemblyAnalysisService assemblyAnalysisService;
     private final AssemblyConstituencyRepository assemblyRepository;
+    private final AssemblyOverviewService assemblyOverviewService;
 
     // Admin helper to list ACs by district or LS
     @GetMapping("/admin/assemblies/by-district")
@@ -52,6 +55,22 @@ public class AssemblyAnalysisController {
         log.info("analyzeByAcCode called with acCode={}, year={}, includeTypes={}", acCode, year, includeTypes);
         List<String> types = parseTypes(includeTypes);
         return assemblyAnalysisService.analyzeByAcCode(acCode, year, types);
+    }
+
+    @GetMapping("/analysis/assembly-overview")
+    public AssemblyOverviewResponseDto assemblyOverview(
+            @RequestParam int year,
+            @RequestParam(required = false) Integer districtCode,
+            @RequestParam(required = false) String includeTypes
+    ) {
+        List<String> types = parseTypes(includeTypes);
+
+        if (districtCode != null) {
+            return assemblyOverviewService.overviewByDistrict(
+                    districtCode, year, types
+            );
+        }
+        return assemblyOverviewService.overviewState(year, types);
     }
 
     @GetMapping("/analysis/state")

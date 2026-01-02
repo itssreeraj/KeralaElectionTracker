@@ -19,18 +19,4 @@ public class KeralaVotesApplication {
     public static void main(String[] args) {
         SpringApplication.run(KeralaVotesApplication.class, args);
     }
-
-    @PostConstruct
-    public void printMongoConfig() {
-        System.out.println("============ MONGO DEBUG ============");
-        System.out.println("spring.data.mongodb.uri       = " + env.getProperty("spring.data.mongodb.uri"));
-        System.out.println("spring.data.mongodb.host      = " + env.getProperty("spring.data.mongodb.host"));
-        System.out.println("spring.data.mongodb.port      = " + env.getProperty("spring.data.mongodb.port"));
-        System.out.println("spring.data.mongodb.database  = " + env.getProperty("spring.data.mongodb.database"));
-        System.out.println("======================================");
-
-        System.out.println(">>> Spring is querying DB: " + mongoTemplate.getDb().getName());
-
-
-    }
 }

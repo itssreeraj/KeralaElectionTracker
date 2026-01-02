@@ -11,6 +11,8 @@ public interface VoteRow {
     String getLocalbodyType();
     Integer getDistrictCode();
 
+    Integer getAcCode();
+
     Long getPartyId();
     Integer getVotes();
 }

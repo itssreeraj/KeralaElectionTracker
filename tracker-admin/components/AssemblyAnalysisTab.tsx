@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import AssemblySelector from "./AssemblySelector";
 import DistrictSelector from "./DistrictSelector";
+import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
 /* ===================== DTO TYPES ===================== */
 type AllianceVoteShare = {
@@ -50,8 +51,9 @@ type AnalysisResponse = {
 const backend =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
 
+
 /* ===================== CONSTANTS ===================== */
-const ANALYSIS_YEARS = [2010, 2015, 2019, 2020, 2024, 2025];
+
 
 const TIER_OPTIONS = [
   { id: "grama_panchayath", label: "Grama Panchayath (GP)" },
@@ -139,7 +141,7 @@ export default function AssemblyAnalysisTab() {
   const [selectedDistrict, setSelectedDistrict] =
     useState<{ districtCode: number; name: string } | null>(null);
 
-  const [year, setYear] = useState(2024);
+  const [year, setYear] = useState(2025);
 
   const [selectedTiers, setSelectedTiers] = useState<string[]>([
     "grama_panchayath",
@@ -149,6 +151,9 @@ export default function AssemblyAnalysisTab() {
 
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  const [showAssemblyOverview, setShowAssemblyOverview] = useState(true);
+  const [assemblyOverview, setAssemblyOverview] = useState<any | null>(null);
 
   const toggleTier = (tier: string) =>
     setSelectedTiers((prev) =>
@@ -187,6 +192,21 @@ export default function AssemblyAnalysisTab() {
     } finally {
       setLoading(false);
     }
+
+    const overviewParams = new URLSearchParams();
+    overviewParams.append("year", String(year));
+    overviewParams.append("includeTypes", selectedTiers.join(","));
+
+    if (selectedDistrict) {
+      overviewParams.append("districtCode", String(selectedDistrict.districtCode));
+    }
+
+    const overviewRes = await fetch(
+      `${backend}/analysis/assembly-overview?${overviewParams.toString()}`
+    );
+
+    setAssemblyOverview(await overviewRes.json());
+
   };
 
   
@@ -398,6 +418,46 @@ export default function AssemblyAnalysisTab() {
           </ResponsiveTable>
         </>
       )}
+
+      {assemblyOverview && (
+        <>
+          <h3>Assembly-wise Overview</h3>
+          <ResponsiveTable>
+            <thead>
+              <tr>
+                <th style={thCell}>Assembly</th>
+                <th style={thCell}>Wards</th>
+                <th style={thCell}>Vote Share</th>
+                <th style={thCell}>Winner</th>
+                <th style={thCell}>Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assemblyOverview.assemblies.map((ac: any) => (
+                <tr key={ac.acCode}>
+                  <td style={tdCell}>{ac.acName}</td>
+                  <td style={tdCell}>{ac.totalWards}</td>
+                  <td style={tdCell}>
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                      {ac.voteShare.map((v: any) => (
+                        <AllianceBadge
+                          key={v.alliance}
+                          alliance={v.alliance}
+                          votes={v.votes}
+                          pct={v.percentage}
+                        />
+                      ))}
+                    </div>
+                  </td>
+                  <td style={tdCell}><b>{ac.winner}</b></td>
+                  <td style={tdCell}>{ac.margin ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </ResponsiveTable>
+        </>
+      )}
+
     </div>
   );
 }

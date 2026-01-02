@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-
+import { AVAILABLE_YEARS } from "../lib/constants";
 /* ======= Shared Styles ======= */
 
 const labelStyle: React.CSSProperties = {
@@ -20,7 +20,7 @@ const selectStyle: React.CSSProperties = {
   fontSize: 14,
 };
 
-const AVAILABLE_YEARS = [2015, 2020, 2019, 2024];
+
 
 const LOCALBODY_TYPES = [
   { value: "", label: "All Types" },

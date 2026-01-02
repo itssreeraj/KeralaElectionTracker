@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { AVAILABLE_YEARS } from "../lib/constants";
 
 /* ========= TYPES ========= */
 
@@ -52,49 +53,6 @@ type AnalysisResponse = {
   elections: Record<string, SingleElectionAnalysis>;
 };
 
-/* ========= DETAILED TABLE TYPES ========= */
-
-/**
- * Backend shape suggested for detailed endpoint:
- *
- * GET /admin/analysis/localbody/{id}/details?years=2015,2020,2024
- *
- * {
- *   "2015": {
- *     "year": 2015,
- *     "type": "LOCALBODY",
- *     "wards": [
- *       {
- *         "wardNum": 1,
- *         "wardName": "Chemmaruthy",
- *         "alliances": [
- *           { "alliance": "LDF", "votes": 123, "percentage": 45.6 },
- *           { "alliance": "UDF", "votes": 100, "percentage": 37.0 },
- *           ...
- *         ],
- *         "total": 270,
- *         "winner": "LDF",
- *         "margin": 23
- *       }
- *     ]
- *   },
- *   "2024": {
- *     "year": 2024,
- *     "type": "GE",
- *     "booths": [
- *       {
- *         "boothNum": 56,
- *         "boothName": "St. Joseph School",
- *         "alliances": [...],
- *         "total": 802,
- *         "winner": "UDF",
- *         "margin": 32
- *       }
- *     ]
- *   }
- * }
- */
-
 type AllianceVoteDetail = {
   alliance: string;
   votes: number;
@@ -138,7 +96,7 @@ const ALLIANCE_COLORS: Record<string, string> = {
   OTH: "#999999",
 };
 
-const AVAILABLE_YEARS = [2015, 2020, 2019, 2024, 2025, 2026];
+
 
 /* ========= COMPONENT ========= */
 
@@ -155,7 +113,7 @@ export default function LocalbodyAnalysisTab() {
   const [selectedYears, setSelectedYears] = useState<number[]>([
     2015,
     2020,
-    2024,
+    2025,
   ]);
 
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
