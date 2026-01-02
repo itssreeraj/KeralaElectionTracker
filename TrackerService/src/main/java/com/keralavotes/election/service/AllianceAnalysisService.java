@@ -32,14 +32,7 @@ public class AllianceAnalysisService {
 
     private final EntityManager em;
 
-    public AllianceAnalysisResponse analyze(
-            int district,
-            String type,
-            String alliance,
-            int year,
-            int swingPercent,
-            Long localbodyId
-    ) {
+    public AllianceAnalysisResponse analyze(int district, String type, String alliance, int year, int swingPercent, Long localbodyId) {
 
         // ======== Load Localbodies ========
         List<Localbody> lbs;
@@ -48,9 +41,7 @@ public class AllianceAnalysisService {
             // Single localbody selected
             Localbody lb = localbodyRepo.findById(localbodyId)
                     .orElseThrow(() -> new RuntimeException("Localbody not found: " + localbodyId));
-
             lbs = List.of(lb);
-
         } else {
             // All localbodies of district & type
             if (type == null || type.isBlank()) {
@@ -135,8 +126,8 @@ public class AllianceAnalysisService {
             Set<Long> wardIds = wards.stream().map(Ward::getId).collect(Collectors.toSet());
 
             // Fetch ward results for these wards
-                        List<LbWardResult> results =
-                                wardResultRepo.findByElectionYearAndWardIdIn(year, wardIds);
+            List<LbWardResult> results =
+                    wardResultRepo.findByElectionYearAndWardIdIn(year, wardIds);
 
             Map<Integer, List<LbWardResult>> wardGroups = results.stream()
                     .collect(groupingBy(LbWardResult::getWardId));
@@ -177,7 +168,7 @@ public class AllianceAnalysisService {
             out.setWardsWinnable(winnable);
 
             // NEW: total wards & majority
-            int totalWards = wards.size();
+            int totalWards = wardGroups.size();
             int majority = (totalWards / 2) + 1;
             out.setTotalWards(totalWards);
             out.setMajorityNeeded(majority);
@@ -279,12 +270,15 @@ public class AllianceAnalysisService {
                 .toList();
     }
 
-    public LocalbodyWardDetailsResponse getWardDetails(
-            Long localbodyId,
-            String alliance,
-            int year,
-            int swingPercent
-    ) {
+    /**
+     * Get ward-level details for a localbody with swing analysis.
+     * @param localbodyId Localbody ID
+     * @param alliance Target alliance
+     * @param year Election year
+     * @param swingPercent Swing percentage
+     * @return LocalbodyWardDetailsResponse
+     */
+    public LocalbodyWardDetailsResponse getWardDetails(Long localbodyId, String alliance, int year, int swingPercent) {
         Localbody lb = localbodyRepo.findById(localbodyId)
                 .orElseThrow(() -> new IllegalArgumentException("Localbody not found: " + localbodyId));
 
