@@ -1,7 +1,10 @@
 "use client";
 
+import { getConfig } from "@/config/env";
+
 import React, { useEffect, useState } from "react";
 import { AVAILABLE_YEARS } from "../lib/constants";
+
 /* ======= Shared Styles ======= */
 
 const labelStyle: React.CSSProperties = {
@@ -207,8 +210,9 @@ function WardStatusBadge({ status }: { status: WardStatus }) {
 /* ========= MAIN TAB ========= */
 
 export default function AllianceAnalysisTab() {
+  const config = getConfig();
   const backend =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+    `${config.apiBase}` || "http://localhost:8080/api";
 
   const [districts, setDistricts] = useState<any[]>([]);
   const [localbodies, setLocalbodies] = useState<any[]>([]);

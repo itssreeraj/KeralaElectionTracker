@@ -1,5 +1,7 @@
 "use client";
 
+import { getConfig } from "@/config/env";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,8 +16,7 @@ import WardAssemblyMappingTab from "@/components/WardAssemblyMappingTab";
 import PartyAllianceAdminTab from "@/components/PartyAllianceAdminTab";
 
 // backend URL
-const backend =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+const backend = `${getConfig().apiBase}` || "http://localhost:8080/api";
 
 const tabs: { key: string; label: string }[] = [
   { key: "upload", label: "CSV Upload" },

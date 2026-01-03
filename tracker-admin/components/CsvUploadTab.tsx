@@ -34,10 +34,10 @@ export default function CsvUploadTab({ backend }: { backend: string }) {
 
   return (
     <div>
-      <CsvUploadBlock title="Booths CSV" onUpload={(file) => uploadFile("/import/booths", file)} />
-      <CsvUploadBlock title="Candidates CSV" onUpload={(file) => uploadFile("/import/candidates", file)} />
-      <CsvUploadBlock title="Form 20 Votes CSV" onUpload={(file) => uploadFile("/import/form20", file)} />
-      <CsvUploadBlock title="Form 20 Totals CSV" onUpload={(file) => uploadFile("/import/form20-totals", file)} />
+      <CsvUploadBlock title="Booths CSV" onUpload={(file: File) => uploadFile("/import/booths", file)} />
+      <CsvUploadBlock title="Candidates CSV" onUpload={(file: File) => uploadFile("/import/candidates", file)} />
+      <CsvUploadBlock title="Form 20 Votes CSV" onUpload={(file: File) => uploadFile("/import/form20", file)} />
+      <CsvUploadBlock title="Form 20 Totals CSV" onUpload={(file: File) => uploadFile("/import/form20-totals", file)} />
 
       <div
         style={{

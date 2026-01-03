@@ -1,5 +1,7 @@
 "use client";
 
+import { getConfig } from "@/config/env";
+
 import React, { useState } from "react";
 import AssemblySelector from "./AssemblySelector";
 import DistrictSelector from "./DistrictSelector";
@@ -48,8 +50,9 @@ type AnalysisResponse = {
   wards: WardRow[];
 };
 
+const config = getConfig();
 const backend =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+  `${config.apiBase}` || "http://localhost:8080/api";
 
 
 /* ===================== CONSTANTS ===================== */

@@ -1,3 +1,6 @@
+import { getConfig } from "@/config/env";
+const config = getConfig();
+
 export async function uploadCsv(
   endpoint: string,
   file: File,
@@ -11,7 +14,7 @@ export async function uploadCsv(
   });
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BACKEND_URL}${endpoint}`,
+    `${config.apiBase}${endpoint}`,
     {
       method: "POST",
       body: form,
