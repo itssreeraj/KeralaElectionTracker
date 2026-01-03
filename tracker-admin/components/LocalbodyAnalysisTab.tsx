@@ -1,5 +1,7 @@
 "use client";
 
+import { getConfig } from "@/config/env";
+
 import React, { useEffect, useState } from "react";
 import { AVAILABLE_YEARS } from "../lib/constants";
 
@@ -101,8 +103,9 @@ const ALLIANCE_COLORS: Record<string, string> = {
 /* ========= COMPONENT ========= */
 
 export default function LocalbodyAnalysisTab() {
+  const config = getConfig();
   const backend =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+    `${config.apiBase}`|| "http://localhost:8080/api";
 
   const [districts, setDistricts] = useState<District[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");

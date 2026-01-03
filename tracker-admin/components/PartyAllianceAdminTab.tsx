@@ -1,5 +1,7 @@
 "use client";
 
+import { getConfig } from "@/config/env";
+
 import React, { useEffect, useState, useMemo } from "react";
 
 /* ===================== TYPES ===================== */
@@ -24,8 +26,9 @@ type RowState = {
   dirty: boolean;
 };
 
+const config = getConfig();
 const backend =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api";
+  `${config.apiBase}` || "http://localhost:8080/api";
 
 const YEARS = [2010, 2015, 2019, 2020, 2024, 2025];
 const TYPES = ["LOCALBODY", "ASSEMBLY", "LOKSABHA"];
