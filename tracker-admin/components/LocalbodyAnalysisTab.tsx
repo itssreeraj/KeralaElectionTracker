@@ -106,6 +106,8 @@ export default function LocalbodyAnalysisTab() {
   const config = getConfig();
   const backend = config.apiBase ? config.apiBase : "http://localhost:8080/api";
   console.log("Using backend:", backend);
+  const posterBase = config.posterBase ? config.posterBase.replace(/\/$/, "") : "";
+  const profile = config.env || "";
 
   const [districts, setDistricts] = useState<District[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
@@ -415,6 +417,13 @@ export default function LocalbodyAnalysisTab() {
   const generatePoster = async () => {
     if (!analysis) return;
 
+    if (!posterBase) {
+      alert(
+        `Poster service not configured for profile: ${profile || "unknown"}. Set NEXT_PUBLIC_POSTER_BASE in your environment.`
+      );
+      return;
+    }
+
     setPosterLoading(true);
     setPosterImage(null);
 
@@ -483,7 +492,7 @@ export default function LocalbodyAnalysisTab() {
     };
 
     try {
-      const res = await fetch("http://localhost:4000/generate", {
+      const res = await fetch(`${posterBase}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
