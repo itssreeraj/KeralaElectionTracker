@@ -104,8 +104,8 @@ const ALLIANCE_COLORS: Record<string, string> = {
 
 export default function LocalbodyAnalysisTab() {
   const config = getConfig();
-  const backend =
-    `${config.apiBase}`|| "http://localhost:8080/api";
+  const backend = config.apiBase ? config.apiBase : "http://localhost:8080/api";
+  console.log("Using backend:", backend);
 
   const [districts, setDistricts] = useState<District[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");

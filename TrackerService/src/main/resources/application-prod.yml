@@ -12,9 +12,9 @@ spring:
       max-request-size: 50MB
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/keralavotes
-    username: keralavotes
-    password: keralavotes
+    url: jdbc:postgresql://localhost:5432/keralavotes_prod
+    username: keralavotes_prod_user
+    password: keralavotes_prod_user
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
