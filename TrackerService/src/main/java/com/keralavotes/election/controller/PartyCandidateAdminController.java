@@ -2,14 +2,18 @@ package com.keralavotes.election.controller;
 
 import com.keralavotes.election.dto.*;
 import com.keralavotes.election.entity.Alliance;
+import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.Candidate;
 import com.keralavotes.election.entity.LoksabhaConstituency;
 import com.keralavotes.election.entity.Party;
 import com.keralavotes.election.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -21,6 +25,7 @@ public class PartyCandidateAdminController {
     private final PartyRepository partyRepo;
     private final CandidateRepository candidateRepo;
     private final LoksabhaConstituencyRepository lsRepo;
+    private final AssemblyConstituencyRepository assemblyConstituencyRepo;
 
     /* ---------------- Alliances ---------------- */
 
@@ -99,12 +104,81 @@ public class PartyCandidateAdminController {
                             p != null ? p.getId() : null,
                             p != null ? p.getName() : null,
                             p != null ? p.getShortName() : null,
+                            c.getElectionType(),
                             a != null ? a.getId() : null,
                             a != null ? a.getName() : null,
                             a != null ? a.getColor() : null
                     );
                 })
                 .toList();
+    }
+
+    @PostMapping("/candidates")
+    public ResponseEntity<List<Candidate>> addCandidates(@RequestBody BatchCreateCandidateRequest req) {
+        List<Candidate> candidates = new ArrayList<>();
+
+        for (CreateCandidateRequest cReq : req.getCandidates()) {
+            if (cReq.getElectionType() == null) {
+                throw new IllegalArgumentException("Election type is required");
+            }
+
+            String electionType = cReq.getElectionType().toUpperCase();
+
+            LoksabhaConstituency ls = null;
+            AssemblyConstituency ac = null;
+
+            switch (electionType) {
+                case "LS":
+                    if (cReq.getLsCode() == null) {
+                        throw new IllegalArgumentException("lsCode is required for LS candidate");
+                    }
+                    if (cReq.getAcCode() != null) {
+                        throw new IllegalArgumentException("acCode must be null for LS candidate");
+                    }
+
+                    ls = lsRepo.findById(cReq.getLsCode())
+                            .orElseThrow(() ->
+                                    new IllegalArgumentException(
+                                            "LS Constituency not found: " + cReq.getLsCode()
+                                    )
+                            );
+                    break;
+                case "AC":
+                    if (cReq.getAcCode() == null) {
+                        throw new IllegalArgumentException("acCode is required for AC candidate");
+                    }
+                    if (cReq.getLsCode() != null) {
+                        throw new IllegalArgumentException("lsCode must be null for AC candidate");
+                    }
+
+                    ac = assemblyConstituencyRepo.findById(cReq.getAcCode())
+                            .orElseThrow(() ->
+                                    new IllegalArgumentException(
+                                            "AC Constituency not found: " + cReq.getAcCode()
+                                    )
+                            );
+                    break;
+                default:
+                    throw new IllegalArgumentException(
+                            "Invalid electionType: " + cReq.getElectionType()
+                    );
+            }
+
+            Candidate candidate = Candidate.builder()
+                    .name(cReq.getName())
+                    .electionYear(cReq.getElectionYear())
+                    .electionType(electionType)
+                    .ls(ls)
+                    .ac(ac)
+                    .build();
+            candidates.add(candidate);
+        }
+
+        List<Candidate> saved = candidateRepo.saveAll(candidates);
+
+        return saved.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(saved);
     }
 
     @PutMapping("/candidates/{id}/party")
@@ -134,6 +208,7 @@ public class PartyCandidateAdminController {
                 savedParty != null ? savedParty.getId() : null,
                 savedParty != null ? savedParty.getName() : null,
                 savedParty != null ? savedParty.getShortName() : null,
+                saved.getElectionType(),
                 a != null ? a.getId() : null,
                 a != null ? a.getName() : null,
                 a != null ? a.getColor() : null

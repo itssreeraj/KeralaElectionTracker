@@ -1,10 +1,10 @@
+server:
+  port: 8081
+
 spring:
   config:
     activate:
       on-profile: dev
-
-  server:
-    port: 8081
 
   datasource:
     url: jdbc:postgresql://localhost:5432/keralavotes

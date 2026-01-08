@@ -52,4 +52,7 @@ public class PollingStation {
 
     @ManyToOne @JoinColumn(name = "ward_id")
     private Ward ward;
+
+    @Column(nullable = false)
+    private int electionYear;
 }

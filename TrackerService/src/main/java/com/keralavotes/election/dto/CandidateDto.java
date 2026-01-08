@@ -17,6 +17,8 @@ public class CandidateDto {
     private String partyName;
     private String partyCode;
 
+    private String electionType;
+
     private Long allianceId;
     private String allianceName;
     private String allianceColor;
