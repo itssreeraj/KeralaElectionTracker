@@ -12,4 +12,6 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
 
     List<Candidate> findByElectionYearOrderByNameAsc(int electionYear);
     List<Candidate> findByLs_IdAndElectionYearOrderByNameAsc(Long lsId, int electionYear);
+    List<Candidate> findByNameAndLs_LsCodeAndElectionYearOrderByNameAsc(String name, Long lsCode, int electionYear);
+    List<Candidate> findByNameAndAc_AcCodeAndElectionYearOrderByNameAsc(String name, Long acCode, int electionYear);
 }
