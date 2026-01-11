@@ -1,5 +1,6 @@
 package com.keralavotes.election.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,10 @@ public class PollingStationResultRequest {
     @JsonProperty("lbName")
     private String lbName;
 
+    @JsonProperty("NOTA")
+    @JsonAlias("U")
+    private Double nota;
+
     // ---- Dynamic candidate votes ----
     private Map<String, Integer> candidateVotes = new HashMap<>();
 
@@ -46,10 +51,11 @@ public class PollingStationResultRequest {
         // Exclude known keys
         switch (key) {
             case "Serial No", "Total Valid Votes", "Rejected Votes",
-                 "Total", "Tendered Votes", "psName", "lbName" -> {}
+                 "Total", "Tendered Votes", "psName", "lbName", "NOTA", "U" -> {}
             default -> {
                 // Store candidate vote using the candidate name as key
-                candidateVotes.put(key, value == null ? 0 : (int) Double.parseDouble(value.toString()));
+                if (key.length() > 1)
+                    candidateVotes.put(key, value == null ? 0 : ((Number) value).intValue());
             }
         }
     }

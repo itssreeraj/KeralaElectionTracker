@@ -21,7 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -38,97 +41,120 @@ public class BoothResultService {
 
     @Transactional
     public String insertPollingStationResult(PollingStationResultInsertRequest  resultInsertRequest) {
-        resultInsertRequest.getResults()
-                .forEach(psListResults->{
-                    String acName = psListResults.getAcName();
-                    AssemblyConstituency constituency = assemblyRepository.findByName(acName);
-                    int electionYear = Integer.parseInt(psListResults.getElectionYear());
-                    String electionType = psListResults.getElectionType();
-                    int lsCode = psListResults.getLsCode();
+        for (var psListResults : resultInsertRequest.getResults()) {
 
-                    List<PollingStation> pollingStationList = new ArrayList<>();
-                    List<Candidate> candidateList;
-                    List<BoothTotals> boothTotalsList = new ArrayList<>();
-                    List<BoothVotes>  boothVotesList = new ArrayList<>();
+            String acName = psListResults.getAcName();
+            int acCode = psListResults.getAcCode();
+            AssemblyConstituency constituency = assemblyRepository.findByAcCode(acCode)
+                    .or(() -> assemblyRepository.findByNameIgnoreCase(acName))
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Assembly not found by code or name: " + acCode + " / " + acName));
 
-                    if (electionType.equalsIgnoreCase("LS")) {
-                        candidateList = candidateRepository
-                                .findByLs_IdAndElectionYearOrderByNameAsc(
-                                        (long) lsCode,
-                                        electionYear
-                                );
-                    } else {
-                        candidateList = new ArrayList<>();
+            int electionYear = Integer.parseInt(psListResults.getElectionYear());
+            String electionType = psListResults.getElectionType();
+            int lsCode = psListResults.getLsCode();
+
+            Set<Integer> existingPs =
+                    pollingStationRepository.findExistingPsNumbers(acCode, electionYear);
+
+            Set<Integer> existingTotals =
+                    boothTotalsRepository.findExistingTotals(acCode, electionYear);
+
+            Set<String> existingVotes =
+                    boothVotesRepository.findExistingVoteKeys(acCode, electionYear);
+
+            LoksabhaConstituency ls = loksabhaConstituencyRepository.findById((long) lsCode)
+                    .orElseThrow(() -> new IllegalArgumentException("LS Constituency not found: " + lsCode));
+
+            /*
+             * 1. Load all candidates once
+             */
+            List<Candidate> existingCandidates =
+                    candidateRepository.findByLs_IdAndElectionYearOrderByNameAsc((long) lsCode, electionYear);
+
+            Map<String, Candidate> candidateMap = new HashMap<>();
+            for (Candidate c: existingCandidates) {
+                candidateMap.put(c.getName().toUpperCase(), c);
+            }
+
+            List<Candidate> newCandidates = new ArrayList<>();
+
+            List<PollingStation> pollingStations = new ArrayList<>();
+            List<BoothTotals> boothTotals = new ArrayList<>();
+            List<BoothVotes>  boothVotes = new ArrayList<>();
+
+            for (var psResult : psListResults.getResults()) {
+
+                Localbody lb = localbodyRepository.findSingleByNameIgnoreCaseAndTypeIn(
+                        psResult.getLbName(), List.of("grama_panchayath", "municipality", "corporation")
+                );
+                if (existingPs.contains(psResult.getSerialNo()))
+                    continue;
+                PollingStation pollingStation = PollingStation.builder()
+                        .electionYear(electionYear)
+                        .psNumber(psResult.getSerialNo())
+                        .psNumberRaw(String.valueOf(psResult.getSerialNo()))
+                        .name(psResult.getPsName())
+                        .ac(constituency)
+                        .localbody(lb)
+                        .build();
+                pollingStations.add(pollingStation);
+
+                BoothTotals totals = BoothTotals.builder()
+                        .pollingStation(pollingStation)
+                        .totalValid(psResult.getTotalValidVotes())
+                        .rejected(psResult.getRejectedVotes())
+                        .nota(psResult.getNota().intValue())
+                        .year(electionYear)
+                        .build();
+                if(!existingTotals.contains(psResult.getSerialNo())) {
+                    boothTotals.add(totals);
+                }
+
+                for (var entry : psResult.getCandidateVotes().entrySet()) {
+
+                    String name = entry.getKey().toUpperCase();
+                    Integer votes = entry.getValue() == null ? 0 : entry.getValue();
+
+                    Candidate candidate = candidateMap.get(name);
+
+                    if (candidate == null) {
+                        candidate = Candidate.builder()
+                                .name(name)
+                                .electionYear(electionYear)
+                                .electionType(electionType)
+                                .ls(ls)
+                                .ac(null)
+                                .build();
+
+                        newCandidates.add(candidate);
+                        candidateMap.put(name, candidate);
                     }
+                    String votekey = psResult.getSerialNo() + "_" +candidate.getId();
+                    if(!existingVotes.contains(votekey)) {
+                        boothVotes.add(
+                                BoothVotes.builder()
+                                        .pollingStation(pollingStation)
+                                        .candidate(candidate)
+                                        .votes(votes)
+                                        .year(electionYear)
+                                        .build()
+                        );
+                    }
+                }
+                log.info("Booth Total saved in memory for booth {}", totals.getPollingStation().getPsNumber());
+            }
 
-                    LoksabhaConstituency ls = loksabhaConstituencyRepository
-                            .findById((long) lsCode)
-                            .orElseThrow(() ->
-                                    new IllegalArgumentException(
-                                            "LS Constituency not found: " + lsCode)
-                            );
+            if (!newCandidates.isEmpty())
+                candidateRepository.saveAll(newCandidates);
 
-                    psListResults.getResults()
-                            .forEach(psResult -> {
-                                Localbody lb = localbodyRepository.findSingleByNameIgnoreCaseAndTypeIn(
-                                        psResult.getLbName(),
-                                        List.of("grama_panchayath", "municipality", "corporation"));
-                                PollingStation pollingStation =  PollingStation.builder()
-                                        .electionYear(electionYear)
-                                        .psNumber(psResult.getSerialNo())
-                                        .psNumberRaw(String.valueOf(psResult.getSerialNo()))
-                                        .name(psResult.getPsName())
-                                        .ac(constituency)
-                                        .localbody(lb)
-                                        .build();
-                                pollingStationList.add(pollingStation);
+            pollingStationRepository.saveAll(pollingStations);
+            boothTotalsRepository.saveAll(boothTotals);
+            boothVotesRepository.saveAll(boothVotes);
 
-                                BoothTotals.BoothTotalsBuilder boothTotalsBuilder = BoothTotals.builder();
-                                boothTotalsBuilder.pollingStation(pollingStation);
-                                boothTotalsBuilder.totalValid(psResult.getTotalValidVotes());
-                                boothTotalsBuilder.rejected(psResult.getRejectedVotes());
-                                boothTotalsBuilder.year(electionYear);
-                                psResult.getCandidateVotes().forEach((key, value) -> {
-                                    if (key.startsWith("NOTA"))
-                                        boothTotalsBuilder.nota(value);
-                                    else if (electionType.equalsIgnoreCase("LS")) {
-                                        List<String> candidates = candidateList.stream()
-                                                .map(Candidate::getName)
-                                                .filter(name -> name.equalsIgnoreCase(key)).toList();
-                                        Candidate savedCandidate;
-                                        if (candidates.isEmpty()) {
-                                            Candidate candidate = Candidate.builder()
-                                                    .name(key)
-                                                    .electionYear(electionYear)
-                                                    .electionType(electionType)
-                                                    .ls(ls)
-                                                    .ac(null)
-                                                    .build();
-                                            savedCandidate = candidateRepository.save(candidate);
-                                        } else {
-                                            savedCandidate = candidateList.stream()
-                                                    .filter(cand -> cand.getName().equalsIgnoreCase(key))
-                                                    .findFirst()
-                                                    .orElse(null);
-                                        }
-                                        BoothVotes boothVotes = BoothVotes.builder()
-                                                .pollingStation(pollingStation)
-                                                .candidate(savedCandidate)
-                                                .votes(value)
-                                                .year(electionYear)
-                                                .build();
-                                        boothVotesList.add(boothVotes);
-                                    }
-                                });
-                                BoothTotals totals = boothTotalsBuilder.build();
-                                boothTotalsList.add(totals);
-                                log.info("Booth Total saved in memory for booth {}", totals.getPollingStation().getPsNumber());
-                            });
-                    pollingStationRepository.saveAll(pollingStationList);
-                    boothVotesRepository.saveAll(boothVotesList);
-                    boothTotalsRepository.saveAll(boothTotalsList);
-                    log.info("Successfully inserted pollingStationResult for constituency: {}", constituency.getName());
-                });
+            log.info("Successfully inserted {} booths, {} votes, for constituency: {}",
+                    pollingStations.size(), boothVotes.size(), constituency.getName());
+        };
         return "OK";
     }
 }

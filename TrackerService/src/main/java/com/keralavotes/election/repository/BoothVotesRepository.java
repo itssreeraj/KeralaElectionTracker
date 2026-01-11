@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Set;
 
 public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
 
@@ -97,5 +98,10 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
     ORDER BY ps.psNumber ASC
 """)
     List<Object[]> getBoothAllianceVotes(Long lbId, Integer year);
+
+    @Query("select concat(v.pollingStation.psNumber, '_', v.candidate.id)" +
+            "from BoothVotes v " +
+            "where v.pollingStation.ac.acCode = :acCode and v.year = :year")
+    Set<String> findExistingVoteKeys(int acCode, int year);
 
 }

@@ -2,6 +2,7 @@ package com.keralavotes.election.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,7 +24,10 @@ public class ConstituencyPollingStationResultRequest {
     private String electionType;
 
     @JsonProperty("lsCode")
-    private int lsCode;
+    private Integer lsCode;
+
+    @JsonProperty("acCode")
+    private Integer acCode;
 
     @JsonProperty("results")
     private List<PollingStationResultRequest> results;
