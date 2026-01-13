@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface AssemblyConstituencyRepository extends JpaRepository<AssemblyConstituency, Long> {
     Optional<AssemblyConstituency> findByAcCode(int acCode);
-    AssemblyConstituency findByName(String name);
+    Optional<AssemblyConstituency> findByNameIgnoreCase(String name);
     List<AssemblyConstituency> findByDistrict_DistrictCode(Integer districtCode);
     List<AssemblyConstituency> findByLs_LsCode(String lsCode);
     Optional<AssemblyConstituency> findByAcCode(Integer acCode);

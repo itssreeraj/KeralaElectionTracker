@@ -33,8 +33,9 @@ public class BoothTotals {
     @Column(nullable = false)
     private Integer rejected;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Integer nota;
+    private Integer nota = 0;
 
     @Column(nullable = false)
     private Integer year;

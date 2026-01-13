@@ -1,10 +1,10 @@
+server:
+  port: 8081
+
 spring:
   config:
     activate:
       on-profile: dev
-
-  server:
-    port: 8081
 
   datasource:
     url: jdbc:postgresql://localhost:5432/keralavotes
@@ -16,7 +16,13 @@ spring:
       ddl-auto: validate
     show-sql: false
     properties:
-      hibernate.format_sql: true
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 1000
+        order_inserts: true
+        order_updates: true
+        jdbc.batch_versioned_data: true
   mongodb:
     uri: mongodb://appuser:apppassword@localhost:27017/keralavotes?authSource=keralavotes
     database: keralavotes

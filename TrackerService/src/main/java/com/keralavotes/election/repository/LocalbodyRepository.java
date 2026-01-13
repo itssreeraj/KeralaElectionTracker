@@ -41,4 +41,16 @@ public interface LocalbodyRepository extends JpaRepository<Localbody, Long> {
     List<Localbody> findByDistrict_DistrictCodeAndTypeIgnoreCase(int district, String type);
 
     List<Localbody> findByDistrict_DistrictCode(int district);
+
+    List<Localbody> findByNameIgnoreCaseAndTypeIn(String name, List<String> types);
+
+    default Localbody findSingleByNameIgnoreCaseAndTypeIn(
+            String name, List<String> types) {
+
+        List<Localbody> matches =
+                findByNameIgnoreCaseAndTypeIn(name, types);
+
+        return (matches.size() == 1) ? matches.getFirst() : null;
+    }
+
 }

@@ -38,8 +38,14 @@ public class Candidate {
     @ManyToOne @JoinColumn(name = "ls_code")
     private LoksabhaConstituency ls;
 
+    @ManyToOne @JoinColumn(name = "ac_code")
+    private AssemblyConstituency ac;
+
     @Column(name = "election_year", nullable = false)
     private Integer electionYear;
+
+    @Column(name = "election_type", nullable = false)
+    private String electionType;
 
     @ManyToOne
     @JoinColumn(name = "alliance_id")
