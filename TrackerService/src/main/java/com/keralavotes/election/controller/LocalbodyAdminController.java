@@ -70,11 +70,6 @@ public class LocalbodyAdminController {
         return localbodyRepo.findByDistrictNameIgnoreCase(districtName);
     }
 
-    @GetMapping("/booths")
-    public List<PollingStation> getBooths(@RequestParam String acCode) {
-        return boothRepo.findByAc_AcCodeOrderByPsNumberAsc(acCode);
-    }
-
     @PostMapping("/localbody")
     public ResponseEntity<?> createOrFetchLocalbody(@RequestBody CreateLocalbodyRequest req) {
 

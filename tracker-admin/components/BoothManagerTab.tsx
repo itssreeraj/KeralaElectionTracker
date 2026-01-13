@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
 export default function BoothManagerTab({ backend }: { backend: string }) {
   const [districts, setDistricts] = useState<any[]>([]);
@@ -17,6 +18,7 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
   const [filteredLocalbodies, setFilteredLocalbodies] = useState<any[]>([]);
   const [localbodySearch, setLocalbodySearch] = useState("");
 
+  const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
 
   // Form fields for create-booth
   const [form, setForm] = useState({
@@ -102,11 +104,17 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
     );
   }, [localbodySearch, localbodies]);
 
+  useEffect(() => {
+    if (form.ac) {
+      loadBooths(form.ac, year);
+    }
+  }, [year]);
+
 
   /* ---------------------------------------------------
       LOAD BOOTHS FOR SELECTED AC
   ----------------------------------------------------- */
-  const loadBooths = async (acCode: string) => {
+  const loadBooths = async (acCode: string, y: number = year) => {
     if (!acCode) {
       setBooths([]);
       return;
@@ -114,7 +122,9 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
 
     setLoadingBooths(true);
     try {
-      const res = await fetch(`${backend}/admin/booths?acCode=${acCode}`);
+      const res = await fetch(
+        `${backend}/admin/booths?acCode=${acCode}&year=${y}`
+      );
       setBooths(await res.json());
     } finally {
       setLoadingBooths(false);
@@ -148,7 +158,8 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
   const submit = async () => {
     const payload = {
       district: form.district,                                    // district name
-      ac: form.ac,                                                // acCode (string)
+      ac: form.ac,
+      year: year,                                                // acCode (string)
       localbody: form.localbody ? Number(form.localbody) : null,  // localbody ID
       ward: form.ward ? Number(form.ward) : null,                 // ward ID
       psNumber: Number(form.psNumber),
@@ -181,6 +192,34 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
   return (
     <div style={{ padding: 24, color: "white" }}>
       <h2 style={{ marginBottom: 16 }}>Booth Manager</h2>
+
+      {/* Year Toggle */}
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: "block", marginBottom: 6 }}>Election Year</label>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {ANALYSIS_YEARS.map((y) => (
+            <button
+              key={y}
+              onClick={() => {
+                setYear(y);
+                if (form.ac) loadBooths(form.ac, y);
+              }}
+              style={{
+                padding: "4px 10px",
+                borderRadius: 999,
+                border: year === y ? "1px solid #0d6efd" : "1px solid #555",
+                background: year === y ? "#0d6efd33" : "transparent",
+                color: "#fff",
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              {y}
+            </button>
+          ))}
+        </div>
+      </div>
+
 
       {/* District */}
       <label>District</label>
@@ -218,7 +257,7 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
         value={form.ac}
         onChange={(e) => {
           updateForm("ac", e.target.value);
-          loadBooths(e.target.value);
+          loadBooths(e.target.value, year);
         }}
         style={{ width: "100%", padding: 8, marginBottom: 16 }}
       >

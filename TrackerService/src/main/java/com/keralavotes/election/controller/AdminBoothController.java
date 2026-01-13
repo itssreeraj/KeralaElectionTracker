@@ -54,6 +54,7 @@ public class AdminBoothController {
                 .psSuffix(req.getPsSuffix())
                 .psNumberRaw(req.getPsNumber()+ (req.getPsSuffix() !=null ? req.getPsSuffix() :""))
                 .name(req.getName())
+                .electionYear(req.getElectionYear())
                 .build();
 
         return psRepo.save(ps);
@@ -76,6 +77,11 @@ public class AdminBoothController {
                         b.getLocalbody() != null ? b.getLocalbody().getName() : null
                 ))
                 .toList();
+    }
+
+    @GetMapping("/booths")
+    public List<PollingStation> getBooths(@RequestParam Integer acCode, @RequestParam Integer year) {
+        return psRepo.findByAc_AcCodeAndElectionYearOrderByPsNumberAsc(acCode, year);
     }
 
     @PostMapping("/booth/{boothId}/reassign")
