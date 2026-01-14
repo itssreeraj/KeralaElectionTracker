@@ -18,6 +18,9 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
   const [filteredLocalbodies, setFilteredLocalbodies] = useState<any[]>([]);
   const [localbodySearch, setLocalbodySearch] = useState("");
 
+  const [lbTypes, setLbTypes] = useState<string[]>([]);
+  const [selectedLbTypes, setSelectedLbTypes] = useState<Set<string>>(new Set());
+
   const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
 
   // Form fields for create-booth
@@ -55,21 +58,25 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
       FILTER AC LIST (search by code or name)
   ----------------------------------------------------- */
   useEffect(() => {
-    if (!assemblySearch.trim()) {
-      setFilteredAssemblies(assemblies);
-      return;
+    let list = assemblies;
+
+    // district filter
+    if (form.district) {
+      list = list.filter(ac => ac.district?.name === form.district);
     }
 
-    const q = assemblySearch.toLowerCase();
-
-    setFilteredAssemblies(
-      assemblies.filter(
-        (ac) =>
-          String(ac.acCode).toLowerCase().includes(q) ||
+    // search filter
+    if (assemblySearch.trim()) {
+      const q = assemblySearch.toLowerCase();
+      list = list.filter(
+        ac =>
+          String(ac.acCode).includes(q) ||
           ac.name.toLowerCase().includes(q)
-      )
-    );
-  }, [assemblySearch, assemblies]);
+      );
+    }
+
+    setFilteredAssemblies(list);
+  }, [assemblies, form.district, assemblySearch]);
 
   // Load localbodies based on selected district
   useEffect(() => {
@@ -88,21 +95,31 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
       .then((data) => {
         setLocalbodies(data);
         setFilteredLocalbodies(data);
+
+        const types = [...new Set(data.map((lb:any) => lb.type))].sort();
+        setLbTypes(types);
       });
   }, [form.district, backend]);
 
   // Localbody search filter
   useEffect(() => {
-    const q = localbodySearch.toLowerCase();
+    let list = [...localbodies];
 
-    setFilteredLocalbodies(
-      localbodies.filter(
-        (lb) =>
+    if (selectedLbTypes.size > 0) {
+      list = list.filter(lb => selectedLbTypes.has(lb.type));
+    }
+
+    if (localbodySearch.trim()) {
+      const q = localbodySearch.toLowerCase();
+      list = list.filter(
+        lb =>
           lb.name.toLowerCase().includes(q) ||
           lb.type.toLowerCase().includes(q)
-      )
-    );
-  }, [localbodySearch, localbodies]);
+      );
+    }
+
+    setFilteredLocalbodies(list);
+  }, [localbodies, localbodySearch, selectedLbTypes]);
 
   useEffect(() => {
     if (form.ac) {
@@ -300,162 +317,210 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
         </div>
       </div>
 
-      {/* Existing Booths */}
-      <div style={{ marginBottom: 24 }}>
-        <h3>Existing Booths</h3>
 
-        {loadingBooths ? (
-          <p>Loading booths…</p>
-        ) : booths.length === 0 ? (
-          <p>No booths found.</p>
-        ) : (
-            <div
-              style={{
-                maxHeight: 260,
-                overflowY: "auto",
-                background: "#0b0b0b",
-                padding: 12,
-                borderRadius: 8,
-                border: "1px solid #333",
-                boxShadow: "inset 0 0 0 1px #1f1f1f",
-              }}
-            >
 
-            {booths.map((b) => (
+      {form.district && form.ac && (
+      <>
+        {/* Existing Booths */}
+        <div style={{ marginBottom: 24 }}>
+          <h3>Existing Booths</h3>
+
+          {loadingBooths ? (
+            <p>Loading booths…</p>
+          ) : booths.length === 0 ? (
+            <p>No booths found.</p>
+          ) : (
               <div
-                key={b.id}
                 style={{
-                  padding: "6px 8px",
-                  borderBottom: "1px solid #1f1f1f",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+                  maxHeight: 260,
+                  overflowY: "auto",
+                  background: "#0b0b0b",
+                  padding: 12,
+                  borderRadius: 8,
+                  border: "1px solid #333",
+                  boxShadow: "inset 0 0 0 1px #1f1f1f",
                 }}
               >
-                <span>
-                  [{b.psNumber}{b.psSuffix || ""}] — {b.name}
-                </span>
 
-                {b.localbodyName && (
-                  <span
-                    style={{
-                      background: "#1e293b",
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      fontSize: 12,
-                      color: "#93c5fd",
-                    }}
-                  >
-                    {b.localbodyName}
+              {booths.map((b) => (
+                <div
+                  key={b.id}
+                  style={{
+                    padding: "6px 8px",
+                    borderBottom: "1px solid #1f1f1f",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span>
+                    [{b.psNumber}{b.psSuffix || ""}] — {b.name}
                   </span>
-                )}
-              </div>
+
+                  {b.localbodyName && (
+                    <span
+                      style={{
+                        background: "#1e293b",
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        fontSize: 12,
+                        color: "#93c5fd",
+                      }}
+                    >
+                      {b.localbodyName}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* ================ CREATE BOOTH FORM ================ */}
+        <div
+          style={{
+            background: "#0b0b0b",
+            padding: 16,
+            borderRadius: 8,
+            border: "1px solid #333",
+            marginTop: 24,
+          }}
+        >
+
+          <label style={{ fontWeight: 600 }}>Localbody Type</label>
+          <div
+            style={{
+              background: "#111",
+              padding: 10,
+              borderRadius: 6,
+              border: "1px solid #333",
+              maxHeight: 150,
+              overflowY: "auto",
+              marginTop: 6,
+              marginBottom: 12,
+            }}
+          >
+            {lbTypes.map((t) => (
+              <label
+                key={t}
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  marginBottom: 4,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedLbTypes.has(t)}
+                  onChange={() => {
+                    const next = new Set(selectedLbTypes);
+                    next.has(t) ? next.delete(t) : next.add(t);
+                    setSelectedLbTypes(next);
+                  }}
+                />
+                {t}
+              </label>
             ))}
           </div>
-        )}
-      </div>
 
-      <div
-        style={{
-          background: "#0b0b0b",
-          padding: 16,
-          borderRadius: 8,
-          border: "1px solid #333",
-          marginTop: 24,
-        }}
-      >
-        {/* Localbody Search */}
-        <label>Search Localbody</label>
-        <input
-          type="text"
-          placeholder="search name or type..."
-          value={localbodySearch}
-          onChange={(e) => setLocalbodySearch(e.target.value)}
-          style={{
-            width: "100%",
-            padding: 8,
-            marginBottom: 8,
-            background: "#222",
-            color: "white",
-          }}
-        />
-
-        {/* Localbody */}
-        <label>Localbody</label>
-        <select
-          value={form.localbody}
-          onChange={(e) => {
-            updateForm("localbody", e.target.value);
-            loadWards(e.target.value);
-          }}
-          style={{ width: "100%", padding: 8, marginBottom: 16 }}
-        >
-          <option value="">-- none --</option>
-          {filteredLocalbodies.map((lb) => (
-            <option key={String(lb.id)} value={lb.id}>
-              {lb.name} ({lb.type})
-            </option>
-          ))}
-        </select>
+          {/* Localbody Search */}
+          <label>Search Localbody</label>
+          <input
+            type="text"
+            placeholder="Search localbody…"
+            value={localbodySearch}
+            onChange={(e) => setLocalbodySearch(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 10,
+              marginBottom: 8,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+              outline: "none",
+            }}
+          />
 
 
-        {/* Ward */}
-        <label>Ward</label>
-        <select
-          value={form.ward}
-          onChange={(e) => updateForm("ward", e.target.value)}
-          style={{ width: "100%", padding: 8, marginBottom: 16 }}
-        >
-          <option value="">-- none --</option>
-          {wards.map((w) => (
-            <option key={String(w.id)} value={w.id}>
-              {w.number} - {w.name}
-            </option>
-          ))}
-        </select>
+          {/* Localbody */}
+          <label>Localbody</label>
+          <select
+            value={form.localbody}
+            onChange={(e) => {
+              updateForm("localbody", e.target.value);
+              loadWards(e.target.value);
+            }}
+            style={{ width: "100%", padding: 8, marginBottom: 16 }}
+          >
+            <option value="">-- none --</option>
+            {filteredLocalbodies.map((lb) => (
+              <option key={String(lb.id)} value={lb.id}>
+                {lb.name} ({lb.type})
+              </option>
+            ))}
+          </select>
 
-        {/* Booth Number */}
-        <label>Polling Station Number</label>
-        <input
-          type="number"
-          value={form.psNumber}
-          onChange={(e) => updateForm("psNumber", e.target.value)}
-          style={{ width: "100%", padding: 8, marginBottom: 16 }}
-        />
+          {/* Ward */}
+          <label>Ward</label>
+          <select
+            value={form.ward}
+            onChange={(e) => updateForm("ward", e.target.value)}
+            style={{ width: "100%", padding: 8, marginBottom: 16 }}
+          >
+            <option value="">-- none --</option>
+            {wards.map((w) => (
+              <option key={String(w.id)} value={w.id}>
+                {w.number} - {w.name}
+              </option>
+            ))}
+          </select>
 
-        {/* Suffix */}
-        <label>Suffix</label>
-        <input
-          type="text"
-          value={form.psSuffix}
-          onChange={(e) => updateForm("psSuffix", e.target.value)}
-          style={{ width: "100%", padding: 8, marginBottom: 16 }}
-        />
+          {/* Booth Number */}
+          <label>Polling Station Number</label>
+          <input
+            type="number"
+            value={form.psNumber}
+            onChange={(e) => updateForm("psNumber", e.target.value)}
+            style={{ width: "100%", padding: 8, marginBottom: 16 }}
+          />
 
-        {/* Booth Name */}
-        <label>Booth Name</label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={(e) => updateForm("name", e.target.value)}
-          style={{ width: "100%", padding: 8, marginBottom: 24 }}
-        />
+          {/* Suffix */}
+          <label>Suffix</label>
+          <input
+            type="text"
+            value={form.psSuffix}
+            onChange={(e) => updateForm("psSuffix", e.target.value)}
+            style={{ width: "100%", padding: 8, marginBottom: 16 }}
+          />
 
-        {/* Submit */}
-        <button
-          onClick={submit}
-          style={{
-            padding: "12px 20px",
-            background: "#0070f3",
-            color: "white",
-            borderRadius: 6,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Create Booth
-        </button>
-      </div>
+          {/* Booth Name */}
+          <label>Booth Name</label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => updateForm("name", e.target.value)}
+            style={{ width: "100%", padding: 8, marginBottom: 24 }}
+          />
+
+          {/* Submit */}
+          <button
+            onClick={submit}
+            style={{
+              padding: "12px 20px",
+              background: "#0070f3",
+              color: "white",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Create Booth
+          </button>
+        </div>
+      </>
+      )}
     </div>
   );
 }
