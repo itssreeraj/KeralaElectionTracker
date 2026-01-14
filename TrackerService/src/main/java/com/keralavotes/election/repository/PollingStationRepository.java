@@ -14,6 +14,10 @@ public interface PollingStationRepository extends JpaRepository<PollingStation, 
     );
     List<PollingStation> findByAc_AcCodeOrderByPsNumberAsc(String acCode);
 
+    List<PollingStation> findByAc_AcCodeAndElectionYearOrderByPsNumberAsc(
+            Integer acCode, Integer electionYear
+    );
+
     @Query("select ps.psNumber from PollingStation ps where ps.ac.acCode = :acCode and ps.electionYear = :year")
     Set<Integer> findExistingPsNumbers(int acCode, int year);
 

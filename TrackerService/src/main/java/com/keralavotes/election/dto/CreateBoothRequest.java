@@ -11,6 +11,9 @@ public class CreateBoothRequest {
     // Assembly Constituency code
     private String ac;
 
+    // Election Year (e.g. 2024)
+    private Integer electionYear;
+
     // Localbody ID (nullable)
     private Long localbody;
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
 type District = {
   districtCode: number;
@@ -36,6 +37,7 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [selectedDistrict, setSelectedDistrict] = useState("");
 
+  const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
 
   /* ---------------------------------------------
        LOAD ASSEMBLIES + LOCALBODIES
@@ -67,12 +69,43 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
     );
   }, [assemblySearch, assemblies]);
 
+  useEffect(() => {
+    if (selectedAc) {
+      loadBooths(year);
+    }
+  }, [year]);
+
+  useEffect(() => {
+    let list = assemblies;
+
+    if (selectedDistrict) {
+      list = list.filter(
+        ac => ac.district?.name === selectedDistrict
+      );
+    }
+
+    if (assemblySearch.trim()) {
+      const q = assemblySearch.toLowerCase();
+      list = list.filter(
+        ac =>
+          String(ac.acCode).includes(q) ||
+          ac.name.toLowerCase().includes(q)
+      );
+    }
+
+    setFilteredAssemblies(list);
+  }, [assemblies, selectedDistrict, assemblySearch]);
+
+
   /* ---------------------------------------------
        LOAD BOOTHS FOR AC
   ---------------------------------------------- */
-  const loadBooths = async () => {
-    if (!selectedAc) return;
-    const r = await fetch(`${backend}/admin/booths?acCode=${selectedAc}`);
+  const loadBooths = async (y: number = year) => {
+    if (!selectedAc) 
+      return;
+    const r = await fetch(
+      `${backend}/admin/booths?acCode=${selectedAc}&year=${y}`
+    );
     const data = await r.json();
 
     setBooths(data);
@@ -302,6 +335,22 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
     loadBooths();
   };
 
+  const groupedBooths = React.useMemo(() => {
+    const map: Record<string, any[]> = {};
+
+    filteredBooths.forEach((b) => {
+      const key = b.localbody?.name || "UNASSIGNED";
+      if (!map[key]) map[key] = [];
+      map[key].push(b);
+    });
+
+    return Object.entries(map).sort((a, b) => {
+      if (a[0] === "UNASSIGNED") return -1;
+      if (b[0] === "UNASSIGNED") return 1;
+      return a[0].localeCompare(b[0]);
+    });
+  }, [filteredBooths]);
+
 
   /* ---------------------------------------------
         RENDER UI
@@ -310,31 +359,132 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
     <div style={{ padding: 24, color: "white" }}>
       <h2>Reassign Booths</h2>
 
-      {/* Assembly Search */}
-      <label>Search AC</label>
-      <input
-        value={assemblySearch}
-        onChange={(e) => setAssemblySearch(e.target.value)}
-        placeholder="Type AC code or name…"
-        style={{ width: "100%", padding: 8, marginBottom: 8 }}
-      />
+      {/* Year selector */}
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: "block", marginBottom: 6 }}>Election Year</label>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {ANALYSIS_YEARS.map((y) => (
+            <button
+              key={y}
+              onClick={() => {
+                setYear(y);
+                if (selectedAc) loadBooths(y);
+              }}
+              style={{
+                padding: "4px 10px",
+                borderRadius: 999,
+                border: year === y ? "1px solid #0d6efd" : "1px solid #555",
+                background: year === y ? "#0d6efd33" : "transparent",
+                color: "#fff",
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              {y}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <select
-        value={selectedAc}
-        onChange={(e) => setSelectedAc(e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 12 }}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "220px 1fr 260px auto",
+          gap: 12,
+          alignItems: "end",
+          marginBottom: 20,
+        }}
       >
-        <option value="">Select AC</option>
-        {filteredAssemblies.map((ac) => (
-          <option key={ac.acCode} value={ac.acCode}>
-            {ac.acCode} – {ac.name}
-          </option>
-        ))}
-      </select>
+        {/* District */}
+        <div>
+          <label style={{ fontSize: 12, color: "#aaa" }}>District</label>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => {
+              setSelectedDistrict(e.target.value);
+              setSelectedAc("");
+              setBooths([]);
+            }}
+            style={{
+              width: "100%",
+              padding: 10,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+            }}
+          >
+            <option value="">All Districts</option>
+            {districts.map((d) => (
+              <option key={d.districtCode} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <button onClick={loadBooths} disabled={!selectedAc}>
-        Load Booths
-      </button>
+        {/* AC Search */}
+        <div>
+          <label style={{ fontSize: 12, color: "#aaa" }}>Search AC</label>
+          <input
+            value={assemblySearch}
+            onChange={(e) => setAssemblySearch(e.target.value)}
+            placeholder="AC code or name"
+            style={{
+              width: "100%",
+              padding: 10,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+            }}
+          />
+        </div>
+
+        {/* AC Select */}
+        <div>
+          <label style={{ fontSize: 12, color: "#aaa" }}>Assembly</label>
+          <select
+            value={selectedAc}
+            onChange={(e) => setSelectedAc(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 10,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+            }}
+          >
+            <option value="">Select AC</option>
+            {filteredAssemblies.map((ac) => (
+              <option key={ac.acCode} value={ac.acCode}>
+                {ac.acCode} – {ac.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Load Button */}
+        <button
+          onClick={() => loadBooths(year)}
+          disabled={!selectedAc}
+          style={{
+            padding: "10px 16px",
+            height: 42,
+            background: "#0d6efd",
+            color: "white",
+            borderRadius: 6,
+            border: "none",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+            opacity: selectedAc ? 1 : 0.5,
+            cursor: selectedAc ? "pointer" : "not-allowed",
+          }}
+        >
+          Load Booths
+        </button>
+      </div>
 
       {/* Booth Search */}
       {booths.length > 0 && (
@@ -345,7 +495,15 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
             value={boothFilter}
             onChange={(e) => setBoothFilter(e.target.value)}
             placeholder="Search booths…"
-            style={{ width: "100%", padding: 8, marginBottom: 12 }}
+            style={{
+              width: "100%",
+              padding: 10,
+              marginBottom: 12,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+            }}
           />
 
           {/* Select All / None */}
@@ -375,7 +533,7 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
             </button>
           </div>
 
-          {/* Booth list */}
+          {/* Booth list (Grouped by Localbody) */}
           <div
             style={{
               background: "#111",
@@ -386,60 +544,99 @@ export default function ReassignBoothsTab({ backend }: { backend: string }) {
               border: "1px solid #444",
             }}
           >
-            {filteredBooths.map((b, idx) => (
-              <label
-                key={b.id}
-                style={{
-                  display: "block",
-                  marginBottom: 6,
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-                onClick={(e) => toggleBooth(e, b.id, idx)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedBooths.has(b.id)}
-                  readOnly
-                />{" "}
-                [{b.psNumber}
-                {b.psSuffix || ""}] — {b.name}{" "}
-                {b.localbodyName && (
-                  <span style={{ color: "#0af" }}>
-                    (Current: {b.localbodyName})
-                  </span>
-                )}
-              </label>
-            ))}
+            {groupedBooths.map(([groupName, list]) => {
+              const lb = list[0]?.localbody;
+              const type = lb?.type || "unassigned";
+
+              const headerColor =
+                groupName === "UNASSIGNED"
+                  ? "#dc3545"
+                  : type === "municipality"
+                  ? "#facc15"
+                  : "#0d6efd";
+
+              const allSelected = list.every((b) => selectedBooths.has(b.id));
+
+              return (
+                <div key={groupName} style={{ marginBottom: 14 }}>
+                  {/* Group Header */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "10px 12px",
+                      background: "linear-gradient(90deg, #1a1a1a, #111)",
+                      borderLeft: `6px solid ${headerColor}`,
+                      boxShadow: "inset 0 0 0 1px #333",
+                      borderRadius: 4,
+                      marginBottom: 6,
+                    }}
+                  >
+                    <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={() => {
+                          const next = new Set(selectedBooths);
+                          list.forEach((b) =>
+                            allSelected ? next.delete(b.id) : next.add(b.id)
+                          );
+                          setSelectedBooths(next);
+                        }}
+                      />
+                      <span style={{ fontWeight: 600 }}>
+                        {groupName}
+                        {lb && (
+                          <span style={{ color: "#aaa", marginLeft: 6 }}>
+                            ({type})
+                          </span>
+                        )}
+                      </span>
+                    </label>
+
+                    <span style={{ fontSize: 12, color: "#aaa" }}>
+                      {list.length} booths
+                    </span>
+                  </div>
+
+                  {/* Booths in this group */}
+                  {list.map((b) => {
+                    const idx = filteredBooths.findIndex((x) => x.id === b.id);
+                    return (
+                      <label
+                        key={b.id}
+                        onClick={(e) => toggleBooth(e, b.id, idx)}
+                        style={{
+                          display: "block",
+                          paddingLeft: 18,
+                          paddingTop: 4,
+                          paddingBottom: 4,
+                          marginBottom: 6,
+                          borderBottom: "1px solid #1f1f1f",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedBooths.has(b.id)}
+                          readOnly
+                        />{" "}
+                        [{b.psNumber}
+                        {b.psSuffix || ""}] — {b.name}
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
+
 
           <p style={{ marginTop: 8, color: "#0ff" }}>
             Selected Booths: {selectedBooths.size}
           </p>
-
-          {/* DISTRICT FILTER */}
-          <div style={{ marginTop: 20 }}>
-            <label style={{ fontWeight: 600 }}>District</label>
-
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 8,
-                marginTop: 6,
-                marginBottom: 16,
-              }}
-            >
-              <option value="">All Districts</option>
-
-              {districts.map((d) => (
-                <option key={d.districtCode} value={d.name}>
-                  {d.districtCode} – {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
 
           {/* TYPE FILTER */}
           <div style={{ marginBottom: 12 }}>
