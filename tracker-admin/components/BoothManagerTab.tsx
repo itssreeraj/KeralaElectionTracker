@@ -193,9 +193,9 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
     <div style={{ padding: 24, color: "white" }}>
       <h2 style={{ marginBottom: 16 }}>Booth Manager</h2>
 
-      {/* Year Toggle */}
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: "block", marginBottom: 6 }}>Election Year</label>
+      {/* Year */}
+      <div>
+        <label style={{ fontSize: 12, color: "#aaa" }}>Year</label>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {ANALYSIS_YEARS.map((y) => (
             <button
@@ -211,7 +211,6 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
                 background: year === y ? "#0d6efd33" : "transparent",
                 color: "#fff",
                 fontSize: 12,
-                cursor: "pointer",
               }}
             >
               {y}
@@ -220,54 +219,86 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
         </div>
       </div>
 
-
-      {/* District */}
-      <label>District</label>
-      <select
-        value={form.district}
-        onChange={(e) => updateForm("district", e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 16 }}
-      >
-        <option value="">-- select district --</option>
-        {districts.map((d) => (
-          <option key={d.districtCode} value={d.name}>
-            {d.districtCode} - {d.name}
-          </option>
-        ))}
-      </select>
-
-      {/* Assembly Search */}
-      <label>Assembly Constituency</label>
-      <input
-        type="text"
-        placeholder="Search AC..."
-        value={assemblySearch}
-        onChange={(e) => setAssemblySearch(e.target.value)}
+      {/* ================= TOP BAR ================= */}
+      <div
         style={{
-          width: "100%",
-          padding: 8,
-          marginBottom: 8,
-          background: "#222",
-          color: "white",
+          display: "grid",
+          gridTemplateColumns: "200px 220px 1fr 260px",
+          gap: 12,
+          alignItems: "end",
+          marginBottom: 20,
         }}
-      />
-
-      {/* AC Dropdown */}
-      <select
-        value={form.ac}
-        onChange={(e) => {
-          updateForm("ac", e.target.value);
-          loadBooths(e.target.value, year);
-        }}
-        style={{ width: "100%", padding: 8, marginBottom: 16 }}
       >
-        <option value="">-- select AC --</option>
-        {filteredAssemblies.map((ac) => (
-          <option key={ac.acCode} value={ac.acCode}>
-            {ac.acCode} - {ac.name}
-          </option>
-        ))}
-      </select>
+
+        {/* District */}
+        <div>
+          <label style={{ fontSize: 12, color: "#aaa" }}>District</label>
+          <select
+            value={form.district}
+            onChange={(e) => updateForm("district", e.target.value)}
+            style={{
+              width: "100%",
+              padding: 10,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+            }}
+          >
+            <option value="">Select District</option>
+            {districts.map((d) => (
+              <option key={d.districtCode} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* AC Search */}
+        <div>
+          <label style={{ fontSize: 12, color: "#aaa" }}>Search Assembly</label>
+          <input
+            value={assemblySearch}
+            onChange={(e) => setAssemblySearch(e.target.value)}
+            placeholder="AC code or name"
+            style={{
+              width: "100%",
+              padding: 10,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+            }}
+          />
+        </div>
+
+        {/* AC Select */}
+        <div>
+          <label style={{ fontSize: 12, color: "#aaa" }}>Assembly</label>
+          <select
+            value={form.ac}
+            onChange={(e) => {
+              updateForm("ac", e.target.value);
+              loadBooths(e.target.value, year);
+            }}
+            style={{
+              width: "100%",
+              padding: 10,
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+            }}
+          >
+            <option value="">Select AC</option>
+            {filteredAssemblies.map((ac) => (
+              <option key={ac.acCode} value={ac.acCode}>
+                {ac.acCode} – {ac.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {/* Existing Booths */}
       <div style={{ marginBottom: 24 }}>
@@ -278,23 +309,44 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
         ) : booths.length === 0 ? (
           <p>No booths found.</p>
         ) : (
-          <div
-            style={{
-              maxHeight: 200,
-              overflowY: "auto",
-              background: "#111",
-              padding: 12,
-              borderRadius: 6,
-              border: "1px solid #333",
-            }}
-          >
+            <div
+              style={{
+                maxHeight: 260,
+                overflowY: "auto",
+                background: "#0b0b0b",
+                padding: 12,
+                borderRadius: 8,
+                border: "1px solid #333",
+                boxShadow: "inset 0 0 0 1px #1f1f1f",
+              }}
+            >
+
             {booths.map((b) => (
-              <div key={b.id} style={{ marginBottom: 6 }}>
-                [{b.psNumber}
-                {b.psSuffix || ""}] — {b.name}
+              <div
+                key={b.id}
+                style={{
+                  padding: "6px 8px",
+                  borderBottom: "1px solid #1f1f1f",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span>
+                  [{b.psNumber}{b.psSuffix || ""}] — {b.name}
+                </span>
+
                 {b.localbodyName && (
-                  <span style={{ marginLeft: 8, color: "#0ff" }}>
-                    (Localbody: {b.localbodyName})
+                  <span
+                    style={{
+                      background: "#1e293b",
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      color: "#93c5fd",
+                    }}
+                  >
+                    {b.localbodyName}
                   </span>
                 )}
               </div>
@@ -303,97 +355,107 @@ export default function BoothManagerTab({ backend }: { backend: string }) {
         )}
       </div>
 
-      {/* Localbody Search */}
-      <label>Search Localbody</label>
-      <input
-        type="text"
-        placeholder="search name or type..."
-        value={localbodySearch}
-        onChange={(e) => setLocalbodySearch(e.target.value)}
+      <div
         style={{
-          width: "100%",
-          padding: 8,
-          marginBottom: 8,
-          background: "#222",
-          color: "white",
-        }}
-      />
-
-      {/* Localbody */}
-      <label>Localbody</label>
-      <select
-        value={form.localbody}
-        onChange={(e) => {
-          updateForm("localbody", e.target.value);
-          loadWards(e.target.value);
-        }}
-        style={{ width: "100%", padding: 8, marginBottom: 16 }}
-      >
-        <option value="">-- none --</option>
-        {filteredLocalbodies.map((lb) => (
-          <option key={String(lb.id)} value={lb.id}>
-            {lb.name} ({lb.type})
-          </option>
-        ))}
-      </select>
-
-
-      {/* Ward */}
-      <label>Ward</label>
-      <select
-        value={form.ward}
-        onChange={(e) => updateForm("ward", e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 16 }}
-      >
-        <option value="">-- none --</option>
-        {wards.map((w) => (
-          <option key={String(w.id)} value={w.id}>
-            {w.number} - {w.name}
-          </option>
-        ))}
-      </select>
-
-      {/* Booth Number */}
-      <label>Polling Station Number</label>
-      <input
-        type="number"
-        value={form.psNumber}
-        onChange={(e) => updateForm("psNumber", e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 16 }}
-      />
-
-      {/* Suffix */}
-      <label>Suffix</label>
-      <input
-        type="text"
-        value={form.psSuffix}
-        onChange={(e) => updateForm("psSuffix", e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 16 }}
-      />
-
-      {/* Booth Name */}
-      <label>Booth Name</label>
-      <input
-        type="text"
-        value={form.name}
-        onChange={(e) => updateForm("name", e.target.value)}
-        style={{ width: "100%", padding: 8, marginBottom: 24 }}
-      />
-
-      {/* Submit */}
-      <button
-        onClick={submit}
-        style={{
-          padding: "12px 20px",
-          background: "#0070f3",
-          color: "white",
-          borderRadius: 6,
-          border: "none",
-          cursor: "pointer",
+          background: "#0b0b0b",
+          padding: 16,
+          borderRadius: 8,
+          border: "1px solid #333",
+          marginTop: 24,
         }}
       >
-        Create Booth
-      </button>
+        {/* Localbody Search */}
+        <label>Search Localbody</label>
+        <input
+          type="text"
+          placeholder="search name or type..."
+          value={localbodySearch}
+          onChange={(e) => setLocalbodySearch(e.target.value)}
+          style={{
+            width: "100%",
+            padding: 8,
+            marginBottom: 8,
+            background: "#222",
+            color: "white",
+          }}
+        />
+
+        {/* Localbody */}
+        <label>Localbody</label>
+        <select
+          value={form.localbody}
+          onChange={(e) => {
+            updateForm("localbody", e.target.value);
+            loadWards(e.target.value);
+          }}
+          style={{ width: "100%", padding: 8, marginBottom: 16 }}
+        >
+          <option value="">-- none --</option>
+          {filteredLocalbodies.map((lb) => (
+            <option key={String(lb.id)} value={lb.id}>
+              {lb.name} ({lb.type})
+            </option>
+          ))}
+        </select>
+
+
+        {/* Ward */}
+        <label>Ward</label>
+        <select
+          value={form.ward}
+          onChange={(e) => updateForm("ward", e.target.value)}
+          style={{ width: "100%", padding: 8, marginBottom: 16 }}
+        >
+          <option value="">-- none --</option>
+          {wards.map((w) => (
+            <option key={String(w.id)} value={w.id}>
+              {w.number} - {w.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Booth Number */}
+        <label>Polling Station Number</label>
+        <input
+          type="number"
+          value={form.psNumber}
+          onChange={(e) => updateForm("psNumber", e.target.value)}
+          style={{ width: "100%", padding: 8, marginBottom: 16 }}
+        />
+
+        {/* Suffix */}
+        <label>Suffix</label>
+        <input
+          type="text"
+          value={form.psSuffix}
+          onChange={(e) => updateForm("psSuffix", e.target.value)}
+          style={{ width: "100%", padding: 8, marginBottom: 16 }}
+        />
+
+        {/* Booth Name */}
+        <label>Booth Name</label>
+        <input
+          type="text"
+          value={form.name}
+          onChange={(e) => updateForm("name", e.target.value)}
+          style={{ width: "100%", padding: 8, marginBottom: 24 }}
+        />
+
+        {/* Submit */}
+        <button
+          onClick={submit}
+          style={{
+            padding: "12px 20px",
+            background: "#0070f3",
+            color: "white",
+            borderRadius: 6,
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Create Booth
+        </button>
+      </div>
     </div>
   );
 }
