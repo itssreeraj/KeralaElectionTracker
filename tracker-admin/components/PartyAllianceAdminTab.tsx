@@ -3,6 +3,7 @@
 import { getConfig } from "@/config/env";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
 /* ===================== TYPES ===================== */
 type MappingRow = {
@@ -30,16 +31,16 @@ const config = getConfig();
 const backend =
   `${config.apiBase}` || "http://localhost:8080/api";
 
-const YEARS = [2010, 2015, 2019, 2020, 2024, 2025];
 const TYPES = ["LOCALBODY", "ASSEMBLY", "LOKSABHA"];
-
+ 
 /* ===================== COMPONENT ===================== */
 export default function PartyAllianceAdminTab() {
-    const [year, setYear] = useState(2025);
+    const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
     const [type, setType] = useState("LOCALBODY");
 
     const [rows, setRows] = useState<MappingRow[]>([]);
     const [alliances, setAlliances] = useState<Alliance[]>([]);
+    const [parties, setParties] = useState<any[]>([]);
     const [rowState, setRowState] = useState<Record<number, RowState>>({});
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState<number | null>(null);
@@ -80,6 +81,28 @@ export default function PartyAllianceAdminTab() {
       })
       .catch(() => setAlliances([]));
   }, []);
+
+  /* ---------------- Load parties ---------------- */
+  const loadParties = async () => {
+    const r = await fetch(`${backend}/admin/parties`);
+    if (r.ok) setParties(await r.json());
+    else setParties([]);
+  };
+
+  useEffect(() => {
+    loadParties();
+  }, []);
+
+  const updatePartyAlliance = async (partyId: number, allianceId: number | null) => {
+    await fetch(`${backend}/admin/parties/${partyId}/alliance`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allianceId }),
+    });
+
+    await loadParties();
+    reloadMappings();
+  };
 
   // map allianceName (from mappings) -> numeric allianceId
   const allianceNameToId = useMemo(() => {
@@ -234,24 +257,43 @@ export default function PartyAllianceAdminTab() {
 
   /* ===================== RENDER ===================== */
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 24, color: "white" }}>
       <h2 style={{ fontSize: 20, marginBottom: 12 }}>
         Party – Alliance Mapping
       </h2>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-        <select value={year} onChange={e => setYear(+e.target.value)}>
-          {YEARS.map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: 'center' }}>
+        <div>
+          <label style={{ fontSize: 12, color: '#aaa', display: 'block' }}>Year</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {ANALYSIS_YEARS.map(y => (
+              <button
+                key={y}
+                onClick={() => setYear(y)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  border: year === y ? '1px solid #0d6efd' : '1px solid #555',
+                  background: year === y ? '#0d6efd33' : 'transparent',
+                  color: '#fff',
+                  fontSize: 12,
+                }}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        <select value={type} onChange={e => setType(e.target.value)}>
-          {TYPES.map(t => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
+        <div>
+          <label style={{ fontSize: 12, color: '#aaa', display: 'block' }}>Type</label>
+          <select value={type} onChange={e => setType(e.target.value)} style={{ padding: 6 }}>
+            {TYPES.map(t => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
         <h3>Add Alliance</h3>
@@ -287,6 +329,8 @@ export default function PartyAllianceAdminTab() {
                     const res = await fetch(`${backend}/public/alliances`);
                     const data = await res.json();
                     setAlliances(Array.isArray(data) ? data : data?.alliances ?? []);
+                    // keep parties up to date if alliance changes
+                    await loadParties();
                 }}
                 >
                 Add
@@ -354,6 +398,7 @@ export default function PartyAllianceAdminTab() {
                 setNewPartyShort("");
                 setNewPartyAlliance("");
 
+                await loadParties();
                 reloadMappings();
             }}
             >

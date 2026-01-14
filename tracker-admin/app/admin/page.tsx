@@ -1,5 +1,5 @@
 "use client";
-
+ 
 import { getConfig } from "@/config/env";
 
 import { useState } from "react";
@@ -11,7 +11,7 @@ import LsMappingTab from "@/components/LsMappingTab";
 import LocalbodyTab from "@/components/LocalBodyTab";
 import BoothManagerTab from "@/components/BoothManagerTab";
 import ReassignBoothsTab from "@/components/ReassignBoothsTab";
-import PartyMappingTab from "@/components/PartyMappingTab";
+import CandidateMappingTab from "@/components/CandidateMappingTab";
 import WardAssemblyMappingTab from "@/components/WardAssemblyMappingTab";
 import PartyAllianceAdminTab from "@/components/PartyAllianceAdminTab";
 
@@ -24,7 +24,7 @@ const tabs: { key: string; label: string }[] = [
   { key: "localbody", label: "Localbody Mapping" },
   { key: "booth", label: "Booth Manager" },
   { key: "reassign", label: "Reassign Booths" },
-  { key: "party", label: "Party Mapping" },
+  { key: "candidate", label: "Candidate Mapping" },
   { key: "wardmap", label: "Ward Assembly Mapping" },
   { key: "partyalliance", label: "Party Alliance Mapping" },
 ];
@@ -74,7 +74,7 @@ export default function AdminPage() {
         {tab === "localbody" && <LocalbodyTab backend={backend} />}
         {tab === "booth" && <BoothManagerTab backend={backend} />}
         {tab === "reassign" && <ReassignBoothsTab backend={backend} />}
-        {tab === "party" && <PartyMappingTab backend={backend} />}
+        {tab === "candidate" && <CandidateMappingTab backend={backend} />}
         {tab === "wardmap" && <WardAssemblyMappingTab backend={backend} />}
         {tab === "partyalliance" && <PartyAllianceAdminTab />}
       </div>
