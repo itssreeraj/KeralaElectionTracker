@@ -10,7 +10,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AllianceDto {
-    private String code;   // LDF / UDF / NDA / IND
+    private long id;   // LDF / UDF / NDA / IND
     private String name;
     private String color;
 }

@@ -263,7 +263,7 @@ public class AllianceAnalysisService {
         return allianceRepository.findAll()
                 .stream()
                 .map(a -> new AllianceDto(
-                        a.getName(),  // code
+                        a.getId(),  // allianceID
                         a.getName(),  // display name
                         a.getColor()  // color
                 ))
