@@ -21,4 +21,8 @@ public interface PollingStationRepository extends JpaRepository<PollingStation, 
     @Query("select ps.psNumber from PollingStation ps where ps.ac.acCode = :acCode and ps.electionYear = :year")
     Set<Integer> findExistingPsNumbers(int acCode, int year);
 
+    Optional<PollingStation> findByAc_AcCodeAndElectionYearAndPsNumber(
+            Integer acCode, Integer electionYear, Integer psNumbers
+    );
+
 }

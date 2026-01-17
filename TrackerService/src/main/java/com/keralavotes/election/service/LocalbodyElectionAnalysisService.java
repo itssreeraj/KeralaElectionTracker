@@ -1,8 +1,6 @@
 package com.keralavotes.election.service;
 
 import com.keralavotes.election.dto.*;
-import com.keralavotes.election.dto.details.AllianceAnalysisResponse;
-import com.keralavotes.election.dto.details.AllianceLocalbodySummaryDto;
 import com.keralavotes.election.dto.details.AllianceVoteDetailDto;
 import com.keralavotes.election.dto.details.BoothDetailRowDto;
 import com.keralavotes.election.dto.details.LocalbodyDetailYearDataDto;
@@ -51,8 +49,8 @@ public class LocalbodyElectionAnalysisService {
         Map<Integer, ElectionType> types = new LinkedHashMap<>();
         types.put(2015, ElectionType.LOCALBODY);
         types.put(2020, ElectionType.LOCALBODY);
-        types.put(2024, ElectionType.GE);
-        types.put(2019, ElectionType.GE);
+        types.put(2024, ElectionType.LOKSABHA);
+        types.put(2019, ElectionType.LOKSABHA);
         types.put(2025, ElectionType.LOCALBODY);
         types.put(2026, ElectionType.ASSEMBLY);
         ELECTION_TYPES = Collections.unmodifiableMap(types);
@@ -123,7 +121,7 @@ public class LocalbodyElectionAnalysisService {
 
             switch (type) {
                 case LOCALBODY -> dto = buildLocalbodyAnalysis(lb, year);
-                case GE, ASSEMBLY -> dto = buildBoothBasedAnalysis(lb, year, type);
+                case LOKSABHA, ASSEMBLY -> dto = buildBoothBasedAnalysis(lb, year, type);
                 default -> {
                     log.warn("Unsupported election type {} for year {}", type, year);
                     continue;
@@ -414,7 +412,7 @@ public class LocalbodyElectionAnalysisService {
             if (type == ElectionType.LOCALBODY) {
                 dto.setWards(buildWardDetailRows(lb, year));
                 dto.setBooths(null);
-            } else if (type == ElectionType.GE || type == ElectionType.ASSEMBLY) {
+            } else if (type == ElectionType.LOKSABHA || type == ElectionType.ASSEMBLY) {
                 dto.setWards(null);
                 dto.setBooths(buildBoothDetailRows(lb, year));
             } else {

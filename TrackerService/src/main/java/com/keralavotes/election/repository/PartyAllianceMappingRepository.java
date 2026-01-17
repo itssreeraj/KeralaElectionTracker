@@ -56,21 +56,11 @@ public interface PartyAllianceMappingRepository
 
     Optional<PartyAllianceMapping> findByPartyIdAndElectionYearAndElectionType(Long id, @NotNull Integer electionYear, @NotBlank ElectionType electionType);
 
-    @Query("""
-        SELECT
-            p.id AS partyId,
-            p.name AS partyName,
-            p.shortName AS partyShortName,
-            a.id AS allianceId,
-            a.name AS allianceName
-        FROM Party p
-        LEFT JOIN PartyAllianceMapping pam
-               ON pam.party = p
-              AND pam.electionYear = :year
-              AND pam.electionType = :type
-        LEFT JOIN pam.alliance a
-        ORDER BY p.name
-    """)
+    @Query("SELECT p.id AS partyId, p.name AS partyName, p.shortName AS partyShortName, " +
+            "a.id AS allianceId, a.name AS allianceName " +
+            "FROM Party p LEFT JOIN PartyAllianceMapping pam ON pam.party = p " +
+            "AND pam.electionYear = :year AND pam.electionType = :type " +
+            "LEFT JOIN pam.alliance a ORDER BY p.name")
     List<PartyAllianceAdminRow> findAllForAdmin(
             @Param("year") int year,
             @Param("type") ElectionType type

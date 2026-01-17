@@ -104,4 +104,5 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
             "where v.pollingStation.ac.acCode = :acCode and v.year = :year")
     Set<String> findExistingVoteKeys(int acCode, int year);
 
+    List<BoothVotes> findByYearAndPollingStation_Ac_AcCode(int year, int acCode);
 }

@@ -1,8 +1,8 @@
 "use client";
 
+import React, { useEffect, useMemo, useState } from "react";
+import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 import { getConfig } from "@/config/env";
-
-import React, { useEffect, useState, useMemo } from "react";
 
 /* ===================== TYPES ===================== */
 type MappingRow = {
@@ -14,11 +14,10 @@ type MappingRow = {
 };
 
 type Alliance = {
-  id?: number | null; // may be missing until normalized
+  id?: number | null;
   name: string;
   code?: string | null;
   color?: string | null;
-
 };
 
 type RowState = {
@@ -26,444 +25,530 @@ type RowState = {
   dirty: boolean;
 };
 
-const config = getConfig();
-const backend =
-  `${config.apiBase}` || "http://localhost:8080/api";
-
-const YEARS = [2010, 2015, 2019, 2020, 2024, 2025];
 const TYPES = ["LOCALBODY", "ASSEMBLY", "LOKSABHA"];
+
+const config = getConfig();
+const backend = `${config.apiBase}` || "http://localhost:8080/api";
+
+
+/* ===================== BUTTON STYLE ===================== 
+const primaryBtn: React.CSSProperties = {
+  padding: "6px 14px",
+  borderRadius: 6,
+  background: "#0d6efd",
+  color: "white",
+  border: "none",
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const secondaryBtn: React.CSSProperties = {
+  padding: "6px 14px",
+  borderRadius: 6,
+  background: "#374151",
+  color: "white",
+  border: "none",
+  fontSize: 12,
+  cursor: "pointer",
+};
+*/
+
+/* ===================== COMMON STYLES ===================== */
+const boxStyle: React.CSSProperties = {
+  background: "#020617",
+  border: "1px solid #374151",
+  borderRadius: 8,
+  padding: 16,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "8px 10px",
+  background: "#0b0b0b",
+  border: "1px solid #333",
+  borderRadius: 6,
+  color: "white",
+  fontSize: 13,
+};
+
+const primaryBtn: React.CSSProperties = {
+  padding: "8px 14px",
+  background: "#0d6efd",
+  color: "white",
+  borderRadius: 6,
+  border: "none",
+  cursor: "pointer",
+  fontSize: 13,
+  fontWeight: 600,
+};
+
+const secondaryBtn: React.CSSProperties = {
+  padding: "8px 14px",
+  background: "#1f2933",
+  color: "white",
+  borderRadius: 6,
+  border: "1px solid #374151",
+  cursor: "pointer",
+  fontSize: 13,
+};
 
 /* ===================== COMPONENT ===================== */
 export default function PartyAllianceAdminTab() {
-    const [year, setYear] = useState(2025);
-    const [type, setType] = useState("LOCALBODY");
+  const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
+  const [type, setType] = useState<string>("");
 
-    const [rows, setRows] = useState<MappingRow[]>([]);
-    const [alliances, setAlliances] = useState<Alliance[]>([]);
-    const [rowState, setRowState] = useState<Record<number, RowState>>({});
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState<number | null>(null);
+  const [rows, setRows] = useState<MappingRow[]>([]);
+  const [alliances, setAlliances] = useState<Alliance[]>([]);
+  const [rowState, setRowState] = useState<Record<number, RowState>>({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState<number | null>(null);
 
-    const [newAllianceName, setNewAllianceName] = useState("");
-    const [newAllianceColor, setNewAllianceColor] = useState("");
+  const [newAllianceName, setNewAllianceName] = useState("");
+  const [newAllianceColor, setNewAllianceColor] = useState("");
 
-    const [newPartyName, setNewPartyName] = useState("");
-    const [newPartyShort, setNewPartyShort] = useState("");
-    const [newPartyAlliance, setNewPartyAlliance] = useState("");
+  const [newPartyName, setNewPartyName] = useState("");
+  const [newPartyShort, setNewPartyShort] = useState("");
+  const [newPartyAlliance, setNewPartyAlliance] = useState("");
 
-    const reloadMappings = () => {
-        setLoading(true);
-        fetch(`${backend}/admin/party-alliance?year=${year}&type=${type}`)
-            .then(r => r.json())
-            .then(setRows)
-            .finally(() => setLoading(false));
-    };
-
-
-
-  // normalize alliance objects from backend to a consistent shape
+  /* ===================== HELPERS ===================== */
   const normalizeAlliances = (arr: any[]) =>
     arr.map(a => ({
-      id: a.id ?? a.allianceId ?? a.value ?? null,
-      name: a.name ?? a.label ?? a.code ?? String(a.id ?? a.allianceId ?? a.value ?? ""),
-      code: a.code ?? a.shortName ?? null,
-      color: a.color ?? a.colour ?? null,
+      id: a.id ?? a.allianceId ?? null,
+      name: a.name ?? a.code ?? String(a.id),
+      code: a.code ?? null,
+      color: a.color ?? null,
     }));
 
-  /* ---------------- Load alliances ---------------- */
-  useEffect(() => {
-    fetch(`${backend}/public/alliances`)
-      .then(r => r.json())
-      .then(data => {
-        const arr = Array.isArray(data) ? data : data?.alliances ?? [];
-        setAlliances(normalizeAlliances(arr));
-      })
-      .catch(() => setAlliances([]));
-  }, []);
+  /* ===================== LOAD DATA ===================== */
+  const loadAlliances = async () => {
+    const r = await fetch(`${backend}/public/alliances`);
+    const data = await r.json();
+    const arr = Array.isArray(data) ? data : data?.alliances ?? [];
+    setAlliances(normalizeAlliances(arr));
+  };
 
-  // map allianceName (from mappings) -> numeric allianceId
-  const allianceNameToId = useMemo(() => {
-    const m = new Map<string, number>();
-
-    // Prefer canonical data from `alliances` (public endpoint)
-    alliances.forEach(a => {
-      if (a.id != null) {
-        if (a.name) m.set(a.name, a.id as number);
-        if (a.code) m.set(a.code, a.id as number);
-        m.set(String(a.id), a.id as number);
-      }
-    });
-
-    // Also include mappings from `rows` (explicit existing mappings)
-    rows.forEach(r => {
-      if (r.allianceName && r.allianceId != null) m.set(r.allianceName, r.allianceId);
-    });
-
-    return m;
-  }, [rows]);
-
-  /* ---------------- Load mappings ---------------- */
-  useEffect(() => {
+  const loadMappings = () => {
     setLoading(true);
-
     fetch(`${backend}/admin/party-alliance?year=${year}&type=${type}`)
       .then(r => r.json())
       .then((data: MappingRow[]) => {
         setRows(data);
-
-        // Reset rowState to reflect the newly loaded mappings for the selected year/type.
-        // This ensures the select controls update when filters (year/type) change.
-        const nextState: Record<number, RowState> = {};
+        const next: Record<number, RowState> = {};
         data.forEach(r => {
-          nextState[r.partyId] = {
-            selectedAllianceId: r.allianceId != null ? String(r.allianceId) : r.allianceName ?? "",
+          next[r.partyId] = {
+            selectedAllianceId: r.allianceId != null ? String(r.allianceId) : "",
             dirty: false,
           };
         });
-
-        setRowState(nextState);
+        setRowState(next);
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadAlliances();
+  }, []);
+
+  useEffect(() => {
+    if (!type) return;
+    loadMappings();
   }, [year, type]);
 
-  /* ---------------- Local change only ---------------- */
+
+  /* ===================== ACTIONS ===================== */
   const onAllianceChange = (partyId: number, value: string) => {
     setRowState(prev => ({
       ...prev,
-      [partyId]: {
-        selectedAllianceId: value,
-        dirty: true,
-      },
+      [partyId]: { selectedAllianceId: value, dirty: true },
     }));
   };
 
-  /* ---------------- Save (explicit action) ---------------- */
   const saveRow = async (partyId: number) => {
     const state = rowState[partyId];
-    if (!state || state.selectedAllianceId === "") return;
+    if (!state || !state.dirty) return;
 
-    const key = state.selectedAllianceId;
-    let numeric = Number(key);
-
-    // try resolving from allianceNameToId if key is not numeric
-    if (!Number.isInteger(numeric)) {
-      const mapped = allianceNameToId.get(key);
-      if (mapped != null) numeric = mapped;
+    if (!type) {
+      alert("Please select Election Type before saving");
+      return;
     }
 
-    // If still non-numeric, try to find or create the alliance on the server
-    if (!Number.isInteger(numeric)) {
-        // try finding in the loaded `alliances` list (robust to different id/code fields)
-        const found = alliances.find(
-          a =>
-            a.name === key ||
-            a.code === key ||
-            String(a.id) === key
-        );
-        if (found && Number.isInteger(found.id)) {
-          numeric = found.id as number;
-        } else {
-          // create alliance on server (name only) and refresh alliances
-          try {
-            await fetch(`${backend}/admin/alliances`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Accept": "application/json" },
-              body: JSON.stringify({ name: key }),
-            });
-
-            const res = await fetch(`${backend}/public/alliances`);
-            const fresh = await res.json();
-            const freshArr = Array.isArray(fresh) ? fresh : fresh?.alliances ?? [];
-            const normalized = normalizeAlliances(freshArr);
-            setAlliances(normalized);
-
-            const created = normalized.find(
-              (a: any) => a.name === key || a.code === key || String(a.id) === key
-            );
-            if (created && Number.isInteger(created.id)) numeric = created.id;
-          } catch (e) {
-            // ignore and fall through to error below
-          }
-        }
-      }
-
-      if (!Number.isInteger(numeric)) {
-        alert("Cannot save: selected alliance has no numeric id on server");
-        return;
-      }
 
     setSaving(partyId);
-
-    const params = new URLSearchParams({
-      partyId: String(partyId),
-      allianceId: String(numeric),
-      year: String(year),
-      type,
-    });
 
     await fetch(`${backend}/admin/party-alliance`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
+      body: new URLSearchParams({
+        partyId: String(partyId),
+        allianceId: state.selectedAllianceId,
+        year: String(year),
+        type,
+      }).toString(),
     });
 
-    // reflect saved value
-    setRows(prev =>
-      prev.map(r =>
-        r.partyId === partyId
-          ? {
-              ...r,
-              allianceId: numeric,
-              allianceName:
-                alliances.find(a => (a.id === numeric || (a.code ?? a.name) === key))?.name ?? key ?? r.allianceName,
-            }
-          : r
-      )
-    );
-
-    setRowState(prev => ({
-      ...prev,
-      [partyId]: {
-        ...prev[partyId],
-        dirty: false,
-      },
-    }));
-
     setSaving(null);
+    loadMappings();
+  };
+
+  /* ===================== ADD ALLIANCE ===================== */
+  const addAlliance = async () => {
+    if (!newAllianceName.trim()) return;
+
+    await fetch(`${backend}/admin/alliances`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newAllianceName.trim(),
+        color: newAllianceColor || null,
+      }),
+    });
+
+    setNewAllianceName("");
+    setNewAllianceColor("");
+    await loadAlliances();
+  };
+
+  /* ===================== ADD PARTY ===================== */
+  const addParty = async () => {
+    if (!newPartyName || !newPartyAlliance) return;
+
+    await fetch(`${backend}/admin/party-with-mapping`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        partyName: newPartyName.trim(),
+        partyShortName: newPartyShort.trim() || null,
+        allianceId: Number(newPartyAlliance),
+        electionYear: year,
+        electionType: type,
+      }),
+    });
+
+    setNewPartyName("");
+    setNewPartyShort("");
+    setNewPartyAlliance("");
+    loadMappings();
   };
 
   /* ===================== RENDER ===================== */
   return (
-    <div style={{ padding: 20 }}>
-      <h2 style={{ fontSize: 20, marginBottom: 12 }}>
+    <div style={{ padding: 24, color: "white" }}>
+      <h2 style={{ fontSize: 20, marginBottom: 16 }}>
         Party – Alliance Mapping
       </h2>
-
-      {/* Filters */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-        <select value={year} onChange={e => setYear(+e.target.value)}>
-          {YEARS.map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-
-        <select value={type} onChange={e => setType(e.target.value)}>
-          {TYPES.map(t => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
-      </div>
-
-        <h3>Add Alliance</h3>
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <input
-                placeholder="Alliance name"
-                value={newAllianceName}
-                onChange={e => setNewAllianceName(e.target.value)}
-            />
-            <input
-                placeholder="Color (#hex)"
-                value={newAllianceColor}
-                onChange={e => setNewAllianceColor(e.target.value)}
-            />
-            <button
-                type="button"
-                onClick={async () => {
-                    await fetch(`${backend}/admin/alliances`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                    },
-                    body: JSON.stringify({
-                        name: newAllianceName,
-                        color: newAllianceColor,
-                    }),
-                    });
-
-                    setNewAllianceName("");
-                    setNewAllianceColor("");
-
-                    const res = await fetch(`${backend}/public/alliances`);
-                    const data = await res.json();
-                    setAlliances(Array.isArray(data) ? data : data?.alliances ?? []);
-                }}
-                >
-                Add
-            </button>
-        </div>
-
-        <h3>Add Party & Mapping</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8 }}>
-        <input
-            placeholder="Party name"
-            value={newPartyName}
-            onChange={e => setNewPartyName(e.target.value)}
-        />
-        <input
-            placeholder="Short name"
-            value={newPartyShort}
-            onChange={e => setNewPartyShort(e.target.value)}
-        />
-        <select
-          value={newPartyAlliance}
-          onChange={e => setNewPartyAlliance(e.target.value)}
-        >
-          <option value="">Alliance</option>
-          {alliances.map(a => {
-            const numericId = a.id ?? allianceNameToId.get(a.name) ?? null;
-            const key = numericId != null ? String(numericId) : a.code ?? a.name;
-            const val = numericId != null ? String(numericId) : "";
-            return (
-              <option key={key} value={val} disabled={numericId == null}>
-                {a.name}
-                {numericId == null ? " (no id)" : ""}
-              </option>
-            );
-          })}
-        </select>
-        <button
-            type="button"
-            onClick={async () => {
-                if (!newPartyName || !newPartyAlliance) {
-                alert("Party name and alliance are required");
-                return;
-                }
-
-                const payload = {
-                    partyName: newPartyName.trim(),
-                    partyShortName: newPartyShort.trim() || null,
-                    allianceId: Number(newPartyAlliance),
-                    electionYear: year,
-                    electionType: type,
-                };
-
-                console.log("Submitting payload:", payload);
-
-                // backend expects a JSON body for CreatePartyWithMappingRequest
-                await fetch(`${backend}/admin/party-with-mapping`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Accept": "application/json",
-                },
-                body: JSON.stringify(payload),
-                });
-
-                setNewPartyName("");
-                setNewPartyShort("");
-                setNewPartyAlliance("");
-
-                reloadMappings();
-            }}
-            >
-            Add
-        </button>
-    </div>
-
-      {/* Table */}
+      {/* ================= FILTER BAR ================= */}
       <div
         style={{
-          maxWidth: 800,
-          margin: "0 auto",
-          background: "#111827",
+          display: "flex",
+          gap: 24,
+          marginBottom: 24,
+          padding: 16,
           borderRadius: 8,
-          padding: 12,
+          border: "1px solid #374151",
+          background: "#020617",
+          alignItems: "center",
         }}
       >
-        <table
+        {/* YEAR */}
+        <div>
+          <label style={{ fontSize: 11, color: "#9ca3af" }}>Election Year</label>
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            {ANALYSIS_YEARS.map(y => (
+              <button
+                key={y}
+                onClick={() => setYear(y)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  border: year === y ? "1px solid #0d6efd" : "1px solid #555",
+                  background: year === y ? "#0d6efd33" : "transparent",
+                  color: "#fff",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* TYPE (PROMINENT + REQUIRED) */}
+        <div
           style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            color: "#e5e7eb",
+            padding: 12,
+            borderRadius: 8,
+            //border: type ? "1px solid #0d6efd" : "2px solid #dc2626",
+            background: "#020617",
+            minWidth: 260,
           }}
         >
-          <thead>
+          <label
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: type ? "#9ca3af" : "#dc2626",
+              display: "block",
+              marginBottom: 6,
+            }}
+          >
+            Election Type {type ? "" : " (required)"}
+          </label>
+
+          <select
+            value={type}
+            onChange={e => setType(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px",
+              background: "#0b0b0b",
+              border: "1px solid #333",
+              borderRadius: 6,
+              color: "white",
+              fontSize: 13,
+            }}
+          >
+            <option value="">— Select Type —</option>
+            {TYPES.map(t => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ================= ADD ALLIANCE + ADD PARTY ================= */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1.2fr",
+          gap: 16,
+          marginBottom: 24,
+        }}
+      >
+        {/* ========== ADD ALLIANCE ========== */}
+        <div
+          style={{
+            background: "#020617",
+            border: "1px solid #374151",
+            borderRadius: 8,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 600,
+              marginBottom: 12,
+              paddingBottom: 6,
+              borderBottom: "1px solid #334155",
+            }}
+          >
+            Add Alliance
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <input
+              placeholder="Alliance name"
+              value={newAllianceName}
+              onChange={e => setNewAllianceName(e.target.value)}
+              style={{
+                flex: 2,
+                padding: "8px 10px",
+                background: "#0b0b0b",
+                border: "1px solid #333",
+                borderRadius: 6,
+                color: "white",
+              }}
+            />
+
+            <input
+              placeholder="#hex"
+              value={newAllianceColor}
+              onChange={e => setNewAllianceColor(e.target.value)}
+              style={{
+                width: 120,
+                padding: "8px 10px",
+                background: "#0b0b0b",
+                border: "1px solid #333",
+                borderRadius: 6,
+                color: "white",
+              }}
+            />
+          </div>
+
+          <button
+            style={{
+              ...primaryBtn,
+              opacity: type ? 1 : 0.5,
+              cursor: type ? "pointer" : "not-allowed",
+            }}
+            disabled={!type}
+            onClick={addAlliance}
+          >
+            Add Alliance
+          </button>
+        </div>
+
+        {/* ========== ADD PARTY ========== */}
+        <div
+          style={{
+            background: "#020617",
+            border: "1px solid #374151",
+            borderRadius: 8,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 600,
+              marginBottom: 12,
+              paddingBottom: 6,
+              borderBottom: "1px solid #334155",
+            }}
+          >
+            Add Party & Initial Mapping
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1.5fr auto",
+              gap: 8,
+              alignItems: "center",
+            }}
+          >
+            <input
+              placeholder="Party name"
+              value={newPartyName}
+              onChange={e => setNewPartyName(e.target.value)}
+              style={{
+                padding: "8px 10px",
+                background: "#0b0b0b",
+                border: "1px solid #333",
+                borderRadius: 6,
+                color: "white",
+              }}
+            />
+
+            <input
+              placeholder="Short"
+              value={newPartyShort}
+              onChange={e => setNewPartyShort(e.target.value)}
+              style={{
+                padding: "8px 10px",
+                background: "#0b0b0b",
+                border: "1px solid #333",
+                borderRadius: 6,
+                color: "white",
+              }}
+            />
+
+            <select
+              value={newPartyAlliance}
+              onChange={e => setNewPartyAlliance(e.target.value)}
+              style={{
+                padding: "8px 10px",
+                background: "#0b0b0b",
+                border: "1px solid #333",
+                borderRadius: 6,
+                color: "white",
+              }}
+            >
+              <option value="">Select Alliance</option>
+              {alliances.map(a => (
+                <option key={a.id} value={a.id ?? ""}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+
+            <button
+              style={{
+                ...primaryBtn,
+                opacity: type ? 1 : 0.5,
+                cursor: type ? "pointer" : "not-allowed",
+              }}
+              disabled={!type}
+              onClick={addParty}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      {/* ================= TABLE ================= */}
+      <div
+        style={{
+          maxWidth: 900,
+          margin: "0 auto",
+          background: "#0b0b0b",
+          border: "1px solid #333",
+          borderRadius: 8,
+        }}
+      >
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead style={{ background: "#111" }}>
             <tr>
-              <th style={{ textAlign: "left", padding: 8, width: "45%" }}>
-                Party
-              </th>
-              <th style={{ textAlign: "left", padding: 8, width: "35%" }}>
-                Alliance
-              </th>
-              <th style={{ padding: 8, width: "20%" }} />
+              <th style={{ padding: "10px 12px", textAlign: "left" }}>Party</th>
+              <th style={{ padding: "10px 12px", textAlign: "left" }}>Alliance</th>
+              <th style={{ padding: "10px 12px" }} />
             </tr>
           </thead>
-
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={3} style={{ padding: 12 }}>
-                  Loading…
-                </td>
+                <td colSpan={3} style={{ padding: 12 }}>Loading…</td>
               </tr>
             )}
 
             {!loading &&
               rows.map(r => {
                 const state = rowState[r.partyId];
-
                 return (
-                  <tr key={r.partyId}>
-                    <td style={{ padding: 8 }}>
+                  <tr key={r.partyId} style={{ borderBottom: "1px solid #1f1f1f" }}>
+                    <td style={{ padding: "8px 12px" }}>
                       <div style={{ fontWeight: 600 }}>{r.partyName}</div>
                       {r.partyShortName && (
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>
+                        <div style={{ fontSize: 11, color: "#9ca3af" }}>
                           {r.partyShortName}
                         </div>
                       )}
                     </td>
-
-                    <td style={{ padding: 8 }}>
-                                {(() => {
-                                  // normalize alliances: prefer numeric id when available (either from public/allies or from rows)
-                                  const normalized = alliances.map(a => {
-                                    const numericId = a.id ?? allianceNameToId.get(a.name) ?? null;
-                                    const key = numericId != null ? String(numericId) : a.code ?? a.name;
-                                    return { key, label: a.name, numericId: numericId ?? null };
-                                  });
-
-                                  return (
-                                    <select
-                                      value={state?.selectedAllianceId ?? ""}
-                                      onChange={e =>
-                                        onAllianceChange(r.partyId, e.target.value)
-                                      }
-                                      style={{
-                                        width: "100%",
-                                        padding: "6px 8px",
-                                        background: "#020617",
-                                        color: "#e5e7eb",
-                                        border: "1px solid #374151",
-                                        borderRadius: 6,
-                                      }}
-                                    >
-                                      <option value="" disabled>
-                                        Select alliance
-                                      </option>
-                                      {normalized.map(a => (
-                                        <option key={a.key} value={a.key}>
-                                          {a.label}
-                                          {a.numericId == null ? " (no id)" : ""}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  );
-                                })()}
+                    <td style={{ padding: "8px 12px" }}>
+                      <select
+                        value={state?.selectedAllianceId ?? ""}
+                        onChange={e =>
+                          onAllianceChange(r.partyId, e.target.value)
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          background: "#020617",
+                          border: "1px solid #374151",
+                          borderRadius: 6,
+                          color: "#e5e7eb",
+                          fontSize: 12,
+                        }}
+                      >
+                        <option value="">Select alliance</option>
+                        {alliances.map(a => (
+                          <option key={a.id} value={a.id ?? ""}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
                     </td>
-
-                    <td style={{ padding: 8 }}>
+                    <td style={{ padding: "8px 12px", textAlign: "right" }}>
                       <button
                         disabled={!state?.dirty || saving === r.partyId}
                         onClick={() => saveRow(r.partyId)}
                         style={{
-                          padding: "6px 12px",
-                          background: state?.dirty
-                            ? "#0d6efd"
-                            : "#374151",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
+                          ...primaryBtn,
+                          background: state?.dirty ? "#0d6efd" : "#374151",
                           cursor: state?.dirty ? "pointer" : "not-allowed",
                         }}
                       >
