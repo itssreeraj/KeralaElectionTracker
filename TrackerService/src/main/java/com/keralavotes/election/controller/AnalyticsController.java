@@ -145,10 +145,8 @@ public class AnalyticsController {
      * GET /api/admin/analysis/localbody/{id}?years=2015,2020,2024
      */
     @GetMapping("/localbody/{id}")
-    public LocalbodyAnalysisResponse analyzeLocalbody(
-            @PathVariable("id") Long localbodyId,
-            @RequestParam(value = "years", required = false) String years
-    ) {
+    public LocalbodyAnalysisResponse analyzeLocalbody(@PathVariable("id") Long localbodyId,
+                                                      @RequestParam(value = "years", required = false) String years) {
         log.info("Unified Localbody Analysis: id={} years={}", localbodyId, years);
 
         List<Integer> yearList = null;
@@ -159,23 +157,23 @@ public class AnalyticsController {
                     .filter(s -> !s.isEmpty())
                     .map(Integer::valueOf)
                     .toList();
+        } else {
+            yearList = List.of(2015, 2020, 2025); // default years
         }
 
         return analysisService.analyzeLocalbody(localbodyId, yearList);
     }
 
     @GetMapping("/localbody/{lbId}/details")
-    public Map<Integer, LocalbodyDetailYearDataDto> getDetailedResults(
-            @PathVariable Long lbId,
-            @RequestParam("years") String yearsCsv
-    ) {
+    public Map<Integer, LocalbodyDetailYearDataDto> getDetailedResults(@PathVariable Long lbId,
+                                                                       @RequestParam("years") String yearsList) {
+        log.info("AnalyticsController::getDetailedResults -> " +
+                "Fetching detailed results for Localbody ID: {} for years: {}", lbId, yearsList);
         List<Integer> years =
-                Arrays.stream(yearsCsv.split(","))
+                Arrays.stream(yearsList.split(","))
                         .map(Integer::parseInt)
                         .toList();
 
         return analysisService.analyzeLocalbodyDetails(lbId, years);
     }
-
-
 }

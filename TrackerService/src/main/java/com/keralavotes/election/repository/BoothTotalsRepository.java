@@ -12,4 +12,6 @@ public interface BoothTotalsRepository extends JpaRepository<BoothTotals, Long> 
     Set<Integer> findExistingTotals(int acCode, int year);
 
     List<BoothTotals> findByYearAndPollingStation_Ac_AcCode(int year, int acCode);
+
+    List<BoothTotals> findByYearAndPollingStation_PsNumberIn(int year, Set<Long> psNumbers);
 }

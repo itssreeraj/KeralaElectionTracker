@@ -1,5 +1,6 @@
 package com.keralavotes.election.repository;
 
+import com.keralavotes.election.dto.ElectionType;
 import com.keralavotes.election.dto.LocalbodyAllianceVotesDto;
 import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
 import com.keralavotes.election.entity.BoothVotes;
@@ -82,7 +83,7 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
     List<Object[]> getWardAllianceVotes(Long lbId, Integer year);
 
     @Query("""
-    SELECT 
+    SELECT\s
         ps.psNumber,
         ps.name,
         COALESCE(a.name, 'OTH') AS alliance,
@@ -98,6 +99,31 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
     ORDER BY ps.psNumber ASC
 """)
     List<Object[]> getBoothAllianceVotes(Long lbId, Integer year);
+
+    @Query("SELECT p.shortName, a.name, SUM(bv.votes) as total " +
+            "FROM BoothVotes bv JOIN bv.pollingStation ps JOIN bv.candidate c " +
+            "LEFT JOIN c.party p LEFT JOIN PartyAllianceMapping pam ON pam.party.id=p.id " +
+            "AND pam.electionYear = :year AND pam.electionType = :type " +
+            "LEFT JOIN pam.alliance a " +
+            "WHERE ps.localbody.id = :lbId AND bv.year = :year " +
+            "GROUP BY p.shortName, a.name ORDER BY total DESC")
+    List<Object[]> getBoothPartyVotes(Long lbId, Integer year, ElectionType type);
+
+    @Query("SELECT ps.id, COALESCE(a.name, 'OTH'), SUM(bv.votes) as total " +
+            "FROM BoothVotes bv JOIN bv.pollingStation ps JOIN bv.candidate c " +
+            "LEFT JOIN c.party p LEFT JOIN PartyAllianceMapping pam ON pam.party.id = p.id " +
+            "AND pam.electionYear = :year AND pam.electionType = :type " +
+            "LEFT JOIN pam.alliance a WHERE ps.localbody.id = :lbId AND bv.year = :year " +
+            "GROUP BY ps.id, a.name")
+    List<Object[]> getBoothResultsGroupedByBooth(Long lbId, Integer year, ElectionType type);
+
+    @Query("SELECT ps.id, ps.psNumber, ps.name, COALESCE(a.name, 'OTH'), SUM(bv.votes) " +
+            "FROM BoothVotes bv JOIN bv.pollingStation ps JOIN bv.candidate c " +
+            "LEFT JOIN c.party p LEFT JOIN PartyAllianceMapping pam on pam.party.id = p.id " +
+            "and pam.electionYear = :year LEFT JOIN pam.alliance a " +
+            "WHERE ps.localbody.id = :lbId AND bv.year = :year " +
+            "GROUP BY ps.id, ps.psNumber, ps.name, a.name")
+    List<Object[]> getBoothVotesDetails(Long lbId, Integer year);
 
     @Query("select concat(v.pollingStation.psNumber, '_', v.candidate.id)" +
             "from BoothVotes v " +
