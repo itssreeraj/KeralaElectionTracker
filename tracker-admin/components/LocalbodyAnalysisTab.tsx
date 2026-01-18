@@ -26,12 +26,12 @@ type VoteShareRow = {
 
 type PerformanceRow = {
   alliance: string;
-  winner: number; // for LOCALBODY: ward wins; for GE: #1 booths
-  runnerUp: number; // for LOCALBODY: #2; for GE: #2 booths
+  winner: number; // for LOCALBODY: ward wins; for LOKSABHA: #1 booths
+  runnerUp: number; // for LOCALBODY: #2; for LOKSABHA: #2 booths
   third: number; // #3
 };
 
-type ElectionType = "LOCALBODY" | "GE" | "ASSEMBLY";
+type ElectionType = "LOCALBODY" | "LOKSABHA" | "ASSEMBLY";
 
 type SingleElectionAnalysis = {
   year: number;
@@ -39,7 +39,7 @@ type SingleElectionAnalysis = {
   label: string;
   voteShare: VoteShareRow[] | null; // ward-based (LOCALBODY)
   wardPerformance: PerformanceRow[] | null; // LOCALBODY
-  boothVoteShare: VoteShareRow[] | null; // GE/ASSEMBLY
+  boothVoteShare: VoteShareRow[] | null; // LOKSABHA/ASSEMBLY
   boothPerformance: PerformanceRow[] | null;
 };
 
@@ -432,9 +432,9 @@ export default function LocalbodyAnalysisTab() {
       .sort((a, b) => a.year - b.year)
       .map((el) => {
         const isLocalbody = el.type === "LOCALBODY";
-        const isGE = el.type === "GE";
+        const isLOKSABHA = el.type === "LOKSABHA";
 
-        const baseYearLabel = isGE ? `${el.year} GE` : `${el.year}`;
+        const baseYearLabel = isLOKSABHA ? `${el.year} LOKSABHA` : `${el.year}`;
 
         const yearBlock: any = {
           year: baseYearLabel,
@@ -462,7 +462,7 @@ export default function LocalbodyAnalysisTab() {
           }));
         }
 
-        if (isGE) {
+        if (isLOKSABHA) {
           yearBlock.generalVotes = (el.boothVoteShare || []).map((v) => ({
             alliance: v.alliance,
             color: getAllianceColor(v.alliance),
@@ -725,11 +725,11 @@ export default function LocalbodyAnalysisTab() {
               .sort((a, b) => a.year - b.year)
               .map((el) => {
                 const isLocalbody = el.type === "LOCALBODY";
-                const isGE = el.type === "GE";
+                const isLOKSABHA = el.type === "LOKSABHA";
                 const badgeColor =
                   el.type === "LOCALBODY"
                     ? "#059669"
-                    : el.type === "GE"
+                    : el.type === "LOKSABHA"
                     ? "#3b82f6"
                     : "#f59e0b";
 
@@ -806,7 +806,7 @@ export default function LocalbodyAnalysisTab() {
                       </>
                     )}
 
-                    {isGE && (
+                    {isLOKSABHA && (
                       <>
                         {renderVoteShareTable(
                           el.boothVoteShare || [],
@@ -860,7 +860,7 @@ export default function LocalbodyAnalysisTab() {
                       }}
                     />
 
-                    {!isLocalbody && !isGE && (
+                    {!isLocalbody && !isLOKSABHA && (
                       <p style={{ fontSize: 13, opacity: 0.7 }}>
                         No renderer defined for type: {el.type}
                       </p>
@@ -1008,7 +1008,7 @@ function DetailedResultsTabs({
                 cursor: "pointer",
               }}
             >
-              {y.year} {y.type === "GE" ? "GE" : ""}
+              {y.year} {y.type === "LOKSABHA" ? "LOKSABHA" : ""}
             </button>
           );
         })}

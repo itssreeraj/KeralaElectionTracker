@@ -25,4 +25,6 @@ public interface PollingStationRepository extends JpaRepository<PollingStation, 
             Integer acCode, Integer electionYear, Integer psNumbers
     );
 
+    List<PollingStation> findByLocalbody_Id(Long localbodyId);
+
 }

@@ -5,15 +5,20 @@ import com.keralavotes.election.dto.details.AllianceVoteDetailDto;
 import com.keralavotes.election.dto.details.BoothDetailRowDto;
 import com.keralavotes.election.dto.details.LocalbodyDetailYearDataDto;
 import com.keralavotes.election.dto.details.WardDetailRowDto;
+import com.keralavotes.election.entity.BoothTotals;
 import com.keralavotes.election.entity.LbCandidate;
 import com.keralavotes.election.entity.LbWardResult;
 import com.keralavotes.election.entity.Localbody;
 import com.keralavotes.election.entity.Party;
+import com.keralavotes.election.entity.PollingStation;
 import com.keralavotes.election.entity.Ward;
+import com.keralavotes.election.repository.BoothTotalsRepository;
+import com.keralavotes.election.repository.BoothVotesRepository;
 import com.keralavotes.election.repository.LbCandidateRepository;
 import com.keralavotes.election.repository.LbWardResultRepository;
 import com.keralavotes.election.repository.LocalbodyRepository;
 import com.keralavotes.election.repository.PartyRepository;
+import com.keralavotes.election.repository.PollingStationRepository;
 import com.keralavotes.election.repository.WardRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +37,9 @@ public class LocalbodyElectionAnalysisService {
     private final LocalbodyRepository localbodyRepo;
     private final LbCandidateRepository candidateRepo;
     private final LbWardResultRepository wardResultRepo;
+    private final BoothVotesRepository boothVotesRepository;
+    private final BoothTotalsRepository boothTotalsRepository;
+    private final PollingStationRepository pollingStationRepo;
     private final WardRepository wardRepo;
     private final PartyRepository partyRepo;
     private final EntityManager em;
@@ -47,6 +55,7 @@ public class LocalbodyElectionAnalysisService {
 
     static {
         Map<Integer, ElectionType> types = new LinkedHashMap<>();
+        types.put(2014, ElectionType.LOKSABHA);
         types.put(2015, ElectionType.LOCALBODY);
         types.put(2020, ElectionType.LOCALBODY);
         types.put(2024, ElectionType.LOKSABHA);
@@ -83,22 +92,26 @@ public class LocalbodyElectionAnalysisService {
     // === PUBLIC ENTRY POINT ==================================================
 
     public LocalbodyAnalysisResponse analyzeLocalbody(Long localbodyId, List<Integer> requestedYears) {
-
+        log.info("LocalbodyElectionAnalysisService::analyzeLocalbody -> Analysing localbody with id={} for years={}",
+                localbodyId, requestedYears.toString());
         Localbody lb = localbodyRepo.findById(localbodyId)
                 .orElseThrow(() -> new IllegalArgumentException("Localbody not found: " + localbodyId));
+        log.info("LocalbodyElectionAnalysisService::analyzeLocalbody -> Found localbody: {} - {}", lb.getId(), lb.getName());
 
-        // Build base response
-        LocalbodyAnalysisResponse resp = new LocalbodyAnalysisResponse();
+        // Build LocalbodyInfo
         LocalbodyAnalysisResponse.LocalbodyInfo info = new LocalbodyAnalysisResponse.LocalbodyInfo();
         info.setId(lb.getId());
         info.setName(lb.getName());
         info.setType(lb.getType());
         info.setDistrictName(lb.getDistrict() != null ? lb.getDistrict().getName() : null);
+
+        // Build base response
+        LocalbodyAnalysisResponse resp = new LocalbodyAnalysisResponse();
         resp.setLocalbody(info);
 
         // Decide which years to include
         List<Integer> yearsToProcess;
-        if (requestedYears == null || requestedYears.isEmpty()) {
+        if (requestedYears.isEmpty()) {
             yearsToProcess = new ArrayList<>(ELECTION_TYPES.keySet());
         } else {
             yearsToProcess = requestedYears.stream()
@@ -107,9 +120,9 @@ public class LocalbodyElectionAnalysisService {
                     .sorted()
                     .toList();
         }
+        log.info("LocalbodyElectionAnalysisService::analyzeLocalbody -> Processing years: {}", yearsToProcess);
 
         Map<String, SingleElectionAnalysisDto> electionMap = new LinkedHashMap<>();
-
         for (Integer year : yearsToProcess) {
             ElectionType type = ELECTION_TYPES.get(year);
             if (type == null) {
@@ -267,56 +280,43 @@ public class LocalbodyElectionAnalysisService {
 
     private SingleElectionAnalysisDto buildBoothBasedAnalysis(Localbody lb, int year, ElectionType type) {
 
-        log.debug("Building {} booth-based analysis for LB={} year={}", type, lb.getId(), year);
+        log.debug("LocalBodyElectionAnalysisService::buildBoothBasedAnalysis -> " +
+                "Building {} booth-based analysis for LB={} year={}", type, lb.getId(), year);
 
-        // --- QUERY 1: party-wise booth votes ---
-        List<Object[]> partyRows = em.createQuery("""
-            SELECT p.shortName, a.name, SUM(bv.votes)
-            FROM BoothVotes bv
-            JOIN bv.pollingStation ps
-            JOIN bv.candidate c
-            LEFT JOIN c.party p
-            LEFT JOIN p.alliance a
-            WHERE ps.localbody.id = :lbId AND bv.year = :year
-            GROUP BY p.shortName, a.name
-            ORDER BY SUM(bv.votes) DESC
-        """, Object[].class)
-                .setParameter("lbId", lb.getId())
-                .setParameter("year", year)
-                .getResultList();
+        // Find the poling stations for this localbody
+        Set<Long> pollingStationIds = pollingStationRepo.findByLocalbody_Id(lb.getId())
+                .stream()
+                .map(PollingStation::getId)
+                .collect(Collectors.toSet());
 
-        // Convert to vote-share DTO
-        long totalVotes = partyRows.stream()
-                .mapToLong(r -> ((Number) r[2]).longValue())
+        // Find total valid votes across all booths in this localbody/year
+        long totalVotes = boothTotalsRepository.findByYearAndPollingStation_PsNumberIn(year, pollingStationIds)
+                .stream()
+                .mapToLong(BoothTotals::getTotalValid)
                 .sum();
 
-        List<VoteShareRowDto> boothVoteShare = partyRows.stream()
-                .map(r -> {
-                    String alliance = r[1] != null ? r[1].toString() : "OTH";
-                    long votes = ((Number) r[2]).longValue();
+        // party-wise booth votes
+        List<Object[]> partyRows = boothVotesRepository.getBoothPartyVotes(lb.getId(), year, type);
+
+        // Merge party votes into alliance votes
+        Map<String, Long> allianceVoteMap = partyRows.stream()
+                .collect(Collectors.groupingBy(
+                        r -> r[1] != null ? r[1].toString() : "OTH",
+                        Collectors.summingLong(r -> ((Number) r[2]).longValue())
+                ));
+
+        List<VoteShareRowDto> boothVoteShare = allianceVoteMap.entrySet().stream()
+                .map(e -> {
+                    String alliance = e.getKey();
+                    long votes = e.getValue();
                     double pct = totalVotes == 0 ? 0 : (votes * 100.0 / totalVotes);
                     return new VoteShareRowDto(alliance, votes, pct);
                 })
+                .sorted(Comparator.comparingLong(VoteShareRowDto::getVotes).reversed())
                 .toList();
 
-        // --- QUERY 2: Booth results grouped by booth -> used for ranking summary ---
-        List<Object[]> boothRows = em.createQuery("""
-        SELECT 
-            ps.id,
-            COALESCE(a.name, 'OTH'),
-            SUM(bv.votes)
-        FROM BoothVotes bv
-            JOIN bv.pollingStation ps
-            JOIN bv.candidate c
-            LEFT JOIN c.party p
-            LEFT JOIN p.alliance a
-        WHERE ps.localbody.id = :lbId
-          AND bv.year = :year
-        GROUP BY ps.id, a.name
-    """, Object[].class)
-                .setParameter("lbId", lb.getId())
-                .setParameter("year", year)
-                .getResultList();
+        // Booth results grouped by booth -> used for ranking summary
+        List<Object[]> boothRows = boothVotesRepository.getBoothResultsGroupedByBooth(lb.getId(), year, type);
 
         // Build booth performance
         Map<Long, Map<String, Long>> boothMap = new HashMap<>();
@@ -345,7 +345,7 @@ public class LocalbodyElectionAnalysisService {
                 PerformanceRowDto row = perfRow.apply(a);
                 if (pos == 0) row.setWinner(row.getWinner() + 1);
                 else if (pos == 1) row.setRunnerUp(row.getRunnerUp() + 1);
-                else if (pos == 2) row.setThird(row.getThird() + 1);
+                else row.setThird(row.getThird() + 1);
             }
         }
 
@@ -378,10 +378,10 @@ public class LocalbodyElectionAnalysisService {
      *    "2024": { "year": 2024, "type": "GE", "wards": null, "booths": [...] }
      *  }
      */
-    public Map<Integer, LocalbodyDetailYearDataDto> analyzeLocalbodyDetails(
-            Long localbodyId,
-            List<Integer> requestedYears
-    ) {
+    public Map<Integer, LocalbodyDetailYearDataDto> analyzeLocalbodyDetails(Long localbodyId,
+                                                                            List<Integer> requestedYears) {
+        log.info("LocalbodyElectionAnalysisService::analyzeLocalbodyDetails -> " +
+                "Analyzing detailed results for localbody id={} years={}", localbodyId, requestedYears);
         Localbody lb = localbodyRepo.findById(localbodyId)
                 .orElseThrow(() -> new IllegalArgumentException("Localbody not found: " + localbodyId));
 
@@ -395,7 +395,6 @@ public class LocalbodyElectionAnalysisService {
                     .sorted()
                     .toList();
         }
-
         Map<Integer, LocalbodyDetailYearDataDto> result = new LinkedHashMap<>();
 
         for (Integer year : yearsToProcess) {
@@ -419,10 +418,8 @@ public class LocalbodyElectionAnalysisService {
                 dto.setWards(null);
                 dto.setBooths(null);
             }
-
             result.put(year, dto);
         }
-
         return result;
     }
 
@@ -555,26 +552,7 @@ public class LocalbodyElectionAnalysisService {
         log.debug("Building booth detail rows for LB={} year={}", lb.getId(), year);
 
         // Query returns: ps.id, ps.psNumber, ps.name, allianceName, SUM(votes)
-        List<Object[]> rows = em.createQuery("""
-            SELECT 
-                ps.id,
-                ps.psNumber,
-                ps.name,
-                COALESCE(a.name, 'OTH'),
-                SUM(bv.votes)
-            FROM BoothVotes bv
-                JOIN bv.pollingStation ps
-                JOIN bv.candidate c
-                LEFT JOIN c.party p
-                LEFT JOIN p.alliance a
-            WHERE ps.localbody.id = :lbId
-              AND bv.year = :year
-            GROUP BY ps.id, ps.psNumber, ps.name, a.name
-        """, Object[].class)
-                .setParameter("lbId", lb.getId())
-                .setParameter("year", year)
-                .getResultList();
-
+        List<Object[]> rows = boothVotesRepository.getBoothVotesDetails(lb.getId(), year);
         if (rows.isEmpty()) {
             return Collections.emptyList();
         }
