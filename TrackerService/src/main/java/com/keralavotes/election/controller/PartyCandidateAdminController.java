@@ -94,12 +94,15 @@ public class PartyCandidateAdminController {
                     Party p = c.getParty();
                     Alliance a = (p != null) ? p.getAlliance() : null;
                     LoksabhaConstituency ls = c.getLs();
+                    AssemblyConstituency assemblyConstituency = c.getAc();
                     return new CandidateDto(
                             c.getId(),
                             c.getName(),
                             c.getElectionYear(),
                             ls != null ? ls.getId() : null,
                             ls != null ? ls.getName() : null,
+                            assemblyConstituency != null ? assemblyConstituency.getAcCode() : null,
+                            assemblyConstituency != null ? assemblyConstituency.getName() : null,
                             p != null ? p.getId() : null,
                             p != null ? p.getName() : null,
                             p != null ? p.getShortName() : null,
@@ -197,6 +200,7 @@ public class PartyCandidateAdminController {
         Party savedParty = saved.getParty();
         Alliance a = savedParty != null ? savedParty.getAlliance() : null;
         LoksabhaConstituency ls = saved.getLs();
+        AssemblyConstituency ac = saved.getAc();
 
         return new CandidateDto(
                 saved.getId(),
@@ -204,6 +208,8 @@ public class PartyCandidateAdminController {
                 saved.getElectionYear(),
                 ls != null ? ls.getId() : null,
                 ls != null ? ls.getName() : null,
+                ac != null ? ac.getAcCode() : null,
+                ac != null ? ac.getName() : null,
                 savedParty != null ? savedParty.getId() : null,
                 savedParty != null ? savedParty.getName() : null,
                 savedParty != null ? savedParty.getShortName() : null,

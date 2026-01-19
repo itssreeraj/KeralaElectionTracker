@@ -135,7 +135,7 @@ public class BoothResultService {
                                 .electionYear(electionYear)
                                 .electionType(electionType)
                                 .ls(ls)
-                                .ac(null)
+                                .ac(constituency)
                                 .build();
 
                         newCandidates.add(candidate);

@@ -13,6 +13,9 @@ public class CandidateDto {
     private Long lsId;
     private String lsName;
 
+    private Integer acCode;
+    private String acName;
+
     private Long partyId;
     private String partyName;
     private String partyCode;
