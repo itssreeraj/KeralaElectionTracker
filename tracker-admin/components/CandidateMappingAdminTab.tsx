@@ -17,7 +17,7 @@ const tdStyle: React.CSSProperties = {
   verticalAlign: "middle",
 };
 
-export default function CandidateMappingTab({ backend }: { backend: string }) {
+export default function CandidateMappingAdminTab({ backend }: { backend: string }) {
   const [selectedAc, setSelectedAc] = useState("");
   const [assemblies, setAssemblies] = useState<{ acCode: number; acName: string }[]>([]);
 

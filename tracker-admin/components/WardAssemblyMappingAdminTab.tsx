@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 const DELIM_YEARS = [2009, 2010, 2025];
 
-export default function WardAssemblyMappingTab({ backend }: { backend: string }) {
+export default function WardAssemblyMappingAdminTab({ backend }: { backend: string }) {
   /* --------------------- STATE --------------------- */
   const [districts, setDistricts] = useState<any[]>([]);
   const [districtCode, setDistrictCode] = useState<number | "">("");

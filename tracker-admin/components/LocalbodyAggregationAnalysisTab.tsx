@@ -5,7 +5,7 @@ import { getConfig } from "@/config/env";
 import React, { useState } from "react";
 import AssemblySelector from "./AssemblySelector";
 import DistrictSelector from "./DistrictSelector";
-import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
+import { LOCALBODY_ELECTION_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
 /* ===================== DTO TYPES ===================== */
 type AllianceVoteShare = {
@@ -133,7 +133,7 @@ function AllianceBadge({
 /* =====================================================
                     MAIN COMPONENT
 ===================================================== */
-export default function AssemblyAnalysisTab() {
+export default function LocalbodyAggregationAnalysisTab() {
   const [mode, setMode] = useState<"assembly" | "district" | "state">(
     "assembly"
   );
@@ -218,7 +218,10 @@ export default function AssemblyAnalysisTab() {
   /* ===================== RENDER ===================== */
   return (
     <div style={{ padding: 20, color: "white" }}>
-      <h2 style={{ fontSize: 22, marginBottom: 12 }}>Election Analysis</h2>
+      <h2 style={{ fontSize: 22, marginBottom: 12 }}>Localbody Aggregation Analysis</h2>
+      <h3 style={{ fontSize: 16, marginBottom: 20, color: "#9ca3af" }}>
+        Analyze localbody election results aggregated at assembly, district, or state level.
+      </h3>
 
       {/* MODE SWITCH */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>

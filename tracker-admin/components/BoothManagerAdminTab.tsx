@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
-export default function BoothManagerTab({ backend }: { backend: string }) {
+export default function BoothManagerAdminTab({ backend }: { backend: string }) {
   const [districts, setDistricts] = useState<any[]>([]);
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [filteredAssemblies, setFilteredAssemblies] = useState<any[]>([]);

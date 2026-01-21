@@ -6,13 +6,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import CsvUploadTab from "@/components/CsvUploadTab";
-import LsMappingTab from "@/components/LsMappingTab";
-import LocalbodyTab from "@/components/LocalBodyTab";
-import BoothManagerTab from "@/components/BoothManagerTab";
-import ReassignBoothsTab from "@/components/ReassignBoothsTab";
-import CandidateMappingTab from "@/components/CandidateMappingTab";
-import WardAssemblyMappingTab from "@/components/WardAssemblyMappingTab";
+import CsvUploadAdminTab from "@/components/CsvUploadAdminTab";
+import LsMappingAdminTab from "@/components/LsMappingAdminTab";
+import LocalbodyAdminTab from "@/components/LocalBodyAdminTab";
+import BoothManagerAdminTab from "@/components/BoothManagerAdminTab";
+import ReassignBoothsAdminTab from "@/components/ReassignBoothsAdminTab";
+import CandidateMappingAdminTab from "@/components/CandidateMappingAdminTab";
+import WardAssemblyMappingAdminTab from "@/components/WardAssemblyMappingAdminTab";
 import PartyAllianceAdminTab from "@/components/PartyAllianceAdminTab";
 
 // backend URL
@@ -69,13 +69,13 @@ export default function AdminPage() {
 
       {/* TAB CONTENT */}
       <div className="tab-content">
-        {tab === "upload" && <CsvUploadTab backend={backend} />}
-        {tab === "ls" && <LsMappingTab backend={backend} />}
-        {tab === "localbody" && <LocalbodyTab backend={backend} />}
-        {tab === "booth" && <BoothManagerTab backend={backend} />}
-        {tab === "reassign" && <ReassignBoothsTab backend={backend} />}
-        {tab === "candidate" && <CandidateMappingTab backend={backend} />}
-        {tab === "wardmap" && <WardAssemblyMappingTab backend={backend} />}
+        {tab === "upload" && <CsvUploadAdminTab backend={backend} />}
+        {tab === "ls" && <LsMappingAdminTab backend={backend} />}
+        {tab === "localbody" && <LocalbodyAdminTab backend={backend} />}
+        {tab === "booth" && <BoothManagerAdminTab backend={backend} />}
+        {tab === "reassign" && <ReassignBoothsAdminTab backend={backend} />}
+        {tab === "candidate" && <CandidateMappingAdminTab backend={backend} />}
+        {tab === "wardmap" && <WardAssemblyMappingAdminTab backend={backend} />}
         {tab === "partyalliance" && <PartyAllianceAdminTab />}
       </div>
 

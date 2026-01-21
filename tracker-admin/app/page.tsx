@@ -3,8 +3,8 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import LocalbodyAnalysisTab from "@/components/LocalbodyAnalysisTab";
-import AllianceAnalysisTab from "@/components/AllianceAnalysisTab";
-import AssemblyAnalysisTab from "@/components/AssemblyAnalysisTab";
+import LocalbodyAllianceTargetAnalysisTab from "@/components/LocalbodyAllianceTargetAnalysisTab";
+import LocalbodyAggregationAnalysisTab from "@/components/LocalbodyAggregationAnalysisTab";
 
 export default function HomePage() {
   const [tab, setTab] = useState<"localbody" | "alliance" | "assembly">("localbody");
@@ -82,7 +82,7 @@ export default function HomePage() {
               cursor: "pointer",
             }}
           >
-            Alliance Target Analysis
+            Localbody Alliance Target Analysis
           </button>
 
           {/* NEW: Assembly Analysis Tab */}
@@ -97,7 +97,7 @@ export default function HomePage() {
               cursor: "pointer",
             }}
           >
-            Assembly Analysis
+            Localbody Aggregation Analysis
           </button>
         </div>
 
@@ -111,8 +111,8 @@ export default function HomePage() {
           }}
         >
           {tab === "localbody" && <LocalbodyAnalysisTab />}
-          {tab === "alliance" && <AllianceAnalysisTab />}
-          {tab === "assembly" && <AssemblyAnalysisTab />}
+          {tab === "alliance" && <LocalbodyAllianceTargetAnalysisTab />}
+          {tab === "assembly" && <LocalbodyAggregationAnalysisTab />}
         </div>
       </main>
     </div>

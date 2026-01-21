@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 
-export default function LsMappingTab({ backend }: { backend: string }) {
+export default function LsMappingAdminTab({ backend }: { backend: string }) {
 
   const [lsList, setLsList] = useState<any[]>([]);
   const [newName, setNewName] = useState("");
