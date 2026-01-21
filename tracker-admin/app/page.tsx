@@ -3,7 +3,7 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import LocalbodyAnalysisTab from "@/components/LocalbodyAnalysisTab";
-import LocalbodyAllianceTargetAnalysisTab from "@/components/LocalbodyAllianceTargetAnalysisTab";
+import LocalbodySwingAnalysisTab from "@/components/LocalbodySwingAnalysisTab";
 import LocalbodyAggregationAnalysisTab from "@/components/LocalbodyAggregationAnalysisTab";
 
 export default function HomePage() {
@@ -111,7 +111,7 @@ export default function HomePage() {
           }}
         >
           {tab === "localbody" && <LocalbodyAnalysisTab />}
-          {tab === "alliance" && <LocalbodyAllianceTargetAnalysisTab />}
+          {tab === "alliance" && <LocalbodySwingAnalysisTab />}
           {tab === "assembly" && <LocalbodyAggregationAnalysisTab />}
         </div>
       </main>

@@ -1122,6 +1122,8 @@ function DetailedResultsTabs({
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
   opacity: 0.85,
+  marginBottom: 10,
+  display: "block",
 };
 
 const selectStyle: React.CSSProperties = {

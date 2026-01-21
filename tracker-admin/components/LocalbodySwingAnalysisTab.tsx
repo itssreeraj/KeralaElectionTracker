@@ -3,7 +3,7 @@
 import { getConfig } from "@/config/env";
 
 import React, { useEffect, useState } from "react";
-import { AVAILABLE_YEARS } from "../lib/constants";
+import { LOCALBODY_ELECTION_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
 /* ======= Shared Styles ======= */
 
@@ -22,8 +22,6 @@ const selectStyle: React.CSSProperties = {
   color: "#f9fafb",
   fontSize: 14,
 };
-
-
 
 const LOCALBODY_TYPES = [
   { value: "", label: "All Types" },
@@ -209,7 +207,7 @@ function WardStatusBadge({ status }: { status: WardStatus }) {
 
 /* ========= MAIN TAB ========= */
 
-export default function LocalbodyAllianceTargetAnalysisTab() {
+export default function LocalbodySwingAnalysisTab() {
   const config = getConfig();
   const backend =
     `${config.apiBase}` || "http://localhost:8080/api";
@@ -326,6 +324,9 @@ export default function LocalbodyAllianceTargetAnalysisTab() {
       <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 16 }}>
         Alliance-Based Analysis
       </h2>
+      <p style={{ marginBottom: 20, opacity: 0.8, fontSize: 14 }}>
+        A swing-based performance analysis of the alliance, utilizing local body election results to project how shifts in voter sentiment impact seat viability
+      </p>
 
       {/* FILTER GRID */}
       <div
@@ -456,7 +457,7 @@ export default function LocalbodyAllianceTargetAnalysisTab() {
               marginTop: 6,
             }}
           >
-            {AVAILABLE_YEARS.map((y) => {
+            {ANALYSIS_YEARS.map((y) => {
               const active = selectedYear === y;
               return (
                 <button
