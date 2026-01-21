@@ -207,7 +207,7 @@ function WardStatusBadge({ status }: { status: WardStatus }) {
 
 /* ========= MAIN TAB ========= */
 
-export default function LocalbodyAllianceTargetAnalysisTab() {
+export default function LocalbodySwingAnalysisTab() {
   const config = getConfig();
   const backend =
     `${config.apiBase}` || "http://localhost:8080/api";
@@ -324,6 +324,9 @@ export default function LocalbodyAllianceTargetAnalysisTab() {
       <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 16 }}>
         Alliance-Based Analysis
       </h2>
+      <p style={{ marginBottom: 20, opacity: 0.8, fontSize: 14 }}>
+        A swing-based performance analysis of the alliance, utilizing local body election results to project how shifts in voter sentiment impact seat viability
+      </p>
 
       {/* FILTER GRID */}
       <div
