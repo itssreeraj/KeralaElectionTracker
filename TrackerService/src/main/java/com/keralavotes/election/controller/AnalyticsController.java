@@ -147,9 +147,8 @@ public class AnalyticsController {
     @GetMapping("/localbody/{id}")
     public LocalbodyAnalysisResponse analyzeLocalbody(@PathVariable("id") Long localbodyId,
                                                       @RequestParam(value = "years", required = false) String years) {
-        log.info("Unified Localbody Analysis: id={} years={}", localbodyId, years);
-
-        List<Integer> yearList = null;
+        log.info("AnalyticsController::analyzeLocalbody -> Unified Localbody Analysis: id={} years={}", localbodyId, years);
+        List<Integer> yearList;
 
         if (years != null && !years.isBlank()) {
             yearList = Arrays.stream(years.split(","))
@@ -160,7 +159,7 @@ public class AnalyticsController {
         } else {
             yearList = List.of(2015, 2020, 2025); // default years
         }
-
+        log.info("AnalyticsController::analyzeLocalbody -> Analyzing Localbody ID: {} for years: {}", localbodyId, yearList);
         return analysisService.analyzeLocalbody(localbodyId, yearList);
     }
 

@@ -55,21 +55,30 @@ public class LocalbodyElectionAnalysisService {
 
     static {
         Map<Integer, ElectionType> types = new LinkedHashMap<>();
+        types.put(2009, ElectionType.LOKSABHA);
         types.put(2014, ElectionType.LOKSABHA);
+        types.put(2019, ElectionType.LOKSABHA);
+        types.put(2024, ElectionType.LOKSABHA);
         types.put(2015, ElectionType.LOCALBODY);
         types.put(2020, ElectionType.LOCALBODY);
-        types.put(2024, ElectionType.LOKSABHA);
-        types.put(2019, ElectionType.LOKSABHA);
         types.put(2025, ElectionType.LOCALBODY);
+        types.put(2011, ElectionType.ASSEMBLY);
+        types.put(2016, ElectionType.ASSEMBLY);
+        types.put(2021, ElectionType.ASSEMBLY);
         types.put(2026, ElectionType.ASSEMBLY);
         ELECTION_TYPES = Collections.unmodifiableMap(types);
 
         Map<Integer, String> labels = new LinkedHashMap<>();
         labels.put(2015, "2015 Localbody Election");
         labels.put(2020, "2020 Localbody Election");
-        labels.put(2024, "2024 General Election");
-        labels.put(2019, "2019 General Election");
         labels.put(2025, "2025 Localbody Election");
+        labels.put(2009, "2009 General Election");
+        labels.put(2014, "2014 General Election");
+        labels.put(2019, "2019 General Election");
+        labels.put(2024, "2024 General Election");
+        labels.put(2011, "2011 Assembly Election");
+        labels.put(2016, "2016 Assembly Election");
+        labels.put(2021, "2021 Assembly Election");
         labels.put(2026, "2026 Assembly Election");
         ELECTION_LABELS = Collections.unmodifiableMap(labels);
     }
