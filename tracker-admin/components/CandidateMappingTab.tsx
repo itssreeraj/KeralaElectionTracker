@@ -18,6 +18,9 @@ const tdStyle: React.CSSProperties = {
 };
 
 export default function CandidateMappingTab({ backend }: { backend: string }) {
+  const [selectedAc, setSelectedAc] = useState("");
+  const [assemblies, setAssemblies] = useState<{ acCode: number; acName: string }[]>([]);
+
   const [parties, setParties] = useState<any[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
   const [lokSabhas, setLokSabhas] = useState<any[]>([]);
@@ -36,6 +39,10 @@ export default function CandidateMappingTab({ backend }: { backend: string }) {
     else setParties([]);
   };
 
+  useEffect(() => {
+    setSelectedAc("");
+  }, [selectedLs]);
+
   const loadCandidates = async () => {
     let url = `${backend}/admin/candidates?year=${year}`;
     if (selectedLs) url += `&lsId=${selectedLs}`;
@@ -44,6 +51,26 @@ export default function CandidateMappingTab({ backend }: { backend: string }) {
     if (r.ok) {
       const data = await r.json();
       setCandidates(data);
+
+      // derive assemblies based on selected LS
+      const acMap = new Map<number, { acCode: number; acName: string }>();
+
+      data.forEach((c: any) => {
+        if (!selectedLs || String(c.lsId) === selectedLs) {
+          if (c.acCode && !acMap.has(c.acCode)) {
+            acMap.set(c.acCode, {
+              acCode: c.acCode,
+              acName: c.acName,
+            });
+          }
+        }
+      });
+
+      setAssemblies(
+        Array.from(acMap.values()).sort((a, b) =>
+          a.acCode - b.acCode
+        )
+      );
 
       // derive Lok Sabhas from the candidate list (grouped by ls id/code/name)
       const map = new Map<string, { id: any; lsCode: string; name: string }>();
@@ -166,8 +193,55 @@ export default function CandidateMappingTab({ backend }: { backend: string }) {
             )}
           </div>
         </div>
-      </div>
+        {/* Assembly */}
+        {selectedLs && (
+          <div style={{ minWidth: 260 }}>
+            <label style={{ fontSize: 11, color: "#9ca3af" }}>
+              Assembly Constituency
+            </label>
 
+            <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+              <select
+                value={selectedAc}
+                onChange={(e) => setSelectedAc(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "8px 10px",
+                  background: "#0b0b0b",
+                  border: selectedAc ? "1px solid #0d6efd" : "1px solid #333",
+                  borderRadius: 6,
+                  color: "white",
+                  fontSize: 12,
+                }}
+              >
+                <option value="">All Assemblies</option>
+                {assemblies.map(ac => (
+                  <option key={ac.acCode} value={ac.acCode}>
+                    {ac.acCode} – {ac.acName}
+                  </option>
+                ))}
+              </select>
+
+              {selectedAc && (
+                <button
+                  onClick={() => setSelectedAc("")}
+                  title="Clear Assembly filter"
+                  style={{
+                    padding: "0 10px",
+                    borderRadius: 6,
+                    border: "1px solid #333",
+                    background: "#111",
+                    color: "#9ca3af",
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       <h3 style={{ marginTop: 24, marginBottom: 8 }}>Candidate Mapping</h3>
       <div
         style={{
@@ -202,7 +276,12 @@ export default function CandidateMappingTab({ backend }: { backend: string }) {
           </thead>
 
           <tbody>
-            {candidates.map((c) => (
+            {candidates
+              .filter(c =>
+                (!selectedLs || String(c.lsId) === selectedLs) &&
+                (!selectedAc || String(c.acCode) === selectedAc)
+              )
+              .map((c) => (
               <tr
                 key={c.id}
                 style={{
