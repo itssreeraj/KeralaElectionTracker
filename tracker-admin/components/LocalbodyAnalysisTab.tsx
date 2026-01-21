@@ -116,8 +116,6 @@ export default function LocalbodyAnalysisTab() {
   const [selectedLocalbody, setSelectedLocalbody] = useState<string>("");
 
   const [selectedYears, setSelectedYears] = useState<number[]>([
-    2015,
-    2020,
     2025,
   ]);
 
@@ -432,9 +430,11 @@ export default function LocalbodyAnalysisTab() {
       .sort((a, b) => a.year - b.year)
       .map((el) => {
         const isLocalbody = el.type === "LOCALBODY";
-        const isLOKSABHA = el.type === "LOKSABHA";
+        const isLokSabha = el.type === "LOKSABHA";
+        const isAssembly = el.type === "ASSEMBLY";
+        const isGeneral = isLokSabha || isAssembly;
 
-        const baseYearLabel = isLOKSABHA ? `${el.year} LOKSABHA` : `${el.year}`;
+        const baseYearLabel = isLokSabha ? `${el.year} LOKSABHA` : isAssembly ? `${el.year} ASSEMBLY` : `${el.year}`;
 
         const yearBlock: any = {
           year: baseYearLabel,
@@ -462,7 +462,7 @@ export default function LocalbodyAnalysisTab() {
           }));
         }
 
-        if (isLOKSABHA) {
+        if (isGeneral) {
           yearBlock.generalVotes = (el.boothVoteShare || []).map((v) => ({
             alliance: v.alliance,
             color: getAllianceColor(v.alliance),
@@ -725,7 +725,7 @@ export default function LocalbodyAnalysisTab() {
               .sort((a, b) => a.year - b.year)
               .map((el) => {
                 const isLocalbody = el.type === "LOCALBODY";
-                const isLOKSABHA = el.type === "LOKSABHA";
+                const isGeneral = el.type === "LOKSABHA" || el.type === "ASSEMBLY";
                 const badgeColor =
                   el.type === "LOCALBODY"
                     ? "#059669"
@@ -806,7 +806,7 @@ export default function LocalbodyAnalysisTab() {
                       </>
                     )}
 
-                    {isLOKSABHA && (
+                    {isGeneral && (
                       <>
                         {renderVoteShareTable(
                           el.boothVoteShare || [],
@@ -860,7 +860,7 @@ export default function LocalbodyAnalysisTab() {
                       }}
                     />
 
-                    {!isLocalbody && !isLOKSABHA && (
+                    {!isLocalbody && !isGeneral && (
                       <p style={{ fontSize: 13, opacity: 0.7 }}>
                         No renderer defined for type: {el.type}
                       </p>
