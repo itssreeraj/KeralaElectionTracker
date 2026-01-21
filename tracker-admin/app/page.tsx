@@ -5,9 +5,10 @@ import React, { useState } from "react";
 import LocalbodyAnalysisTab from "@/components/LocalbodyAnalysisTab";
 import LocalbodySwingAnalysisTab from "@/components/LocalbodySwingAnalysisTab";
 import LocalbodyAggregationAnalysisTab from "@/components/LocalbodyAggregationAnalysisTab";
+import AssemblyOverviewTab from "@/components/AssemblyOverviewTab";
 
 export default function HomePage() {
-  const [tab, setTab] = useState<"localbody" | "alliance" | "assembly">("localbody");
+  const [tab, setTab] = useState<"localbody" | "swing" | "aggregation" | "assembly">("localbody");
 
   return (
     <div style={{ minHeight: "100vh", background: "#0b0f19", color: "white" }}>
@@ -72,20 +73,36 @@ export default function HomePage() {
           </button>
 
           <button
-            onClick={() => setTab("alliance")}
+            onClick={() => setTab("swing")}
             style={{
               padding: "10px 16px",
               borderRadius: 8,
-              background: tab === "alliance" ? "#2563eb" : "#1f2937",
+              background: tab === "swing" ? "#2563eb" : "#1f2937",
               color: "white",
               border: "1px solid #374151",
               cursor: "pointer",
             }}
           >
-            Localbody Alliance Target Analysis
+            Localbody Alliance Swing Target Analysis
           </button>
 
-          {/* NEW: Assembly Analysis Tab */}
+          {/* Localbody aggregation Analysis Tab */}
+          <button
+            onClick={() => setTab("aggregation")}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 8,
+              background: tab === "aggregation" ? "#2563eb" : "#1f2937",
+              color: "white",
+              border: "1px solid #374151",
+              cursor: "pointer",
+            }}
+          >
+            Localbody Aggregation Analysis
+          </button>
+
+
+          {/* Assembly Analysis Tab */}
           <button
             onClick={() => setTab("assembly")}
             style={{
@@ -97,7 +114,7 @@ export default function HomePage() {
               cursor: "pointer",
             }}
           >
-            Localbody Aggregation Analysis
+            Assembly Overview Analysis
           </button>
         </div>
 
@@ -111,8 +128,9 @@ export default function HomePage() {
           }}
         >
           {tab === "localbody" && <LocalbodyAnalysisTab />}
-          {tab === "alliance" && <LocalbodySwingAnalysisTab />}
-          {tab === "assembly" && <LocalbodyAggregationAnalysisTab />}
+          {tab === "swing" && <LocalbodySwingAnalysisTab />}
+          {tab === "aggregation" && <LocalbodyAggregationAnalysisTab />}
+          {tab === "assembly" && <AssemblyOverviewTab />}
         </div>
       </main>
     </div>
