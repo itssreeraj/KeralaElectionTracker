@@ -213,15 +213,13 @@ export default function LocalbodyAggregationAnalysisTab() {
   };
 
   
-
-
   /* ===================== RENDER ===================== */
   return (
     <div style={{ padding: 20, color: "white" }}>
       <h2 style={{ fontSize: 22, marginBottom: 12 }}>Localbody Aggregation Analysis</h2>
-      <h3 style={{ fontSize: 16, marginBottom: 20, color: "#9ca3af" }}>
+      <p style={{ marginBottom: 20, opacity: 0.8, fontSize: 14 }}>
         Analyze localbody election results aggregated at assembly, district, or state level.
-      </h3>
+      </p>
 
       {/* MODE SWITCH */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>

@@ -3,7 +3,7 @@
 import { getConfig } from "@/config/env";
 
 import React, { useEffect, useState } from "react";
-import { AVAILABLE_YEARS } from "../lib/constants";
+import { LOCALBODY_ELECTION_YEARS as ANALYSIS_YEARS } from "../lib/constants";
 
 /* ======= Shared Styles ======= */
 
@@ -22,8 +22,6 @@ const selectStyle: React.CSSProperties = {
   color: "#f9fafb",
   fontSize: 14,
 };
-
-
 
 const LOCALBODY_TYPES = [
   { value: "", label: "All Types" },
@@ -456,7 +454,7 @@ export default function LocalbodyAllianceTargetAnalysisTab() {
               marginTop: 6,
             }}
           >
-            {AVAILABLE_YEARS.map((y) => {
+            {ANALYSIS_YEARS.map((y) => {
               const active = selectedYear === y;
               return (
                 <button
