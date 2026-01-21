@@ -42,7 +42,6 @@ public class BoothResultService {
     @Transactional
     public String insertPollingStationResult(PollingStationResultInsertRequest  resultInsertRequest) {
         for (var psListResults : resultInsertRequest.getResults()) {
-
             String acName = psListResults.getAcName();
             int acCode = psListResults.getAcCode();
             AssemblyConstituency constituency = assemblyRepository.findByAcCode(acCode)
@@ -54,8 +53,7 @@ public class BoothResultService {
             String electionType = psListResults.getElectionType();
             int lsCode = psListResults.getLsCode();
 
-            Set<Integer> existingPs =
-                    pollingStationRepository.findExistingPsNumbers(acCode, electionYear);
+            Set<Integer> existingPs = pollingStationRepository.findExistingPsNumbers(acCode, electionYear);
 
             Map<Integer, BoothTotals> boothTotalsMap = new HashMap<>();
             boothTotalsRepository.findByYearAndPollingStation_Ac_AcCode(electionYear, acCode)
