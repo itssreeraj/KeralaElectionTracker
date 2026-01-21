@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 
-export default function CsvUploadTab({ backend }: { backend: string }) {
+export default function CsvUploadAdminTab({ backend }: { backend: string }) {
   const [logMessages, setLogMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 

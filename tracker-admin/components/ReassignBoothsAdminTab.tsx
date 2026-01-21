@@ -8,7 +8,7 @@ type District = {
   name: string;
 };
 
-export default function ReassignBoothsTab({ backend }: { backend: string }) {
+export default function ReassignBoothsAdminTab({ backend }: { backend: string }) {
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [filteredAssemblies, setFilteredAssemblies] = useState<any[]>([]);
   const [assemblySearch, setAssemblySearch] = useState("");

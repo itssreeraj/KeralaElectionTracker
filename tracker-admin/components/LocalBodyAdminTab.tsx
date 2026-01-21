@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 
-export default function LocalbodyTab({ backend }: { backend: string }) {
+export default function LocalbodyAdminTab({ backend }: { backend: string }) {
 
   const [districts, setDistricts] = useState<any[]>([]);
   const [assemblies, setAssemblies] = useState<any[]>([]);

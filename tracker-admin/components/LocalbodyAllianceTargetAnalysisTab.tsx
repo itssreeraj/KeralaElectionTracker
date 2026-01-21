@@ -209,7 +209,7 @@ function WardStatusBadge({ status }: { status: WardStatus }) {
 
 /* ========= MAIN TAB ========= */
 
-export default function AllianceAnalysisTab() {
+export default function LocalbodyAllianceTargetAnalysisTab() {
   const config = getConfig();
   const backend =
     `${config.apiBase}` || "http://localhost:8080/api";

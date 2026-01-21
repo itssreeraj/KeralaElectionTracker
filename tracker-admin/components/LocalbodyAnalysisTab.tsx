@@ -517,8 +517,8 @@ export default function LocalbodyAnalysisTab() {
     <div style={{ padding: 24, color: "white" }}>
       <h2 style={{ marginBottom: 8 }}>Localbody Election Analysis</h2>
       <p style={{ marginBottom: 20, opacity: 0.8, fontSize: 14 }}>
-        Compare alliance performance across Localbody (2015, 2020) and General
-        Election (2024) for the selected localbody.
+        Compare alliance performance across Localbody (2015, 2020, 2025), General
+        Election (2009, 2014, 2019, 2024) and Assembly Election (2011, 2016, 2021, 2026) for the selected localbody.
       </p>
 
       {/* TOP FILTER BAR */}
