@@ -3,7 +3,6 @@
 import { getConfig } from "@/config/env";
 import React, { useEffect, useState } from "react";
 import AssemblySelector from "./AssemblySelector";
-import DistrictSelector from "./DistrictSelector";
 import { AVAILABLE_YEARS } from "../lib/constants";
 
 /* ===================== TYPES ===================== */
@@ -14,14 +13,13 @@ type AllianceSummary = {
   alliance: string;
   votes: number;
   percentage: number;
-  rank1: number;
-  rank2: number;
 };
 
-type YearBlock = {
+type ResultBlock = {
   year: number;
   type: ElectionType;
-  allianceSummary: AllianceSummary[];
+  label: string;
+  voteShare: AllianceSummary[];
   winner: string;
 };
 
@@ -31,7 +29,7 @@ type AssemblyOverviewResponse = {
     name: string;
     districtName: string;
   };
-  years: YearBlock[];
+  historicResults: ResultBlock[];
 };
 
 /* ===================== CONSTANTS ===================== */
@@ -40,8 +38,6 @@ const ALLIANCE_COLORS: Record<string, string> = {
   LDF: "#e11d48",
   UDF: "#2563eb",
   NDA: "#f59e0b",
-  SDPI: "#16a34a",
-  IND: "#9ca3af",
   OTH: "#6b7280",
 };
 
@@ -50,7 +46,7 @@ const ALLIANCE_COLORS: Record<string, string> = {
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
   opacity: 0.85,
-  marginBottom: 6,
+  marginBottom: 10,
   display: "block",
 };
 
@@ -142,7 +138,7 @@ export default function AssemblyOverviewTab() {
 
     try {
       const res = await fetch(
-        `${backend}/analysis/assembly/overview?${params.toString()}`
+        `${backend}/analysis/historic/assembly?${params.toString()}`
       );
       if (!res.ok) throw new Error("Failed");
       setData(await res.json());
@@ -168,11 +164,7 @@ export default function AssemblyOverviewTab() {
           marginBottom: 20,
         }}
       >
-        <div>
-          <label style={labelStyle}>District</label>
-          <DistrictSelector backend={backend} onSelectDistrict={setSelectedDistrict} />
-        </div>
-
+        
         <div>
           <label style={labelStyle}>Assembly</label>
           <AssemblySelector backend={backend} onSelectAc={setSelectedAc} />
@@ -287,9 +279,10 @@ export default function AssemblyOverviewTab() {
                   <th style={thStyleLeft}>Type</th>
 
                   {Object.keys(ALLIANCE_COLORS).map((a) => (
-                    <th key={a} style={thStyleRight}>
-                      {a} %
-                    </th>
+                    <React.Fragment key={a}>
+                      <th style={thStyleRight}>{a} Votes</th>
+                      <th style={thStyleRight}>{a} %</th>
+                    </React.Fragment>
                   ))}
 
                   <th style={thStyleLeft}>Winner</th>
@@ -297,17 +290,18 @@ export default function AssemblyOverviewTab() {
               </thead>
 
               <tbody>
-                {data.years
+                {data.historicResults
                   .sort((a, b) => a.year - b.year)
                   .map((y) => {
                     const map: Record<string, AllianceSummary> = {};
-                    y.allianceSummary.forEach((a) => {
+                    y.voteShare.forEach((a) => {
                       map[a.alliance] = a;
                     });
 
                     return (
                       <tr key={`${y.year}-${y.type}`}>
                         <td style={tdStyleLeft}>{y.year}</td>
+
                         <td style={tdStyleLeft}>
                           <span
                             style={{
@@ -329,9 +323,14 @@ export default function AssemblyOverviewTab() {
                         {Object.keys(ALLIANCE_COLORS).map((a) => {
                           const v = map[a];
                           return (
-                            <td key={a} style={tdStyleRight}>
-                              {v ? `${v.percentage.toFixed(2)}%` : "—"}
-                            </td>
+                            <React.Fragment key={a}>
+                              <td style={tdStyleRight}>
+                                {v ? v.votes.toLocaleString("en-IN") : "—"}
+                              </td>
+                              <td style={tdStyleRight}>
+                                {v ? `${v.percentage.toFixed(2)}%` : "—"}
+                              </td>
+                            </React.Fragment>
                           );
                         })}
 
