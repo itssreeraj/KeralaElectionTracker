@@ -358,6 +358,20 @@ export default function AssemblyOverviewTab() {
               </tbody>
             </table>
           </div>
+          <div
+            style={{
+              marginTop: 24,
+              padding: 12,
+              borderRadius: 6,
+              background: "#1f2937",
+              borderLeft: "4px solid #f59e0b",
+              fontSize: 13,
+              color: "#e5e7eb",
+            }}
+          >
+            <b>Note:</b> General election results exclude postal ballots. Only EVM votes are included.
+          </div>
+
         </>
       )}
     </div>
