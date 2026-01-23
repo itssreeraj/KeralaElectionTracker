@@ -14,7 +14,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
@@ -39,5 +39,7 @@ logging:
   level:
     root: INFO
     com.keralavotes: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   file:
     name: logs/keralavotes.log

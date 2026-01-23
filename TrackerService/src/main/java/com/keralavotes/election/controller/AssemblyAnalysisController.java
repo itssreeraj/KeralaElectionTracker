@@ -3,6 +3,7 @@ package com.keralavotes.election.controller;
 import com.keralavotes.election.dto.AssemblyAnalysisResponseDto;
 import com.keralavotes.election.dto.AssemblyOverviewResponseDto;
 import com.keralavotes.election.entity.AssemblyConstituency;
+import com.keralavotes.election.model.AssemblyHistoricResultsResponseDto;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.service.AssemblyAnalysisService;
 import com.keralavotes.election.service.AssemblyOverviewService;
@@ -90,6 +91,16 @@ public class AssemblyAnalysisController {
     ) {
         List<String> types = parseTypes(includeTypes);
         return assemblyAnalysisService.analyzeByDistrict(districtCode, year, types);
+    }
+
+    @GetMapping("/analysis/historic/assembly")
+    public AssemblyHistoricResultsResponseDto assemblyHistoricAnalysis(
+            @RequestParam int acCode,
+            @RequestParam String years,
+            @RequestParam(required = false) String includeTypes
+    ) {
+        List<String> types = parseTypes(includeTypes);
+        return assemblyAnalysisService.doHistoricAnalysis(acCode, years, types);
     }
 
     private List<String> parseTypes(String includeTypes) {

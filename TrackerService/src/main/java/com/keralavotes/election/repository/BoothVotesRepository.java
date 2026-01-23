@@ -131,4 +131,15 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
     Set<String> findExistingVoteKeys(int acCode, int year);
 
     List<BoothVotes> findByYearAndPollingStation_Ac_AcCode(int year, int acCode);
+
+    @Query("SELECT COALESCE(a.name, 'OTH'), SUM(bv.votes) " +
+            "FROM BoothVotes bv " +
+            "JOIN bv.pollingStation ps " +
+            "JOIN bv.candidate c " +
+            "LEFT JOIN c.party p " +
+            "LEFT JOIN PartyAllianceMapping pam ON pam.party.id = p.id AND pam.electionYear = :year " +
+            "LEFT JOIN pam.alliance a WHERE ps.ac.acCode  = :acCode AND bv.year = :year AND c.electionYear = :year " +
+            "GROUP BY COALESCE(a.name, 'OTH') ORDER BY SUM(bv.votes) DESC")
+    List<Object[]> getAssemblyVoteShare(int acCode, int year);
+
 }

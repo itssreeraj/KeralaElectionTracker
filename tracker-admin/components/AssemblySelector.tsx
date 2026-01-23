@@ -11,7 +11,8 @@ export default function AssemblySelector({
 }) {
   const [districts, setDistricts] = useState<any[]>([]);
   const [districtCode, setDistrictCode] = useState<number | "">("");
-  const [lsCode, setLsCode] = useState<string>("");
+  const [loksabha, setLoksabha] = useState<any[]>([]);
+  const [lsCode, setLsCode] = useState<number | "">("");
   const [acCode, setAcCode] = useState<string>("");
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,10 @@ export default function AssemblySelector({
       .then((r) => r.json())
       .then((d) => setDistricts(Array.isArray(d) ? d : []))
       .catch(() => setDistricts([]));
+    fetch(`${backend}/admin/loksabha`)
+      .then((r) => r.json())
+      .then((d) => setLoksabha(Array.isArray(d) ? d : []))
+      .catch(() => setLoksabha([]));
   }, [backend]);
 
   const loadByDistrict = async (code: number) => {
@@ -34,10 +39,10 @@ export default function AssemblySelector({
     }
   };
 
-  const loadByLs = async (ls: string) => {
+  const loadByLs = async (lsCode: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`${backend}/admin/assemblies/by-ls?lsCode=${encodeURIComponent(ls)}`);
+      const res = await fetch(`${backend}/admin/assemblies/by-ls?lsCode=${encodeURIComponent(lsCode)}`);
       const data = await res.json();
       setAssemblies(Array.isArray(data) ? data : []);
     } finally {
@@ -126,36 +131,33 @@ export default function AssemblySelector({
         </div>
       </div>
 
-      {/* LS code lookup */}
+      {/* LS Selector */}
       <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 13, opacity: 0.85 }}>Or by LS code</label>
-        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-          <input
+        <label style={{ fontSize: 13, opacity: 0.85 }}>Or pick by Loksabha</label>
+        <div style={{ marginTop: 6 }}>
+          <select
             value={lsCode}
-            onChange={(e) => setLsCode(e.target.value)}
-            placeholder="LS code"
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setLsCode(v || "");
+              if (v) loadByLs(v);
+            }}
             style={{
+              width: "100%",
               padding: "6px 8px",
               borderRadius: 6,
               border: "1px solid #374151",
               background: "#020617",
               color: "#f9fafb",
-              width: 200,
-            }}
-          />
-          <button
-            onClick={() => loadByLs(lsCode)}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 6,
-              background: "#2563eb",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
             }}
           >
-            Lookup
-          </button>
+            <option value="">Select Loksabha</option>
+            {loksabha.map((ls) => (
+              <option key={ls.lsCode} value={ls.lsCode}>
+                {ls.lsCode} - {ls.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
