@@ -7,8 +7,6 @@ import { AVAILABLE_YEARS } from "../lib/constants";
 
 /* ===================== TYPES ===================== */
 
-type ElectionType = "LOCALBODY" | "ASSEMBLY" | "LOKSABHA";
-
 type AllianceSummary = {
   alliance: string;
   votes: number;
@@ -17,10 +15,12 @@ type AllianceSummary = {
 
 type ResultBlock = {
   year: number;
-  type: ElectionType;
+  type: "LOCALBODY" | "ASSEMBLY" | "LOKSABHA";
   label: string;
   voteShare: AllianceSummary[];
   winner: string;
+  runnerUp: string;
+  margin: number;
 };
 
 type AssemblyOverviewResponse = {
@@ -33,6 +33,14 @@ type AssemblyOverviewResponse = {
 };
 
 /* ===================== CONSTANTS ===================== */
+
+const TIER_OPTIONS = [
+  { id: "grama_panchayath", label: "Grama Panchayath" },
+  { id: "block_panchayath", label: "Block Panchayath" },
+  { id: "Municipality", label: "Municipality" },
+  { id: "Corporation", label: "Corporation" },
+];
+
 
 const ALLIANCE_COLORS: Record<string, string> = {
   LDF: "#e11d48",
@@ -94,15 +102,20 @@ export default function AssemblyOverviewTab() {
   const config = getConfig();
   const backend = config.apiBase || "http://localhost:8080/api";
 
-  const [selectedDistrict, setSelectedDistrict] = useState<any | null>(null);
   const [selectedAc, setSelectedAc] = useState<any | null>(null);
-
   const [selectedYears, setSelectedYears] = useState<number[]>([2021, 2026]);
-  const [selectedTypes, setSelectedTypes] = useState<ElectionType[]>([
-    "LOCALBODY",
-    "ASSEMBLY",
-    "LOKSABHA",
+
+  const [selectedTiers, setSelectedTiers] = useState<string[]>([
+    "grama_panchayath",
+    "Municipality",
+    "Corporation",
   ]);
+
+  const toggleTier = (tier: string) =>
+    setSelectedTiers((prev) =>
+      prev.includes(tier) ? prev.filter((t) => t !== tier) : [...prev, tier]
+    );
+
 
   const [data, setData] = useState<AssemblyOverviewResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -113,16 +126,10 @@ export default function AssemblyOverviewTab() {
     );
   };
 
-  const toggleType = (t: ElectionType) => {
-    setSelectedTypes((prev) =>
-      prev.includes(t) ? prev.filter((v) => v !== t) : [...prev, t]
-    );
-  };
-
   const canRun =
     selectedAc &&
     selectedYears.length > 0 &&
-    selectedTypes.length > 0 &&
+    selectedTiers.length > 0 &&
     !loading;
 
   const runAnalysis = async () => {
@@ -131,7 +138,7 @@ export default function AssemblyOverviewTab() {
     const params = new URLSearchParams();
     params.append("acCode", String(selectedAc.acCode));
     params.append("years", selectedYears.join(","));
-    params.append("types", selectedTypes.join(","));
+    params.append("includeTypes", selectedTiers.join(","));
 
     setLoading(true);
     setData(null);
@@ -171,14 +178,14 @@ export default function AssemblyOverviewTab() {
         </div>
 
         <div>
-          <label style={labelStyle}>Election Types</label>
+          <label style={labelStyle}>Localbody Tiers</label>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {["LOCALBODY", "ASSEMBLY", "LOKSABHA"].map((t) => {
-              const active = selectedTypes.includes(t as ElectionType);
+            {TIER_OPTIONS.map((t) => {
+              const active = selectedTiers.includes(t.id);
               return (
                 <button
-                  key={t}
-                  onClick={() => toggleType(t as ElectionType)}
+                  key={t.id}
+                  onClick={() => toggleTier(t.id)}
                   style={{
                     padding: "6px 12px",
                     borderRadius: 999,
@@ -188,7 +195,7 @@ export default function AssemblyOverviewTab() {
                     fontSize: 12,
                   }}
                 >
-                  {t}
+                  {t.label}
                 </button>
               );
             })}
@@ -286,6 +293,8 @@ export default function AssemblyOverviewTab() {
                   ))}
 
                   <th style={thStyleLeft}>Winner</th>
+                  <th style={thStyleLeft}>Runner Up</th>
+                  <th style={thStyleLeft}>Margin</th>
                 </tr>
               </thead>
 
@@ -336,6 +345,12 @@ export default function AssemblyOverviewTab() {
 
                         <td style={tdStyleLeft}>
                           <b>{y.winner || "-"}</b>
+                        </td>
+                        <td style={tdStyleLeft}>
+                          <b>{y.runnerUp || "-"}</b>
+                        </td>
+                        <td style={tdStyleLeft}>
+                          <b>{y.margin || "-"}</b>
                         </td>
                       </tr>
                     );

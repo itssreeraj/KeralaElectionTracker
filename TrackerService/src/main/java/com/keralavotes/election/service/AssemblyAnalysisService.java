@@ -362,7 +362,8 @@ public class AssemblyAnalysisService {
         return result;
     }
 
-    public AssemblyHistoricResultsResponseDto doHistoricAnalysis(int acCode, String years) {
+    @Transactional()
+    public AssemblyHistoricResultsResponseDto doHistoricAnalysis(int acCode, String years, List<String> includeTypes) {
         AssemblyConstituency assemblyConstituency = assemblyConstituencyRepository.findByAcCode(acCode)
                 .orElseThrow(() -> new RuntimeException("Invalid AC code: " + acCode));
 
@@ -381,9 +382,13 @@ public class AssemblyAnalysisService {
 
         List<SingleElectionAnalysisDto> historicResults = new ArrayList<>();
         for (int year : yearList) {
+            SingleElectionAnalysisDto singleElectionAnalysisDto = new SingleElectionAnalysisDto();
+            singleElectionAnalysisDto.setYear(year);
+            singleElectionAnalysisDto.setType(ElectionYear.typeOf(year));
+            singleElectionAnalysisDto.setLabel(ElectionYear.labelOf(year));
+
             if (ElectionYear.fromYear(year).isGeneral()) {
                 List<Object[]> assemblyVoteshare;
-                SingleElectionAnalysisDto singleElectionAnalysisDto = new SingleElectionAnalysisDto();
                 // Find the poling stations for this localbody
                 Set<Long> pollingStationIds = pollingStationRepository
                         .findByAc_AcCodeAndElectionYearOrderByPsNumberAsc(acCode, year)
@@ -398,20 +403,59 @@ public class AssemblyAnalysisService {
                         .sum();
 
                 assemblyVoteshare = boothVotesRepository.getAssemblyVoteShare(acCode, year);
-                singleElectionAnalysisDto.setYear(year);
-                singleElectionAnalysisDto.setType(ElectionYear.typeOf(year));
-                singleElectionAnalysisDto.setLabel(ElectionYear.labelOf(year));
                 List<VoteShareRowDto> boothVoteShare = assemblyVoteshare.stream()
                         .map(a -> {
                             String alliance = a[0].toString();
                             long votes = ((Number) a[1]).longValue();
                             double pct = totalVotes == 0 ? 0 : (votes * 100.0 / totalVotes);
                             return new VoteShareRowDto(alliance, votes, pct);
-                }).toList();
+                        })
+                        .sorted(Comparator.comparingLong(VoteShareRowDto::getVotes).reversed())
+                        .toList();
+
+                VoteShareRowDto winner = !boothVoteShare.isEmpty() ? boothVoteShare.getFirst() : null;
+                VoteShareRowDto runnerUp = boothVoteShare.size() > 1 ? boothVoteShare.get(1) : null;
+
+                String winnerAlliance = winner != null ? winner.getAlliance() : "OTH";
+                String runnerUpAlliance = runnerUp != null ? runnerUp.getAlliance() : null;
+                long margin = (winner != null && runnerUp != null) ? winner.getVotes() - runnerUp.getVotes() : 0;
+
                 singleElectionAnalysisDto.setVoteShare(boothVoteShare);
+
+                singleElectionAnalysisDto.setWinner(winnerAlliance);
+                singleElectionAnalysisDto.setRunnerUp(runnerUpAlliance);
+                singleElectionAnalysisDto.setMargin(margin);
+
+                historicResults.add(singleElectionAnalysisDto);
+            } else {
+                AssemblyAnalysisResponseDto assemblyAnalysisResponseDto =
+                        analyze(year, acCode, null, includeTypes, ElectionType.LOCALBODY, "Assembly " + acCode);
+                List<VoteShareRowDto> voteShareRowDtoList = assemblyAnalysisResponseDto.getOverallVoteShare().stream()
+                        .map(voteshare -> {
+                                    String alliance = voteshare.getAlliance();
+                                    long votes = voteshare.getVotes();
+                                    double percentage = voteshare.getPercentage();
+                                    return new VoteShareRowDto(alliance, votes, percentage);
+                                }
+                        )
+                        .sorted(Comparator.comparingLong(VoteShareRowDto::getVotes).reversed())
+                        .toList();
+
+                VoteShareRowDto winner = !voteShareRowDtoList.isEmpty() ? voteShareRowDtoList.getFirst() : null;
+                VoteShareRowDto runnerUp = voteShareRowDtoList.size() > 1 ? voteShareRowDtoList.get(1) : null;
+
+                String winnerAlliance = winner != null ? winner.getAlliance() : "OTH";
+                String runnerUpAlliance = runnerUp != null ? runnerUp.getAlliance() : null;
+                long margin = (winner != null && runnerUp != null) ? winner.getVotes() - runnerUp.getVotes() : 0;
+
+                singleElectionAnalysisDto.setVoteShare(voteShareRowDtoList);
+
+                singleElectionAnalysisDto.setWinner(winnerAlliance);
+                singleElectionAnalysisDto.setRunnerUp(runnerUpAlliance);
+                singleElectionAnalysisDto.setMargin(margin);
+
                 historicResults.add(singleElectionAnalysisDto);
             }
-
         }
         responseDto.setHistoricResults(historicResults);
 

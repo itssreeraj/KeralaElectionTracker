@@ -97,10 +97,10 @@ public class AssemblyAnalysisController {
     public AssemblyHistoricResultsResponseDto assemblyHistoricAnalysis(
             @RequestParam int acCode,
             @RequestParam String years,
-            @RequestParam(required = false) String electionTypes
+            @RequestParam(required = false) String includeTypes
     ) {
-        //List<String> types = parseTypes(electionTypes);
-        return assemblyAnalysisService.doHistoricAnalysis(acCode, years);
+        List<String> types = parseTypes(includeTypes);
+        return assemblyAnalysisService.doHistoricAnalysis(acCode, years, types);
     }
 
     private List<String> parseTypes(String includeTypes) {

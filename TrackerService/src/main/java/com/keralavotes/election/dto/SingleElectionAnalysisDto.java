@@ -21,4 +21,10 @@ public class SingleElectionAnalysisDto {
     // For GE/ASSEMBLY (booth-based):
     private List<VoteShareRowDto> boothVoteShare;        // optional
     private List<PerformanceRowDto> boothPerformance;    // optional
+
+    // Winner - Alliance
+    private String winner;
+    private String runnerUp;
+
+    private long margin;
 }
