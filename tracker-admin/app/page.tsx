@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import LocalbodyAnalysisTab from "@/components/LocalbodyAnalysisTab";
 import LocalbodySwingAnalysisTab from "@/components/LocalbodySwingAnalysisTab";
 import LocalbodyAggregationAnalysisTab from "@/components/LocalbodyAggregationAnalysisTab";
-import AssemblyOverviewTab from "@/components/AssemblyOverviewTab";
+import AssemblyAnalysisTab from "@/components/AssemblyAnalysisTab";
 
 export default function HomePage() {
   const [tab, setTab] = useState<"localbody" | "swing" | "aggregation" | "assembly">("localbody");
@@ -114,7 +114,7 @@ export default function HomePage() {
               cursor: "pointer",
             }}
           >
-            Assembly Overview Analysis
+            Assembly Analysis
           </button>
         </div>
 
@@ -130,7 +130,7 @@ export default function HomePage() {
           {tab === "localbody" && <LocalbodyAnalysisTab />}
           {tab === "swing" && <LocalbodySwingAnalysisTab />}
           {tab === "aggregation" && <LocalbodyAggregationAnalysisTab />}
-          {tab === "assembly" && <AssemblyOverviewTab />}
+          {tab === "assembly" && <AssemblyAnalysisTab />}
         </div>
       </main>
     </div>

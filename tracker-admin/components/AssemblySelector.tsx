@@ -18,11 +18,11 @@ export default function AssemblySelector({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${backend}/admin/districts`)
+    fetch(`${backend}/public/districts`)
       .then((r) => r.json())
       .then((d) => setDistricts(Array.isArray(d) ? d : []))
       .catch(() => setDistricts([]));
-    fetch(`${backend}/admin/loksabha`)
+    fetch(`${backend}/public/ls`)
       .then((r) => r.json())
       .then((d) => setLoksabha(Array.isArray(d) ? d : []))
       .catch(() => setLoksabha([]));
