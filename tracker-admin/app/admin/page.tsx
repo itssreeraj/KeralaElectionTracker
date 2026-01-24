@@ -11,6 +11,7 @@ import ConstituencyMappingAdminTab from "@/components/ConstituencyMappingAdminTa
 import LocalbodyAdminTab from "@/components/LocalBodyAdminTab";
 import BoothManagerAdminTab from "@/components/BoothManagerAdminTab";
 import ReassignBoothsAdminTab from "@/components/ReassignBoothsAdminTab";
+import BoothVotesDataAdminTab from "@/components/BoothVotesDataAdminTab";
 import CandidateMappingAdminTab from "@/components/CandidateMappingAdminTab";
 import WardAssemblyMappingAdminTab from "@/components/WardAssemblyMappingAdminTab";
 import PartyAllianceAdminTab from "@/components/PartyAllianceAdminTab";
@@ -24,6 +25,7 @@ const tabs: { key: string; label: string }[] = [
   { key: "localbody", label: "Localbody Mapping" },
   { key: "booth", label: "Booth Manager" },
   { key: "reassign", label: "Reassign Booths" },
+  { key: "boothvotes", label: "Booth Vote Data" },
   { key: "candidate", label: "Candidate Mapping" },
   { key: "wardmap", label: "Ward Assembly Mapping" },
   { key: "partyalliance", label: "Party Alliance Mapping" },
@@ -74,6 +76,7 @@ export default function AdminPage() {
         {tab === "localbody" && <LocalbodyAdminTab backend={backend} />}
         {tab === "booth" && <BoothManagerAdminTab backend={backend} />}
         {tab === "reassign" && <ReassignBoothsAdminTab backend={backend} />}
+        {tab === "boothvotes" && <BoothVotesDataAdminTab backend={backend} />}
         {tab === "candidate" && <CandidateMappingAdminTab backend={backend} />}
         {tab === "wardmap" && <WardAssemblyMappingAdminTab backend={backend} />}
         {tab === "partyalliance" && <PartyAllianceAdminTab />}

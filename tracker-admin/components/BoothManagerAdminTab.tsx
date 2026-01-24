@@ -38,11 +38,11 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       INITIAL LOAD → Districts, ACs, Localbodies
   ----------------------------------------------------- */
   useEffect(() => {
-    fetch(`${backend}/admin/districts`)
+    fetch(`${backend}/public/districts`)
       .then((r) => r.json())
       .then(setDistricts);
 
-    fetch(`${backend}/admin/assemblies`)
+    fetch(`${backend}/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
         setAssemblies(data);
@@ -140,7 +140,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     setLoadingBooths(true);
     try {
       const res = await fetch(
-        `${backend}/admin/booths?acCode=${acCode}&year=${y}`
+        `${backend}/public/booths?acCode=${acCode}&year=${y}`
       );
       setBooths(await res.json());
     } finally {

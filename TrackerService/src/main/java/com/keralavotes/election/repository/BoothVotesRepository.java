@@ -3,6 +3,7 @@ package com.keralavotes.election.repository;
 import com.keralavotes.election.dto.ElectionType;
 import com.keralavotes.election.dto.LocalbodyAllianceVotesDto;
 import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
+import com.keralavotes.election.dto.details.CandidateVoteDataDto;
 import com.keralavotes.election.entity.BoothVotes;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -142,4 +143,19 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
             "GROUP BY COALESCE(a.name, 'OTH') ORDER BY SUM(bv.votes) DESC")
     List<Object[]> getAssemblyVoteShare(int acCode, int year);
 
+    @Query("""
+        select new com.keralavotes.election.dto.details.CandidateVoteDataDto(
+            bv.pollingStation.id,
+            bv.candidate.id,
+            bv.candidate.name,
+            bv.votes
+        )
+        from BoothVotes bv
+        where bv.year = :year
+          and bv.pollingStation.ac.acCode = :acCode
+    """)
+    List<CandidateVoteDataDto> findBoothVotes(
+            @Param("acCode") Integer acCode,
+            @Param("year") Integer year
+    );
 }

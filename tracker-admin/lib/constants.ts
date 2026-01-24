@@ -13,3 +13,8 @@ export const NATIONAL_ELECTION_YEARS: number[] = [
 export const KERALA_ASSEMBLY_ELECTION_YEARS: number[] = [
   2011, 2016, 2021, 2026,
 ];
+
+export const GENERAL_ELECTION_YEARS = [
+  ...NATIONAL_ELECTION_YEARS,
+  ...KERALA_ASSEMBLY_ELECTION_YEARS,
+].sort((a, b) => a - b);
