@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import CsvUploadAdminTab from "@/components/CsvUploadAdminTab";
-import LsMappingAdminTab from "@/components/LsMappingAdminTab";
+import ConstituencyMappingAdminTab from "@/components/ConstituencyMappingAdminTab";
 import LocalbodyAdminTab from "@/components/LocalBodyAdminTab";
 import BoothManagerAdminTab from "@/components/BoothManagerAdminTab";
 import ReassignBoothsAdminTab from "@/components/ReassignBoothsAdminTab";
@@ -20,7 +20,7 @@ const backend = `${getConfig().apiBase}` || "http://localhost:8080/api";
 
 const tabs: { key: string; label: string }[] = [
   { key: "upload", label: "CSV Upload" },
-  { key: "ls", label: "LS Mapping" },
+  { key: "constituency", label: "Constituency Mapping" },
   { key: "localbody", label: "Localbody Mapping" },
   { key: "booth", label: "Booth Manager" },
   { key: "reassign", label: "Reassign Booths" },
@@ -70,7 +70,7 @@ export default function AdminPage() {
       {/* TAB CONTENT */}
       <div className="tab-content">
         {tab === "upload" && <CsvUploadAdminTab backend={backend} />}
-        {tab === "ls" && <LsMappingAdminTab backend={backend} />}
+        {tab === "constituency" && <ConstituencyMappingAdminTab backend={backend} />}
         {tab === "localbody" && <LocalbodyAdminTab backend={backend} />}
         {tab === "booth" && <BoothManagerAdminTab backend={backend} />}
         {tab === "reassign" && <ReassignBoothsAdminTab backend={backend} />}

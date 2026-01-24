@@ -25,7 +25,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/wards")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-public class AdminWardController {
+public class WardAdminController {
 
     private final WardAssemblyService wardAssemblyService;
     private final WardRepository wardRepository;
