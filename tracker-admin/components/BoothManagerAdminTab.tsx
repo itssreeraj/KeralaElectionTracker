@@ -23,6 +23,10 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
   const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
 
+  const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
+  const [copyYear, setCopyYear] = useState<number | null>(null);
+  const [copying, setCopying] = useState(false);
+
   // Form fields for create-booth
   const [form, setForm] = useState({
     district: "",
@@ -127,6 +131,25 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     }
   }, [year]);
 
+  /* ---------------------------------------------------
+    Helper methods
+  ----------------------------------------------------- */
+  const toggleBoothSelection = (id: number) => {
+    setSelectedBooths(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllBooths = () => {
+    setSelectedBooths(new Set(booths.map(b => b.id)));
+  };
+
+  const clearAllBooths = () => {
+    setSelectedBooths(new Set());
+  };
+
 
   /* ---------------------------------------------------
       LOAD BOOTHS FOR SELECTED AC
@@ -202,6 +225,58 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       alert("❌ Error: " + text);
     }
   };
+
+  /* ---------------------------------------------------
+      COPY → BULK COPY BOOTHS
+  ----------------------------------------------------- */
+
+  const bulkCopyBooths = async () => {
+    if (!copyYear) {
+      alert("Select target year");
+      return;
+    }
+
+    if (copyYear === year) {
+      alert("Target year must be different from source year");
+      return;
+    }
+
+    const selected = booths.filter(b => selectedBooths.has(b.id));
+    if (selected.length === 0) {
+      alert("No booths selected");
+      return;
+    }
+
+    const payload = selected.map(b => ({
+      district: form.district,
+      ac: form.ac,
+      electionYear: copyYear,
+      localbody: b.localbody?.id ?? null,
+      ward: b.wardId ?? null,
+      psNumber: b.psNumber,
+      psSuffix: b.psSuffix ?? null,
+      name: b.name,
+    }));
+
+    setCopying(true);
+    try {
+      const res = await fetch(`${backend}/admin/booth/bulk-create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      if (!res.ok) throw new Error(text);
+
+      alert(`✔ Copied ${selected.length} booths to ${copyYear}`);
+    } catch (e:any) {
+      alert("❌ Copy failed: " + e.message);
+    } finally {
+      setCopying(false);
+    }
+  };
+
 
   /* ---------------------------------------------------
       RENDER
@@ -323,25 +398,83 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       <>
         {/* Existing Booths */}
         <div style={{ marginBottom: 24 }}>
-          <h3>Existing Booths</h3>
+          <h3>Existing Booths ({booths.length})</h3>
 
+          {/* Bulk Controls */}
+          <div style={{ display: "flex", gap: 12, marginTop:10, marginBottom: 10, alignItems: "center" }}>
+            {/* Select All / None */}
+            <button
+              onClick={selectAllBooths}
+              style={{
+                padding: "6px 14px",
+                background: "#0d6efd",
+                color: "white",
+                borderRadius: 6,
+              }}
+            >
+              Select All
+            </button>
+
+            <button
+              onClick={clearAllBooths}
+              style={{
+                padding: "6px 14px",
+                background: "#dc3545",
+                color: "white",
+                borderRadius: 6,
+              }}
+            >
+              Clear
+            </button>
+            <select
+              value={copyYear ?? ""}
+              onChange={(e) => setCopyYear(Number(e.target.value))}
+              style={{
+                background: "#0b0b0b",
+                color: "white",
+                border: "1px solid #333",
+                padding: 6,
+                borderRadius: 4,
+              }}
+            >
+              <option value="">Copy to year…</option>
+              {ANALYSIS_YEARS.filter(y => y !== year).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+
+            <button
+              disabled={copying || selectedBooths.size === 0}
+              onClick={bulkCopyBooths}
+              style={{
+                padding: "6px 14px",
+                background: selectedBooths.size === 0 ? "#333" : "#059669",
+                color: "white",
+                borderRadius: 6,
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {copying ? "Copying…" : `Copy ${selectedBooths.size} Booths`}
+            </button>
+          </div>
+
+          {/* Booth List */}
           {loadingBooths ? (
             <p>Loading booths…</p>
           ) : booths.length === 0 ? (
             <p>No booths found.</p>
           ) : (
-              <div
-                style={{
-                  maxHeight: 260,
-                  overflowY: "auto",
-                  background: "#0b0b0b",
-                  padding: 12,
-                  borderRadius: 8,
-                  border: "1px solid #333",
-                  boxShadow: "inset 0 0 0 1px #1f1f1f",
-                }}
-              >
-
+            <div
+              style={{
+                maxHeight: 260,
+                overflowY: "auto",
+                background: "#0b0b0b",
+                padding: 12,
+                borderRadius: 8,
+                border: "1px solid #333",
+              }}
+            >
               {booths.map((b) => (
                 <div
                   key={b.id}
@@ -349,11 +482,17 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
                     padding: "6px 8px",
                     borderBottom: "1px solid #1f1f1f",
                     display: "flex",
-                    justifyContent: "space-between",
                     alignItems: "center",
+                    gap: 8,
                   }}
                 >
-                  <span>
+                  <input
+                    type="checkbox"
+                    checked={selectedBooths.has(b.id)}
+                    onChange={() => toggleBoothSelection(b.id)}
+                  />
+
+                  <span style={{ flex: 1 }}>
                     [{b.psNumber}{b.psSuffix || ""}] — {b.name}
                   </span>
 
@@ -375,6 +514,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
             </div>
           )}
         </div>
+
         {/* ================ CREATE BOOTH FORM ================ */}
         <div
           style={{

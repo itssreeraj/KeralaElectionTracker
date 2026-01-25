@@ -4,6 +4,7 @@ import com.keralavotes.election.dto.BulkReassignRequest;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.District;
 import com.keralavotes.election.entity.Localbody;
+import com.keralavotes.election.entity.LoksabhaConstituency;
 import com.keralavotes.election.entity.PollingStation;
 import com.keralavotes.election.dto.BoothSummary;
 import com.keralavotes.election.dto.CreateBoothRequest;
@@ -21,7 +22,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -57,6 +61,32 @@ public class BoothAdminController {
                 .build();
 
         return psRepo.save(ps);
+    }
+
+    @PostMapping("/admin/booth/bulk-create")
+    public List<PollingStation> createBooths(@RequestBody List<CreateBoothRequest> req) {
+        List<PollingStation> pollingStations = new ArrayList<>();
+        req.forEach(booth -> {
+            AssemblyConstituency ac = acRepo.findByAcCode(Integer.parseInt(booth.getAc()))
+                    .orElseThrow(() -> new RuntimeException("AC not found"));
+            LoksabhaConstituency ls = ac.getLs();
+            Localbody lb = Optional.ofNullable(booth.getLocalbody())
+                    .flatMap(localbodyRepo::findById)
+                    .orElse(null);
+            PollingStation ps = PollingStation.builder()
+                    .ac(ac)
+                    .ls(ls)
+                    .localbody(lb)
+                    .psNumber(booth.getPsNumber())
+                    .psSuffix(booth.getPsSuffix())
+                    .psNumberRaw(booth.getPsNumber()+ (booth.getPsSuffix() !=null ? booth.getPsSuffix() :""))
+                    .name(booth.getName())
+                    .electionYear(booth.getElectionYear())
+                    .build();
+            pollingStations.add(ps);
+        });
+
+        return psRepo.saveAll(pollingStations);
     }
 
     @GetMapping("/public/booth/all")
