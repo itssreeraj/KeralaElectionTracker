@@ -336,20 +336,29 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
           <thead style={{ position: "sticky", top: 0, background: "#111", zIndex: 2 }}>
             <tr>
-              <th style={thStyle}>PS No</th>
-              <th style={thStyle}>Polling Station</th>
+              {/* Sticky Left */}
+              <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 6, background: "#111" }}>PS No</th>
+              <th style={{ ...thStyle, position: "sticky", left: 80, zIndex: 6, background: "#111" }}>Polling Station</th>
 
-              {candidateHeaders.map((c) => (
-                <th key={c.candidateId} style={thStyle}>
-                  {c.candidateName}
-                  {c.partyName ? ` (${c.partyName})` : ""}
-                </th>
-              ))}
-
-              <th style={thStyle}>Total Valid</th>
-              <th style={thStyle}>Rejected</th>
-              <th style={thStyle}>NOTA</th>
-              <th style={thStyle}></th>
+              {/* Scrollable Candidate Headers */}
+              <th style={thStyle}>
+                <div style={{ overflowX: "auto", whiteSpace: "nowrap" }}>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    {candidateHeaders.map((c) => (
+                      <th key={c.candidateId} style={thStyle}>
+                        {c.candidateName}
+                        {c.partyName ? ` (${c.partyName})` : ""}
+                      </th>
+                    ))}
+                  </div>
+                </div>
+              </th>
+              
+              {/* Sticky Right */}
+              <th style={{ ...thStyle, position: "sticky", right: 240, background: "#111", minWidth: 100 }}>Total Valid</th>
+              <th style={{ ...thStyle, position: "sticky", right: 120, background: "#111", minWidth: 90 }}>Rejected</th>
+              <th style={{ ...thStyle, position: "sticky", right: 90, background: "#111", minWidth: 90 }}>NOTA</th>
+              <th style={{ ...thStyle, position: "sticky", right: 0, background: "#111", minWidth: 90 }}>Actions</th>
             </tr>
           </thead>
 
@@ -365,65 +374,106 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
 
               return (
                 <tr key={b.psId}>
-                  <td style={tdStyle}>{b.psNumber}</td>
-                  <td style={tdStyle}>{b.psName}</td>
+                  {/* Sticky Left Columns */}
+                  <td style={{ ...tdStyle, position: "sticky", left: 0, background: "#0b0b0b", zIndex: 3 }}>{b.psNumber}</td>
+                  <td style={{ ...tdStyle, position: "sticky", left: 80, background: "#0b0b0b", zIndex: 3 }}>{b.psName}</td>
 
-                  {/* Candidate Cells */}
-                  {candidateHeaders.map((h) => {
-                    const c = candMap.get(h.candidateId);
-                    return (
-                      <td key={h.candidateId} style={tdStyle}>
-                        <input
-                          type="number"
-                          value={c?.votes ?? ""}
-                          onChange={(e) =>
-                            updateVote(
-                              b.psId,
-                              h.candidateId,
-                              Number(e.target.value)
-                            )
-                          }
-                          style={{
-                            ...inputStyle,
-                            border:
-                              c?.votes == null ? "1px solid #dc2626" : "1px solid #333",
-                          }}
-                        />
-                      </td>
-                    );
-                  })}
-
-                  {/* Totals */}
-                  {["totalValid", "rejected", "nota"].map((f) => (
-                    <td key={f} style={tdStyle}>
-                      <input
-                        type="number"
-                        value={(b.totals as any)[f] ?? ""}
-                        onChange={(e) =>
-                          updateTotal(b.psId, f, Number(e.target.value))
-                        }
-                        style={{
-                          ...inputStyle,
-                          border:
-                            (b.totals as any)[f] == null
-                              ? "1px solid #dc2626"
-                              : "1px solid #333",
-                        }}
-                      />
-                    </td>
-                  ))}
-
-                  {/* Save */}
+                  {/* Scrollable Candidate Section */}
                   <td style={tdStyle}>
+                    <div style={{ overflowX: "auto", whiteSpace: "nowrap" }}>
+                      <div style={{ display: "flex", gap: 12 }}>
+                        {/* Candidate Cells */}
+                        {candidateHeaders.map((h) => {
+                          const c = candMap.get(h.candidateId);
+                          return (
+                            <td key={h.candidateId} style={tdStyle}>
+                              <input
+                                type="number"
+                                value={c?.votes ?? ""}
+                                onChange={(e) =>
+                                  updateVote(
+                                    b.psId,
+                                    h.candidateId,
+                                    Number(e.target.value)
+                                  )
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  border:
+                                    c?.votes == null ? "1px solid #dc2626" : "1px solid #333",
+                                }}
+                              />
+                            </td>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Sticky Totals */}
+                  <td
+                    style={{
+                      ...tdStyle,
+                      position: "sticky",
+                      right: 240,
+                      background: "#0b0b0b",
+                      zIndex: 3,
+                      minWidth: 100,
+                    }}
+                  >
+                    <input
+                      value={b.totals.totalValid ?? ""}
+                      onChange={(e) => updateTotal(b.psId, "totalValid", Number(e.target.value))}
+                      style={inputStyle}
+                    />
+                  </td>
+
+                  {/* Rejected */}
+                  <td
+                    style={{
+                      ...tdStyle,
+                      position: "sticky",
+                      right: 120,
+                      background: "#0b0b0b",
+                      zIndex: 3,
+                      minWidth: 90,
+                    }}
+                  >
+                    <input
+                      value={b.totals.rejected ?? ""}
+                      onChange={(e) => updateTotal(b.psId, "rejected", Number(e.target.value))}
+                      style={inputStyle}
+                    />
+                  </td>
+
+                  {/* NOTA */}
+                  <td
+                    style={{
+                      ...tdStyle,
+                      position: "sticky",
+                      right: 0 + 90,
+                      background: "#0b0b0b",
+                      zIndex: 3,
+                      minWidth: 90,
+                    }}
+                  >
+                    <input
+                      value={b.totals.nota ?? ""}
+                      onChange={(e) => updateTotal(b.psId, "nota", Number(e.target.value))}
+                      style={inputStyle}
+                    />
+                  </td>
+
+                  {/* Sticky Save */}
+                  <td style={{ ...tdStyle, position: "sticky", right: 0, background: "#0b0b0b", zIndex: 3 }}>
                     <button
                       onClick={() => saveBooth(b)}
                       style={{
-                        padding: "6px 10px",
-                        background: dirty.has(b.psId) ? "#0d6efd" : "#374151",
+                        padding: "6px 12px",
+                        background: "#0d6efd",
                         color: "white",
                         borderRadius: 6,
                         border: "none",
-                        fontSize: 12,
                         cursor: "pointer",
                       }}
                     >
