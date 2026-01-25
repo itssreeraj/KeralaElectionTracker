@@ -148,11 +148,15 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
             bv.pollingStation.id,
             bv.candidate.id,
             bv.candidate.name,
+            p.shortName,
             bv.votes
         )
         from BoothVotes bv
+            left join candidate c on c.id = bv.candidate.id
+            left join party p on p.id = c.party.id
         where bv.year = :year
           and bv.pollingStation.ac.acCode = :acCode
+        order by bv.candidate.id
     """)
     List<CandidateVoteDataDto> findBoothVotes(
             @Param("acCode") Integer acCode,

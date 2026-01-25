@@ -17,6 +17,7 @@ public class CandidateVoteDataDto {
     private Long psId;
     private Long candidateId;
     private String candidateName;
+    private String partyName;
     private Integer votes;
 }
 

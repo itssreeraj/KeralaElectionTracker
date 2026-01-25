@@ -185,7 +185,7 @@ public class BoothResultService {
                     votes.stream().collect(Collectors.groupingBy(CandidateVoteDataDto::getPsId));
 
             booths.forEach(b -> {
-                b.setCandidates(voteMap.getOrDefault(b.getPsId().longValue(), List.of()));
+                b.setCandidates(voteMap.getOrDefault(b.getPsId(), List.of()));
             });
 
             return booths;

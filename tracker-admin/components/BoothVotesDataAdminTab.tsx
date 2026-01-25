@@ -339,18 +339,59 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
               {/* Sticky Left */}
               <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 6, background: "#111", minWidth: 60 }}>PS No</th>
               <th style={{ ...thStyle, position: "sticky", left: 60, zIndex: 6, background: "#111" }}>Polling Station</th>
-
+              
               {/* Scrollable Candidate Headers */}
-              <th style={thStyle}>
-                <div style={{ overflowX: "auto", whiteSpace: "nowrap" }}>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    {candidateHeaders.map((c) => (
-                      <th key={c.candidateId} style={thStyle}>
+              <th style={{ ...thStyle, minWidth: candidateHeaders.length * 220 }}>
+                <div style={{ display: "flex", gap: 0 }}>
+                  {candidateHeaders.map((c) => (
+                    <div
+                      key={c.candidateId}
+                      style={{
+                        width: 220,
+                        minWidth: 220,
+                        maxWidth: 220,
+                        padding: "0 8px",
+                        borderRight: "1px solid #1f1f1f",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                      title={`${c.candidateName} (${c.partyName || ""})`}
+                    >
+                      {/* Candidate Name */}
+                      <span
+                        style={{
+                          flex: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {c.candidateName}
-                        {c.partyName ? ` (${c.partyName})` : ""}
-                      </th>
-                    ))}
-                  </div>
+                      </span>
+
+                      {/* Party Badge */}
+                      {c.partyName && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            padding: "1px 6px",
+                            borderRadius: 999,
+                            background: c.partyColor || "#334155",
+                            color: "white",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {c.partyName}
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </th>
               
@@ -380,33 +421,35 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
 
                   {/* Scrollable Candidate Section */}
                   <td style={tdStyle}>
-                    <div style={{ overflowX: "auto", whiteSpace: "nowrap" }}>
-                      <div style={{ display: "flex", gap: 12 }}>
-                        {/* Candidate Cells */}
-                        {candidateHeaders.map((h) => {
-                          const c = candMap.get(h.candidateId);
-                          return (
-                            <td key={h.candidateId} style={tdStyle}>
-                              <input
-                                type="number"
-                                value={c?.votes ?? ""}
-                                onChange={(e) =>
-                                  updateVote(
-                                    b.psId,
-                                    h.candidateId,
-                                    Number(e.target.value)
-                                  )
-                                }
-                                style={{
-                                  ...inputStyle,
-                                  border:
-                                    c?.votes == null ? "1px solid #dc2626" : "1px solid #333",
-                                }}
-                              />
-                            </td>
-                          );
-                        })}
-                      </div>
+                    <div style={{ display: "flex" }}>
+                      {candidateHeaders.map((h) => {
+                        const c = candMap.get(h.candidateId);
+                        return (
+                          <div
+                            key={h.candidateId}
+                            style={{
+                              width: 220,
+                              minWidth: 220,
+                              maxWidth: 220,
+                              padding: "4px 8px",
+                              borderRight: "1px solid #1f1f1f",
+                            }}
+                          >
+                            <input
+                              type="number"
+                              value={c?.votes ?? ""}
+                              onChange={(e) =>
+                                updateVote(b.psId, h.candidateId, Number(e.target.value))
+                              }
+                              style={{
+                                ...inputStyle,
+                                width: 60,
+                                border: c?.votes == null ? "1px solid #dc2626" : "1px solid #333",
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </td>
 
