@@ -28,17 +28,17 @@ public class AssemblyAnalysisController {
     private final AssemblyOverviewService assemblyOverviewService;
 
     // Admin helper to list ACs by district or LS
-    @GetMapping("/admin/assemblies/by-district")
+    @GetMapping("/public/assemblies/by-district")
     public List<AssemblyConstituency> listByDistrict(@RequestParam Integer districtCode) {
         return assemblyRepository.findByDistrict_DistrictCode(districtCode);
     }
 
-    @GetMapping("/admin/assemblies/by-ls")
+    @GetMapping("/public/assemblies/by-ls")
     public List<AssemblyConstituency> listByLs(@RequestParam String lsCode) {
         return assemblyRepository.findByLs_LsCode(lsCode);
     }
 
-    @GetMapping("/admin/assembly/by-ac-code")
+    @GetMapping("/public/assembly/by-ac-code")
     public AssemblyConstituency findByAcCode(@RequestParam int acCode) {
         return assemblyRepository.findByAcCode(acCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "acCode not found"));

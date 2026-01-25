@@ -106,7 +106,7 @@ public class PartyCandidateAdminController {
                             p != null ? p.getId() : null,
                             p != null ? p.getName() : null,
                             p != null ? p.getShortName() : null,
-                            c.getElectionType(),
+                            c.getElectionType().name(),
                             a != null ? a.getId() : null,
                             a != null ? a.getName() : null,
                             a != null ? a.getColor() : null
@@ -124,13 +124,13 @@ public class PartyCandidateAdminController {
                 throw new IllegalArgumentException("Election type is required");
             }
 
-            String electionType = cReq.getElectionType().toUpperCase();
+            ElectionType electionType = cReq.getElectionType();
 
             LoksabhaConstituency ls = null;
             AssemblyConstituency ac = null;
 
             switch (electionType) {
-                case "LS":
+                case LOKSABHA:
                     if (cReq.getLsCode() == null) {
                         throw new IllegalArgumentException("lsCode is required for LS candidate");
                     }
@@ -145,7 +145,7 @@ public class PartyCandidateAdminController {
                                     )
                             );
                     break;
-                case "AC":
+                case ASSEMBLY:
                     if (cReq.getAcCode() == null) {
                         throw new IllegalArgumentException("acCode is required for AC candidate");
                     }
@@ -213,7 +213,7 @@ public class PartyCandidateAdminController {
                 savedParty != null ? savedParty.getId() : null,
                 savedParty != null ? savedParty.getName() : null,
                 savedParty != null ? savedParty.getShortName() : null,
-                saved.getElectionType(),
+                saved.getElectionType().name(),
                 a != null ? a.getId() : null,
                 a != null ? a.getName() : null,
                 a != null ? a.getColor() : null

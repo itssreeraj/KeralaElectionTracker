@@ -43,7 +43,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
       LOAD ASSEMBLIES
      ============================================================= */
   const loadAssemblies = async (code: number) => {
-    const res = await fetch(`${backend}/admin/assemblies/by-district?districtCode=${code}`);
+    const res = await fetch(`${backend}/public/assemblies/by-district?districtCode=${code}`);
     setAssemblies(await res.json());
   };
 

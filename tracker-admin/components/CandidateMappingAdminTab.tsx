@@ -28,6 +28,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
   const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
   const [selectedLs, setSelectedLs] = useState("");
 
+  /* ================= LOAD PARTIES ================= */
   useEffect(() => {
     loadParties();
     loadCandidates();
@@ -43,6 +44,150 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
     setSelectedAc("");
   }, [selectedLs]);
 
+  /* ================= LOAD LS MASTER ================= */
+  useEffect(() => {
+    loadLokSabhas();
+  }, []);
+
+  const loadLokSabhas = async () => {
+    const r = await fetch(`${backend}/public/ls`);
+    if (!r.ok) return setLokSabhas([]);
+
+    const data = await r.json();
+
+    const map = new Map<string, { id: any; lsCode: string; name: string }>();
+    (Array.isArray(data) ? data : []).forEach((ls: any) => {
+      const id = ls?.id ?? null;
+      const lsCode = ls?.lsCode ?? null;
+      const name = ls?.name ?? null;
+      const key = id ?? lsCode ?? name ?? null;
+      if (key != null && !map.has(String(key))) {
+        map.set(String(key), { id: id ?? lsCode ?? name, lsCode: lsCode ?? "", name: name ?? "" });
+      }
+    });
+
+    setLokSabhas(
+        Array.from(map.values()).sort((a, b) => {
+          if (a.lsCode && b.lsCode) {
+            return Number(a.lsCode) - Number(b.lsCode);
+          }
+          return a.name.localeCompare(b.name);
+        })
+      );
+  };
+
+  /* ================= LOAD ASSEMBLIES BY LS ================= */
+  useEffect(() => {
+    setSelectedAc("");
+    if (selectedLs) loadAssembliesByLs(selectedLs);
+    else setAssemblies([]);
+  }, [selectedLs]);
+
+  const loadAssembliesByLs = async (lsCode: string) => {
+    const r = await fetch(`${backend}/public/assemblies/by-ls?lsCode=${lsCode}`);
+    if (!r.ok) return setAssemblies([]);
+
+    const data = await r.json();
+    const acMap = new Map<number, { acCode: number; acName: string }>();
+
+    data.forEach((ac: any) => {
+      if (!selectedLs || String(ac.ls.id) === selectedLs) {
+        if (ac.acCode && !acMap.has(ac.acCode)) {
+          acMap.set(ac.acCode, {
+            acCode: ac.acCode,
+            acName: ac.name,
+          });
+        }
+      }
+    });
+
+    setAssemblies(
+      Array.from(acMap.values()).sort((a, b) =>
+        a.acCode - b.acCode
+      )
+    );
+  };
+
+  // ================= BATCH ADD CANDIDATES =================
+
+  type NewCandidateRow = {
+    name: string;
+    electionType: "LOKSABHA" | "ASSEMBLY";
+    electionYear: number;
+    lsCode?: string;
+    acCode?: string;
+    partyId?: string;
+    allianceId?: string;
+  };
+
+  const [newCandidates, setNewCandidates] = useState<NewCandidateRow[]>([]);
+  const [showBatchForm, setShowBatchForm] = useState(false);
+
+  // ========================================================
+
+  const addCandidateRow = () => {
+    setNewCandidates((prev) => [
+      ...prev,
+      {
+        name: "",
+        electionType: "ASSEMBLY",
+        electionYear: year,
+      },
+    ]);
+  };
+
+  const removeCandidateRow = (idx: number) => {
+    setNewCandidates((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateCandidateRow = (idx: number, field: string, value: any) => {
+    setNewCandidates((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, [field]: value } : c))
+    );
+  };
+
+  const submitCandidates = async () => {
+    if (newCandidates.length === 0) return alert("Add at least one candidate");
+
+    // Validation
+    for (const c of newCandidates) {
+      if (!c.name) return alert("Candidate name required");
+      if (c.electionType === "LOKSABHA" && !c.lsCode)
+        return alert("LS candidate must have LS selected");
+      if (c.electionType === "ASSEMBLY" && !c.acCode)
+        return alert("AC candidate must have AC selected");
+    }
+
+    const payload = {
+      candidates: newCandidates.map((c) => ({
+        name: c.name,
+        electionYear: c.electionYear,
+        electionType: c.electionType,
+        lsCode: c.electionType === "LOKSABHA" ? Number(c.lsCode) : null,
+        acCode: c.electionType === "ASSEMBLY" ? Number(c.acCode) : null,
+        partyId: c.partyId ? Number(c.partyId) : null,
+        allianceId: c.allianceId ? Number(c.allianceId) : null,
+      })),
+    };
+
+    const res = await fetch(`${backend}/admin/candidates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      alert("Failed to create candidates");
+      return;
+    }
+
+    alert("Candidates created successfully");
+    setNewCandidates([]);
+    setShowBatchForm(false);
+    loadCandidates();
+  };
+
+
   const loadCandidates = async () => {
     let url = `${backend}/admin/candidates?year=${year}`;
     if (selectedLs) url += `&lsId=${selectedLs}`;
@@ -51,51 +196,6 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
     if (r.ok) {
       const data = await r.json();
       setCandidates(data);
-
-      // derive assemblies based on selected LS
-      const acMap = new Map<number, { acCode: number; acName: string }>();
-
-      data.forEach((c: any) => {
-        if (!selectedLs || String(c.lsId) === selectedLs) {
-          if (c.acCode && !acMap.has(c.acCode)) {
-            acMap.set(c.acCode, {
-              acCode: c.acCode,
-              acName: c.acName,
-            });
-          }
-        }
-      });
-
-      setAssemblies(
-        Array.from(acMap.values()).sort((a, b) =>
-          a.acCode - b.acCode
-        )
-      );
-
-      // derive Lok Sabhas from the candidate list (grouped by ls id/code/name)
-      const map = new Map<string, { id: any; lsCode: string; name: string }>();
-      (Array.isArray(data) ? data : []).forEach((c: any) => {
-        const id = c.lsId ?? c.ls?.id ?? null;
-        const lsCode = c.lsCode ?? c.ls?.lsCode ?? null;
-        const name = c.lsName ?? c.ls?.name ?? null;
-        const key = id ?? lsCode ?? name ?? null;
-        if (key != null && !map.has(String(key))) {
-          map.set(String(key), { id: id ?? lsCode ?? name, lsCode: lsCode ?? "", name: name ?? "" });
-        }
-      });
-
-      setLokSabhas(
-        Array.from(map.values()).sort((a, b) => {
-          if (a.lsCode && b.lsCode) {
-            return Number(a.lsCode) - Number(b.lsCode);
-          }
-          return a.name.localeCompare(b.name);
-        })
-      );
-
-    } else {
-      setCandidates([]);
-      setLokSabhas([]);
     }
   };
 
@@ -353,10 +453,187 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
           </tbody>
         </table>
       </div>
-
       <p style={{ marginTop: 16, fontSize: 12, opacity: 0.7 }}>
         * Alliance is automatically derived from Party
       </p>
+      {/* ================= BATCH ADD CANDIDATES ================= */}
+        <div style={{ marginTop: 32 }}>
+          <h3>Bulk Add Candidates</h3>
+
+          <button
+            onClick={() => setShowBatchForm(!showBatchForm)}
+            style={{
+              padding: "6px 12px",
+              background: "#0d6efd",
+              color: "white",
+              borderRadius: 6,
+              border: "none",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            {showBatchForm ? "Hide Form" : "+ Add Candidates"}
+          </button>
+
+          {showBatchForm && (
+            <div
+              style={{
+                marginTop: 12,
+                padding: 12,
+                background: "#0b0b0b",
+                border: "1px solid #333",
+                borderRadius: 8,
+              }}
+            >
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Name</th>
+                    <th style={thStyle}>Type</th>
+                    <th style={thStyle}>LS / AC</th>
+                    <th style={thStyle}>Party</th>
+                    <th style={thStyle}></th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {newCandidates.map((c, idx) => (
+                    <tr key={idx}>
+                      {/* Name */}
+                      <td style={tdStyle}>
+                        <input
+                          value={c.name}
+                          onChange={(e) =>
+                            updateCandidateRow(idx, "name", e.target.value)
+                          }
+                          style={{
+                            width: "100%",
+                            padding: 6,
+                            background: "#111",
+                            border: "1px solid #333",
+                            color: "white",
+                          }}
+                        />
+                      </td>
+
+                      {/* Election Type */}
+                      <td style={tdStyle}>
+                        <select
+                          value={c.electionType}
+                          onChange={(e) =>
+                            updateCandidateRow(idx, "electionType", e.target.value)
+                          }
+                          style={{ background: "#111", color: "white" }}
+                        >
+                          <option value="ASSEMBLY">Assembly</option>
+                          <option value="LOKSABHA">Lok Sabha</option>
+                        </select>
+                      </td>
+
+                      {/* LS / AC Selector */}
+                      <td style={tdStyle}>
+                        {c.electionType === "LOKSABHA" ? (
+                          <select
+                            value={c.lsCode || ""}
+                            onChange={(e) =>
+                              updateCandidateRow(idx, "lsCode", e.target.value)
+                            }
+                          >
+                            <option value="">Select LS</option>
+                            {lokSabhas.map((ls) => (
+                              <option key={ls.id} value={ls.id}>
+                                {ls.lsCode} – {ls.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <select
+                            value={c.acCode || ""}
+                            onChange={(e) =>
+                              updateCandidateRow(idx, "acCode", e.target.value)
+                            }
+                          >
+                            <option value="">Select AC</option>
+                            {assemblies.map((ac) => (
+                              <option key={ac.acCode} value={ac.acCode}>
+                                {ac.acCode} – {ac.acName}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
+
+                      {/* Party */}
+                      <td style={tdStyle}>
+                        <select
+                          value={c.partyId || ""}
+                          onChange={(e) =>
+                            updateCandidateRow(idx, "partyId", e.target.value)
+                          }
+                        >
+                          <option value="">— Party —</option>
+                          {parties.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+
+                      {/* Remove */}
+                      <td style={tdStyle}>
+                        <button
+                          onClick={() => removeCandidateRow(idx)}
+                          style={{
+                            padding: "4px 8px",
+                            background: "#dc2626",
+                            color: "white",
+                            borderRadius: 4,
+                            border: "none",
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Add Row */}
+              <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
+                <button
+                  onClick={addCandidateRow}
+                  style={{
+                    padding: "6px 10px",
+                    background: "#374151",
+                    color: "white",
+                    borderRadius: 6,
+                    border: "none",
+                  }}
+                >
+                  + Add Row
+                </button>
+
+                {newCandidates.length > 0 && (
+                  <button
+                    onClick={submitCandidates}
+                    style={{
+                      padding: "6px 14px",
+                      background: "#059669",
+                      color: "white",
+                      borderRadius: 6,
+                      border: "none",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Save All Candidates
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
     </div>
   );
 }

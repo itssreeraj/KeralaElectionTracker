@@ -2,6 +2,7 @@ package com.keralavotes.election.service;
 
 import com.keralavotes.election.constants.ElectionYear;
 import com.keralavotes.election.controller.AssemblyAnalysisController;
+import com.keralavotes.election.dto.ElectionType;
 import com.keralavotes.election.dto.PollingStationResultInsertRequest;
 import com.keralavotes.election.dto.details.BoothVoteDetailsRowDto;
 import com.keralavotes.election.dto.details.CandidateVoteDataDto;
@@ -136,7 +137,7 @@ public class BoothResultService {
                         candidate = Candidate.builder()
                                 .name(name)
                                 .electionYear(electionYear)
-                                .electionType(electionType)
+                                .electionType(ElectionType.valueOf(electionType))
                                 .ls(ls)
                                 .ac(constituency)
                                 .build();

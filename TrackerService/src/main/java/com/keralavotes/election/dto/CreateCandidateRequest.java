@@ -15,7 +15,7 @@ public class CreateCandidateRequest {
     private String name;
 
     private int electionYear;
-    private String electionType; // "LS" or "AC"
+    private ElectionType electionType; // "LOKSABHA" or "ASSEMBLY"
 
     private Long lsCode;
     private Long acCode;
