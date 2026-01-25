@@ -3,7 +3,11 @@ package com.keralavotes.election.dto.details;
 import lombok.*;
 import java.util.List;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BoothDetailRowDto {
     private Integer boothNum;
     private String boothName;

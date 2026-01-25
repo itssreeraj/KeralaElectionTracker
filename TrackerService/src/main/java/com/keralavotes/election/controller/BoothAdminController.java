@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class BoothAdminController {
@@ -34,8 +34,7 @@ public class BoothAdminController {
     private final AssemblyConstituencyRepository acRepo;
     private final LocalbodyRepository localbodyRepo;
 
-
-    @PostMapping("/booth/create")
+    @PostMapping("/admin/booth/create")
     public PollingStation createBooth(@RequestBody CreateBoothRequest req) {
         District district = districtRepo.findByName(req.getDistrict())
                 .orElseThrow(() -> new RuntimeException("District not found"));
@@ -60,12 +59,12 @@ public class BoothAdminController {
         return psRepo.save(ps);
     }
 
-    @GetMapping("/booth/all")
+    @GetMapping("/public/booth/all")
     public List<PollingStation> listAll() {
         return psRepo.findAll();
     }
 
-    @GetMapping("/booths/by-ac")
+    @GetMapping("/public/booths/by-ac")
     public List<BoothSummary> boothsByAc(@RequestParam String ac) {
         return psRepo.findByAc_AcCodeOrderByPsNumberAsc(ac)
                 .stream()
@@ -79,12 +78,12 @@ public class BoothAdminController {
                 .toList();
     }
 
-    @GetMapping("/booths")
+    @GetMapping("/public/booths")
     public List<PollingStation> getBooths(@RequestParam Integer acCode, @RequestParam Integer year) {
         return psRepo.findByAc_AcCodeAndElectionYearOrderByPsNumberAsc(acCode, year);
     }
 
-    @PostMapping("/booth/{boothId}/reassign")
+    @PostMapping("/admin/booth/{boothId}/reassign")
     public String reassignBooth(
             @PathVariable Long boothId,
             @RequestParam Long localbodyId,
@@ -102,9 +101,8 @@ public class BoothAdminController {
         return "Reassigned";
     }
 
-    @PostMapping("/booths/reassign")
+    @PostMapping("/admin/booths/reassign")
     public String bulkReassign(@RequestBody BulkReassignRequest req) {
-
         Localbody lb = localbodyRepo.findById(req.getLocalbodyId())
                 .orElseThrow(() -> new RuntimeException("Localbody not found"));
 
@@ -118,5 +116,4 @@ public class BoothAdminController {
 
         return "Bulk booth reassign complete";
     }
-
 }
