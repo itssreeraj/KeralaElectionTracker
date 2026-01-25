@@ -337,8 +337,8 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
           <thead style={{ position: "sticky", top: 0, background: "#111", zIndex: 2 }}>
             <tr>
               {/* Sticky Left */}
-              <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 6, background: "#111" }}>PS No</th>
-              <th style={{ ...thStyle, position: "sticky", left: 80, zIndex: 6, background: "#111" }}>Polling Station</th>
+              <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 6, background: "#111", minWidth: 60 }}>PS No</th>
+              <th style={{ ...thStyle, position: "sticky", left: 60, zIndex: 6, background: "#111" }}>Polling Station</th>
 
               {/* Scrollable Candidate Headers */}
               <th style={thStyle}>
@@ -376,7 +376,7 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
                 <tr key={b.psId}>
                   {/* Sticky Left Columns */}
                   <td style={{ ...tdStyle, position: "sticky", left: 0, background: "#0b0b0b", zIndex: 3 }}>{b.psNumber}</td>
-                  <td style={{ ...tdStyle, position: "sticky", left: 80, background: "#0b0b0b", zIndex: 3 }}>{b.psName}</td>
+                  <td style={{ ...tdStyle, position: "sticky", left: 60, background: "#0b0b0b", zIndex: 3 }}>{b.psName}</td>
 
                   {/* Scrollable Candidate Section */}
                   <td style={tdStyle}>
