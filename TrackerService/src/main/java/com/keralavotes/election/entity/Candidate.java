@@ -36,7 +36,7 @@ public class Candidate {
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "party_id")
+    @JoinColumn(name = "party_id", referencedColumnName = "id")
     private Party party;
 
     @ManyToOne @JoinColumn(name = "ls_code", referencedColumnName = "ls_code")

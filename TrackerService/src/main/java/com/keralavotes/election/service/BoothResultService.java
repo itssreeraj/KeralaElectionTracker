@@ -174,9 +174,17 @@ public class BoothResultService {
         return "OK";
     }
 
+    /**
+     * Get the candidate vote data for booths in an AC
+     * @param acCode The assembly code
+     * @param year The election year
+     * @return The List of Booth Vote details
+     */
     public List<BoothVoteDetailsRowDto> getBoothResultsData(Integer acCode, Integer year) {
-        assemblyRepository.findByAcCode(acCode)
+        AssemblyConstituency ac = assemblyRepository.findByAcCode(acCode)
                 .orElseThrow(() -> new RuntimeException("Invalid AC code: " + acCode));
+        log.info("BoothResultService::getBoothResultsData -> Get booth data for Assembly constituency: {}, " +
+                        "for Year: {}", ac.getName(), year);
 
         if (ElectionYear.fromYear(year).isGeneral()) {
             List<BoothVoteDetailsRowDto> booths = pollingStationRepository.findBoothTotals(acCode, year);
@@ -185,7 +193,7 @@ public class BoothResultService {
             Map<Long, List<CandidateVoteDataDto>> voteMap =
                     votes.stream().collect(Collectors.groupingBy(CandidateVoteDataDto::getPsId));
 
-            booths.forEach(b -> {
+                booths.forEach(b -> {
                 b.setCandidates(voteMap.getOrDefault(b.getPsId(), List.of()));
             });
 

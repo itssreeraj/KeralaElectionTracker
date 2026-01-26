@@ -24,13 +24,13 @@ const tdStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width: 70,
-  padding: "4px 6px",
+  width: 90,
+  padding: "6px 8px",
   background: "#0b0b0b",
   border: "1px solid #333",
   borderRadius: 4,
   color: "white",
-  fontSize: 12,
+  fontSize: 13,
 };
 
 /* ================= TYPES ================= */
@@ -67,6 +67,11 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+
+  const CAND_WIDTH = 160;
+  const CAND_GAP = 12;
+  const LEFT_WIDTH = 60 + 260; // PS No + PS Name
+  const RIGHT_WIDTH = 240; // totals + actions
 
   /* ================= LOAD DATA ================= */
 
@@ -200,37 +205,171 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
           </div>
         </div>
       </div>
+      
+      {/* Pagination Controls */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 10,
+          fontSize: 12,
+          color: "#9ca3af",
+        }}
+      >
+        {/* Page Size */}
+        <div>
+          Show{" "}
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+            style={{
+              background: "#0b0b0b",
+              color: "white",
+              border: "1px solid #333",
+              padding: "2px 6px",
+              borderRadius: 4,
+              fontSize: 12,
+            }}
+          >
+            {[10, 20, 50].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>{" "}
+          booths
+        </div>
+
+        {/* Page Controls */}
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <select
+            value={page}
+            onChange={(e) => setPage(Number(e.target.value))}
+            style={{
+              background: "#0b0b0b",
+              color: "white",
+              border: "1px solid #333",
+              padding: "2px 6px",
+              borderRadius: 4,
+              fontSize: 12,
+            }}
+          >
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+
+          <button
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            style={{
+              padding: "4px 8px",
+              borderRadius: 4,
+              border: "1px solid #333",
+              background: page === 1 ? "#111" : "#0d6efd",
+              color: "white",
+              fontSize: 11,
+              cursor: "pointer",
+            }}
+          >
+            Prev
+          </button>
+
+          <span>
+            Page {page} / {totalPages}
+          </span>
+
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            style={{
+              padding: "4px 8px",
+              borderRadius: 4,
+              border: "1px solid #333",
+              background: page === totalPages ? "#111" : "#0d6efd",
+              color: "white",
+              fontSize: 11,
+              cursor: "pointer",
+            }}
+          >
+            Next
+          </button>
+        </div>
+      </div>
 
       {/* TABLE */}
       <div style={{ maxHeight: 650, overflow: "auto", background: "#0b0b0b", border: "1px solid #333", borderRadius: 8 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-          <thead style={{ position: "sticky", top: 0, background: "#111", zIndex: 2 }}>
+          <thead style={{ position: "sticky", top: 0, background: "#111", zIndex: 20 }}>
             <tr>
               {/* Sticky Left */}
-              <th style={{ ...thStyle, position: "sticky", left: 0, background: "#111", minWidth: 60 }}>PS No</th>
-              <th style={{ ...thStyle, position: "sticky", left: 60, background: "#111", minWidth: 260 }}>Polling Station</th>
+              <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 30, background: "#111", minWidth: 60, boxShadow: "2px 0 4px rgba(0,0,0,0.6)"}}>
+                PS No
+              </th>
+              <th style={{ ...thStyle, position: "sticky", left: 60, zIndex: 30, background: "#111", minWidth: 260, boxShadow: "2px 0 4px rgba(0,0,0,0.6)"}}>
+                Polling Station
+              </th>
 
-              {/* Candidate Headers */}
-              <th style={{ ...thStyle }}>
-                <div style={{ overflowX: "auto", whiteSpace: "nowrap" }}>
-                  <div style={{ display: "flex", gap: 12 }}>
+              {/* Candidate Scrollable Header */}
+              <th style={{ padding: 0 }}>
+                <div
+                  style={{
+                    overflowX: "auto",
+                    marginLeft: 10,
+                    marginRight: RIGHT_WIDTH,
+                    background: "#111",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: `${CAND_WIDTH}px`,
+                      columnGap: CAND_GAP,
+                      padding: "10px 0",
+                    }}
+                  >
                     {candidateHeaders.map((c) => (
                       <div
                         key={c.candidateId}
                         style={{
-                          minWidth: 200,
-                          maxWidth: 200,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: c.partyColor || "#e5e7eb",
+                          width: CAND_WIDTH,
+                          borderRight: "1px solid #1f2937",
+                          paddingRight: 8,
                         }}
-                        title={`${c.candidateName}${c.partyName ? " (" + c.partyName + ")" : ""}`}
+                        title={`${c.candidateName} (${c.partyName || ""})`}
                       >
-                        {c.candidateName}
-                        {c.partyName && <span style={{ color: "#9ca3af" }}> ({c.partyName})</span>}
+                        <div
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: "#e5e7eb",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {c.candidateName}
+                        </div>
+
+                        {c.partyName && (
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: c.partyColor || "#9ca3af",
+                              fontWeight: 500,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            ({c.partyName})
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -238,10 +377,18 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
               </th>
 
               {/* Sticky Right */}
-              <th style={{ ...thStyle, position: "sticky", right: 240, background: "#111", minWidth: 100 }}>Total Valid</th>
-              <th style={{ ...thStyle, position: "sticky", right: 120, background: "#111", minWidth: 90 }}>Rejected</th>
-              <th style={{ ...thStyle, position: "sticky", right: 60, background: "#111", minWidth: 90 }}>NOTA</th>
-              <th style={{ ...thStyle, position: "sticky", right: 0, background: "#111", minWidth: 90 }}>Actions</th>
+              <th style={{ ...thStyle, position: "sticky", right: 240, zIndex: 30, background: "#111", minWidth: 90, boxShadow: "2px 0 4px rgba(0,0,0,0.6)" }}>
+                Total Valid
+              </th>
+              <th style={{ ...thStyle, position: "sticky", right: 150, zIndex: 30, background: "#111", minWidth: 90, boxShadow: "2px 0 4px rgba(0,0,0,0.6)" }}>
+                Rejected
+              </th>
+              <th style={{ ...thStyle, position: "sticky", right: 60, zIndex: 30, background: "#111", minWidth: 60, boxShadow: "2px 0 4px rgba(0,0,0,0.6)" }}>
+                NOTA
+              </th>
+              <th style={{ ...thStyle, position: "sticky", right: 0, zIndex: 30, background: "#111", minWidth: 60, boxShadow: "2px 0 4px rgba(0,0,0,0.6)" }}>
+                Actions
+              </th>
             </tr>
           </thead>
 
@@ -297,22 +444,40 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
                   </td>
 
                   {/* Candidate Votes */}
-                  <td style={tdStyle}>
-                    <div style={{ overflowX: "auto", whiteSpace: "nowrap" }}>
-                      <div style={{ display: "flex", gap: 12 }}>
+                  <td style={{ padding: 0 }}>
+                    <div
+                      style={{
+                        overflowX: "auto",
+                        marginLeft: 10,
+                        marginRight: RIGHT_WIDTH,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridAutoFlow: "column",
+                          gridAutoColumns: `${CAND_WIDTH}px`,
+                          columnGap: CAND_GAP,
+                          padding: "6px 0",
+                        }}
+                      >
                         {candidateHeaders.map((h) => {
                           const c = candMap.get(h.candidateId);
                           return (
-                            <td key={h.candidateId} style={tdStyle}>
+                            <div key={h.candidateId} style={{ width: CAND_WIDTH }}>
                               <input
                                 type="number"
                                 value={c?.votes ?? ""}
                                 onChange={(e) =>
                                   updateVote(b.psId, h.candidateId, Number(e.target.value))
                                 }
-                                style={inputStyle}
+                                style={{
+                                  ...inputStyle,
+                                  width: 80,
+                                  border: c?.votes == null ? "1px solid #dc2626" : "1px solid #333",
+                                }}
                               />
-                            </td>
+                            </div>
                           );
                         })}
                       </div>
@@ -324,7 +489,7 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
                     <input value={b.totals.totalValid ?? ""} onChange={(e) => updateTotal(b.psId, "totalValid", Number(e.target.value))} style={inputStyle} />
                   </td>
 
-                  <td style={{ ...tdStyle, position: "sticky", right: 120, background: "#0b0b0b" }}>
+                  <td style={{ ...tdStyle, position: "sticky", right: 150, background: "#0b0b0b" }}>
                     <input value={b.totals.rejected ?? ""} onChange={(e) => updateTotal(b.psId, "rejected", Number(e.target.value))} style={inputStyle} />
                   </td>
 

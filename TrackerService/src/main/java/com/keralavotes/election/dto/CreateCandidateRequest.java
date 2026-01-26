@@ -17,8 +17,8 @@ public class CreateCandidateRequest {
     private int electionYear;
     private ElectionType electionType; // "LOKSABHA" or "ASSEMBLY"
 
-    private Long lsCode;
-    private Long acCode;
+    private Integer lsCode;
+    private Integer acCode;
 
     private Long partyId;
     private Long allianceId;
