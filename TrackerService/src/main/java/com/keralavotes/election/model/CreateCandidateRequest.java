@@ -1,7 +1,7 @@
-package com.keralavotes.election.dto;
+package com.keralavotes.election.model;
 
+import com.keralavotes.election.dto.ElectionType;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

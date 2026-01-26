@@ -1,8 +1,8 @@
 package com.keralavotes.election.controller;
 
-import com.keralavotes.election.dto.LocalbodyAnalysisResponse;
+import com.keralavotes.election.model.LocalbodyAnalysisResponse;
 import com.keralavotes.election.dto.details.AllianceAnalysisResponse;
-import com.keralavotes.election.dto.details.LocalbodyWardDetailsResponse;
+import com.keralavotes.election.model.LocalbodyWardDetailsResponse;
 import com.keralavotes.election.service.AllianceAnalysisService;
 import com.keralavotes.election.service.LocalbodyElectionAnalysisService;
 import lombok.RequiredArgsConstructor;

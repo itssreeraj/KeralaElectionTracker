@@ -2,7 +2,7 @@ package com.keralavotes.election.service;
 
 import com.keralavotes.election.dto.AllianceDto;
 import com.keralavotes.election.dto.details.AllianceAnalysisResponse;
-import com.keralavotes.election.dto.details.LocalbodyWardDetailsResponse;
+import com.keralavotes.election.model.LocalbodyWardDetailsResponse;
 import com.keralavotes.election.entity.*;
 import com.keralavotes.election.repository.*;
 import jakarta.persistence.EntityManager;

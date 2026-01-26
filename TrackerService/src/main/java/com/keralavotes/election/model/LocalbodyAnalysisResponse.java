@@ -1,5 +1,6 @@
-package com.keralavotes.election.dto;
+package com.keralavotes.election.model;
 
+import com.keralavotes.election.dto.SingleElectionAnalysisDto;
 import lombok.Data;
 
 import java.util.Map;

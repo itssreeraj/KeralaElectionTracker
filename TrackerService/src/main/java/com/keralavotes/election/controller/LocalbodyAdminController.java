@@ -1,11 +1,10 @@
 package com.keralavotes.election.controller;
 
-import com.keralavotes.election.dto.LocalbodyResponse;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.District;
 import com.keralavotes.election.entity.Localbody;
 import com.keralavotes.election.entity.PollingStation;
-import com.keralavotes.election.dto.CreateLocalbodyRequest;
+import com.keralavotes.election.model.CreateLocalbodyRequest;
 import com.keralavotes.election.dto.MapBoothsRequest;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.repository.DistrictRepository;

@@ -12,6 +12,7 @@ import com.keralavotes.election.entity.Localbody;
 import com.keralavotes.election.entity.Party;
 import com.keralavotes.election.entity.PollingStation;
 import com.keralavotes.election.entity.Ward;
+import com.keralavotes.election.model.LocalbodyAnalysisResponse;
 import com.keralavotes.election.repository.BoothTotalsRepository;
 import com.keralavotes.election.repository.BoothVotesRepository;
 import com.keralavotes.election.repository.LbCandidateRepository;
@@ -299,7 +300,7 @@ public class LocalbodyElectionAnalysisService {
                 .collect(Collectors.toSet());
 
         // Find total valid votes across all booths in this localbody/year
-        long totalVotes = boothTotalsRepository.findByYearAndPollingStation_PsNumberIn(year, pollingStationIds)
+        long totalVotes = boothTotalsRepository.findByYearAndPollingStation_IdIn(year, pollingStationIds)
                 .stream()
                 .mapToLong(BoothTotals::getTotalValid)
                 .sum();

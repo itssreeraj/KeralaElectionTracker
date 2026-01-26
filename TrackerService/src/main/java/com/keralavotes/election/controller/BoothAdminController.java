@@ -7,7 +7,7 @@ import com.keralavotes.election.entity.Localbody;
 import com.keralavotes.election.entity.LoksabhaConstituency;
 import com.keralavotes.election.entity.PollingStation;
 import com.keralavotes.election.dto.BoothSummary;
-import com.keralavotes.election.dto.CreateBoothRequest;
+import com.keralavotes.election.model.CreateBoothRequest;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.repository.DistrictRepository;
 import com.keralavotes.election.repository.LocalbodyRepository;
@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @RestController

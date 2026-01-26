@@ -1,9 +1,8 @@
 package com.keralavotes.election.service;
 
 import com.keralavotes.election.constants.ElectionYear;
-import com.keralavotes.election.controller.AssemblyAnalysisController;
 import com.keralavotes.election.dto.ElectionType;
-import com.keralavotes.election.dto.PollingStationResultInsertRequest;
+import com.keralavotes.election.model.PollingStationResultInsertRequest;
 import com.keralavotes.election.dto.details.BoothVoteDetailsRowDto;
 import com.keralavotes.election.dto.details.CandidateVoteDataDto;
 import com.keralavotes.election.entity.AssemblyConstituency;
@@ -203,41 +202,46 @@ public class BoothResultService {
         }
     }
 
-//    @Transactional
-//    public void saveBoothVote(Long psId, Long candidateId, Integer year, Integer votes) {
-//        boothVotesRepository.findByPollingStationIdAndCandidateIdAndYear(psId, candidateId, year)
-//                .ifPresentOrElse(
-//                        bv -> bv.setVotes(votes),
-//                        () -> boothVotesRepository.save(
-//                                BoothVotes.builder()
-//                                        .pollingStation(entityManager.getReference(PollingStation.class, psId))
-//                                        .candidate(entityManager.getReference(Candidate.class, candidateId))
-//                                        .year(year)
-//                                        .votes(votes)
-//                                        .build()
-//                        )
-//                );
-//    }
-//
-//    @Transactional
-//    public void saveBoothTotals(Long psId, Integer year, Integer totalValid, Integer rejected, Integer nota) {
-//        boothTotalsRepository.findByPollingStationIdAndYear(psId, year)
-//                .ifPresentOrElse(
-//                        bt -> {
-//                            bt.setTotalValid(totalValid);
-//                            bt.setRejected(rejected);
-//                            bt.setNota(nota);
-//                        },
-//                        () -> boothTotalsRepository.save(
-//                                BoothTotals.builder()
-//                                        .pollingStation(entityManager.getReference(PollingStation.class, psId))
-//                                        .year(year)
-//                                        .totalValid(totalValid)
-//                                        .rejected(rejected)
-//                                        .nota(nota)
-//                                        .build()
-//                        )
-//                );
-//    }
+    @Transactional
+    public void saveBoothVote(Long psId, Long candidateId, Integer year, Integer votes) {
+        PollingStation pollingStation = pollingStationRepository.findById(psId)
+                .orElseThrow(() -> new RuntimeException("Invalid PS ID: " + psId));
+        Candidate candidate = candidateRepository.findById(candidateId)
+                        .orElseThrow(() -> new RuntimeException("Invalid Candidate ID: " + candidateId));
+        boothVotesRepository.findByPollingStation_IdAndCandidate_IdAndYear(psId, candidateId, year)
+                .ifPresentOrElse(
+                        bv -> bv.setVotes(votes),
+                        () -> boothVotesRepository.save(
+                                BoothVotes.builder()
+                                        .pollingStation(pollingStation)
+                                        .candidate(candidate)
+                                        .year(year)
+                                        .votes(votes)
+                                        .build()
+                        )
+                );
+    }
 
+    @Transactional
+    public void saveBoothTotals(Long psId, Integer year, Integer totalValid, Integer rejected, Integer nota) {
+        PollingStation pollingStation = pollingStationRepository.findById(psId)
+                .orElseThrow(() -> new RuntimeException("Invalid PS ID: " + psId));
+        boothTotalsRepository.findByYearAndPollingStation_Id(year, psId)
+                .ifPresentOrElse(
+                        bt -> {
+                            bt.setTotalValid(totalValid);
+                            bt.setRejected(rejected);
+                            bt.setNota(nota);
+                        },
+                        () -> boothTotalsRepository.save(
+                                BoothTotals.builder()
+                                        .pollingStation(pollingStation)
+                                        .year(year)
+                                        .totalValid(totalValid)
+                                        .rejected(rejected)
+                                        .nota(nota)
+                                        .build()
+                        )
+                );
+    }
 }

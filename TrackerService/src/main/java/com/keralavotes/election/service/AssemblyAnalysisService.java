@@ -8,7 +8,7 @@ import com.keralavotes.election.dto.VoteShareRowDto;
 import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.BoothTotals;
 import com.keralavotes.election.entity.PollingStation;
-import com.keralavotes.election.model.AssemblyHistoricResultsResponseDto;
+import com.keralavotes.election.model.AssemblyHistoricResultsResponse;
 import com.keralavotes.election.model.VoteRow;
 import com.keralavotes.election.model.WardAccumulator;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
@@ -363,7 +363,7 @@ public class AssemblyAnalysisService {
     }
 
     @Transactional()
-    public AssemblyHistoricResultsResponseDto doHistoricAnalysis(int acCode, String years, List<String> includeTypes) {
+    public AssemblyHistoricResultsResponse doHistoricAnalysis(int acCode, String years, List<String> includeTypes) {
         AssemblyConstituency assemblyConstituency = assemblyConstituencyRepository.findByAcCode(acCode)
                 .orElseThrow(() -> new RuntimeException("Invalid AC code: " + acCode));
 
@@ -377,7 +377,7 @@ public class AssemblyAnalysisService {
             throw new RuntimeException("No valid years provided");
         }
 
-        AssemblyHistoricResultsResponseDto responseDto = new AssemblyHistoricResultsResponseDto();
+        AssemblyHistoricResultsResponse responseDto = new AssemblyHistoricResultsResponse();
         responseDto.setAssembly(assemblyConstituency);
 
         List<SingleElectionAnalysisDto> historicResults = new ArrayList<>();

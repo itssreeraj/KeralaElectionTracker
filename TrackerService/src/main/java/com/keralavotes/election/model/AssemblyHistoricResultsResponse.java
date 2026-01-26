@@ -9,7 +9,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class AssemblyHistoricResultsResponseDto {
+public class AssemblyHistoricResultsResponse {
     private AssemblyConstituency assembly;
     private List<SingleElectionAnalysisDto> historicResults;
 }

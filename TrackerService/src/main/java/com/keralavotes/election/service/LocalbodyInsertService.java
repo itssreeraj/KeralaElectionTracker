@@ -1,8 +1,8 @@
 package com.keralavotes.election.service;
 
 import com.keralavotes.election.dto.BatchImportRequest;
-import com.keralavotes.election.dto.WardInsertRequest;
-import com.keralavotes.election.dto.WardResultInsertRequest;
+import com.keralavotes.election.model.WardInsertRequest;
+import com.keralavotes.election.model.WardResultInsertRequest;
 import com.keralavotes.election.entity.District;
 import com.keralavotes.election.entity.LbCandidate;
 import com.keralavotes.election.entity.LbWardResult;
@@ -22,10 +22,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 

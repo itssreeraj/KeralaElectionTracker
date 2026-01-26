@@ -1,6 +1,6 @@
 package com.keralavotes.election.controller;
 
-import com.keralavotes.election.dto.CreatePartyWithMappingRequest;
+import com.keralavotes.election.model.CreatePartyWithMappingRequest;
 import com.keralavotes.election.dto.ElectionType;
 import com.keralavotes.election.entity.Alliance;
 import com.keralavotes.election.entity.LoksabhaConstituency;

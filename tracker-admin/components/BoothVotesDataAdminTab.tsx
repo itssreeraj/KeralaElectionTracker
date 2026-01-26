@@ -143,8 +143,8 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
   };
 
   const saveBooth = async (booth: BoothRow) => {
-    await fetch(`${backend}/admin/form20/booth/${booth.psId}`, {
-      method: "PUT",
+    await fetch(`${backend}/admin/booth/result?psId=${booth.psId}&year=${year}`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         votes: booth.candidates.map((c) => ({

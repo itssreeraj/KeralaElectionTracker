@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
@@ -168,4 +169,6 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
             @Param("acCode") Integer acCode,
             @Param("year") Integer year
     );
+
+    Optional<BoothVotes> findByPollingStation_IdAndCandidate_IdAndYear(long pollingStationId, long candidateId, Integer year);
 }
