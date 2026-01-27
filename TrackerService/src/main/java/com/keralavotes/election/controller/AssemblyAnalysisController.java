@@ -18,12 +18,11 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v1/public")
 @RequiredArgsConstructor
 public class AssemblyAnalysisController {
 
     private final AssemblyAnalysisService assemblyAnalysisService;
-    private final AssemblyConstituencyRepository assemblyRepository;
     private final AssemblyOverviewService assemblyOverviewService;
 
     /**

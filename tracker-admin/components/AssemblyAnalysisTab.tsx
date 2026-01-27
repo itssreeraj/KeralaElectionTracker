@@ -145,7 +145,7 @@ export default function AssemblyOverviewTab() {
 
     try {
       const res = await fetch(
-        `${backend}/analysis/historic/assembly?${params.toString()}`
+        `${backend}/v1/public/analysis/historic/assembly?${params.toString()}`
       );
       if (!res.ok) throw new Error("Failed");
       setData(await res.json());
