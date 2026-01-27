@@ -43,14 +43,14 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
        LOAD ASSEMBLIES + LOCALBODIES
   ---------------------------------------------- */
   useEffect(() => {
-    fetch(`${backend}/admin/assemblies`)
+    fetch(`${backend}/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
         setAssemblies(data);
         setFilteredAssemblies(data);
       });
 
-    fetch(`${backend}/admin/localbodies`)
+    fetch(`${backend}/v1/public/localbodies`)
       .then((r) => r.json())
       .then(setLocalbodies);
   }, [backend]);
@@ -104,7 +104,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
     if (!selectedAc) 
       return;
     const r = await fetch(
-      `${backend}/public/booths?acCode=${selectedAc}&year=${y}`
+      `${backend}/v1/public/booths?acCode=${selectedAc}&year=${y}`
     );
     const data = await r.json();
 
@@ -132,7 +132,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
   useEffect(() => {
     const loadDistricts = async () => {
       try {
-        const res = await fetch(`${backend}/public/districts`);
+        const res = await fetch(`${backend}/v1/public/districts`);
         if (!res.ok) return;
         const data = await res.json();
         setDistricts(Array.isArray(data) ? data : []);
@@ -156,7 +156,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
 
       try {
         const res = await fetch(
-          `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+          `${backend}/v1/public/localbodies/by-district?name=${encodeURIComponent(
             selectedDistrict
           )}`
         );

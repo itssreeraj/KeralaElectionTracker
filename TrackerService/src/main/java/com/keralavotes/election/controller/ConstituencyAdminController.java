@@ -8,30 +8,54 @@ import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.repository.DistrictRepository;
 import com.keralavotes.election.repository.LoksabhaConstituencyRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
-@CrossOrigin(origins = "*")
+@RequestMapping("/v1")
 @RequiredArgsConstructor
 public class ConstituencyAdminController {
 
-    private final AssemblyConstituencyRepository acRepo;
+    private final AssemblyConstituencyRepository assemblyRepository;
     private final LoksabhaConstituencyRepository lsRepo;
     private final DistrictRepository districtRepo;
+
+    // GET Districts
+    @GetMapping("/public/districts")
+    public List<District> getDistricts() {
+        return districtRepo.findAll();
+    }
 
     // GET assemblies
     @GetMapping("/public/assemblies")
     public List<AssemblyConstituency> getAssemblies() {
-        return acRepo.findAll();
+        return assemblyRepository.findAll();
+    }
+
+    // Admin helper to list ACs by district or LS
+    @GetMapping("/public/assemblies/by-district")
+    public List<AssemblyConstituency> listByDistrict(@RequestParam Integer districtCode) {
+        return assemblyRepository.findByDistrict_DistrictCode(districtCode);
+    }
+
+    @GetMapping("/public/assemblies/by-ls")
+    public List<AssemblyConstituency> listByLs(@RequestParam String lsCode) {
+        return assemblyRepository.findByLs_LsCode(lsCode);
+    }
+
+    @GetMapping("/public/assembly/by-ac-code")
+    public AssemblyConstituency findByAcCode(@RequestParam int acCode) {
+        return assemblyRepository.findByAcCode(acCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "acCode not found"));
     }
 
     // GET loksabha constituencies
@@ -40,11 +64,7 @@ public class ConstituencyAdminController {
         return lsRepo.findAll();
     }
 
-    // GET Districts
-    @GetMapping("/public/districts")
-    public List<District> getDistricts() {
-        return districtRepo.findAll();
-    }
+
 
     // UPDATE LS + District mapping
     @PutMapping("/admin/assemblies/{id}")
@@ -52,7 +72,7 @@ public class ConstituencyAdminController {
             @PathVariable Long id,
             @RequestBody AssemblyMappingUpdateDto dto
     ) {
-        AssemblyConstituency ac = acRepo.findById(id)
+        AssemblyConstituency ac = assemblyRepository.findById(id)
                 .orElseThrow();
 
         if (dto.getLsCode() != null) {
@@ -65,6 +85,6 @@ public class ConstituencyAdminController {
             ac.setDistrict(district);
         }
 
-        return acRepo.save(ac);
+        return assemblyRepository.save(ac);
     }
 }

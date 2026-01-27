@@ -30,8 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/admin")
-@CrossOrigin(origins = "*")
+@RequestMapping("/v1")
 @RequiredArgsConstructor
 @Slf4j
 public class LocalbodyAdminController {
@@ -41,22 +40,12 @@ public class LocalbodyAdminController {
     private final AssemblyConstituencyRepository acRepo;
     private final DistrictRepository districtRepository;
 
-    @GetMapping("/districts")
-    public List<District> getDistricts() {
-        return districtRepository.findAll();
-    }
-
-    @GetMapping("/assemblies")
-    public List<AssemblyConstituency> listAssemblies() {
-        return acRepo.findAll();
-    }
-
-    @GetMapping("/localbodies")
+    @GetMapping("/public/localbodies")
     public List<Localbody> listLocalbodies() {
         return localbodyRepo.findAll();
     }
 
-    @GetMapping("/localbodies/by-ac")
+    @GetMapping("/public/localbodies/by-ac")
     public List<Localbody> listLocalbodiesByAc(@RequestParam String acCode) {
         AssemblyConstituency ac = acRepo.findByAcCode(Integer.parseInt(acCode))
                 .orElseThrow(() -> new IllegalArgumentException("Unknown AC: " + acCode));
@@ -64,12 +53,12 @@ public class LocalbodyAdminController {
         return localbodyRepo.findAllByDistrict(ac.getDistrict());
     }
 
-    @GetMapping("/localbodies/by-district")
+    @GetMapping("/public/localbodies/by-district")
     public List<Localbody> getByDistrict(@RequestParam("name") String districtName) {
         return localbodyRepo.findByDistrictNameIgnoreCase(districtName);
     }
 
-    @PostMapping("/localbody")
+    @PostMapping("/admin/localbody")
     public ResponseEntity<?> createOrFetchLocalbody(@RequestBody CreateLocalbodyRequest req) {
 
         // --- Validate Input ---
@@ -98,7 +87,8 @@ public class LocalbodyAdminController {
             if (existing.isPresent()) {
                 Localbody lb = existing.get();
 
-                log.debug("Localbody already exists → ID= {}, Name= {} Type= {}, District= {}",
+                log.debug("LocalbodyAdminController::createOrFetchLocalbody -> " +
+                                "Localbody already exists → ID= {}, Name= {} Type= {}, District= {}",
                         lb.getId(), lb.getName(), lb.getType(), lb.getDistrict().getName());
 
                 return ResponseEntity.ok(Map.of(
@@ -127,19 +117,20 @@ public class LocalbodyAdminController {
             ));
 
         } catch (RuntimeException e) {
-            log.error("Localbody creation failed: {}" , e.getMessage());
+            log.error("LocalbodyAdminController::createOrFetchLocalbody -> " +
+                    "Localbody creation failed: {}" , e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
-            log.error("Unexpected error while creating localbody: {}", e.getMessage());
-            e.printStackTrace();
+            log.error("LocalbodyAdminController::createOrFetchLocalbody -> " +
+                    "Unexpected error while creating localbody: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Unexpected server error", "details", e.getMessage()));
         }
     }
 
-    @PostMapping("/localbody/{id}/map-booths")
+    @PostMapping("/admin/localbody/{id}/map-booths")
     @Transactional
     public ResponseEntity<?> mapBooths(
             @PathVariable Long id,
@@ -179,10 +170,11 @@ public class LocalbodyAdminController {
         boothRepo.saveAll(booths);
 
         // Logging summary
-        log.debug("Mapped {} booths to local body {} (ID: {})", booths.size(), lb.getName(), lb.getId());
+        log.debug("LocalbodyAdminController::mapBooths -> " +
+                "Mapped {} booths to local body {} (ID: {})", booths.size(), lb.getName(), lb.getId());
 
         if (!missingIds.isEmpty()) {
-            log.warn("WARNING: Missing booth IDs: {} ", missingIds);
+            log.warn("LocalbodyAdminController::mapBooths -> WARNING: Missing booth IDs: {} ", missingIds);
         }
 
         // Build response
@@ -195,6 +187,5 @@ public class LocalbodyAdminController {
 
         return ResponseEntity.ok(response);
     }
-
 }
 

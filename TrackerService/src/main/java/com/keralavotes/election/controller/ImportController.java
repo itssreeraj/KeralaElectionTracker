@@ -7,8 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/import")
-@CrossOrigin(origins = "*")
+@RequestMapping("/v1/admin/import")
 @RequiredArgsConstructor
 public class ImportController {
 

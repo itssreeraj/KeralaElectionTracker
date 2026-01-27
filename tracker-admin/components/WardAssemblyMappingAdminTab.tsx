@@ -34,7 +34,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
       LOAD DISTRICTS
      ============================================================= */
   useEffect(() => {
-    fetch(`${backend}/admin/districts`)
+    fetch(`${backend}/v1/public/districts`)
       .then((r) => r.json())
       .then((d) => setDistricts(Array.isArray(d) ? d : []));
   }, [backend]);
@@ -43,7 +43,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
       LOAD ASSEMBLIES
      ============================================================= */
   const loadAssemblies = async (code: number) => {
-    const res = await fetch(`${backend}/public/assemblies/by-district?districtCode=${code}`);
+    const res = await fetch(`${backend}/v1/public/assemblies/by-district?districtCode=${code}`);
     setAssemblies(await res.json());
   };
 
@@ -52,7 +52,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
      ============================================================= */
   const loadLocalbodies = async (dist: any) => {
     const res = await fetch(
-      `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(dist.name)}`
+      `${backend}/v1/public/localbodies/by-district?name=${encodeURIComponent(dist.name)}`
     );
     setLocalbodies(await res.json());
   };
@@ -84,7 +84,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
 
     try {
       const res = await fetch(
-        `${backend}/admin/wards/by-localbody?localbodyId=${selectedLocalbody}&delimitationYear=${delimitationYear}`
+        `${backend}/v1/public/wards/by-localbody?localbodyId=${selectedLocalbody}&delimitationYear=${delimitationYear}`
       );
       setWards(await res.json());
     } catch {
@@ -118,7 +118,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
     }
 
     try {
-      const res = await fetch(`${backend}/admin/wards/by-assembly?${params}`);
+      const res = await fetch(`${backend}/v1/public/wards/by-assembly?${params}`);
       setMappedWards(await res.json());
     } catch {
       setMappedWards([]);
@@ -166,7 +166,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
     if (!selectedAcCode || !delimitationYear || selectedWardIds.length === 0)
       return alert("Missing selection");
 
-    await fetch(`${backend}/admin/wards/assign-assembly`, {
+    await fetch(`${backend}/v1/admin/wards/assign-assembly`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

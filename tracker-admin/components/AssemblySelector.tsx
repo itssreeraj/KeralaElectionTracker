@@ -18,11 +18,11 @@ export default function AssemblySelector({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${backend}/public/districts`)
+    fetch(`${backend}/v1/public/districts`)
       .then((r) => r.json())
       .then((d) => setDistricts(Array.isArray(d) ? d : []))
       .catch(() => setDistricts([]));
-    fetch(`${backend}/public/ls`)
+    fetch(`${backend}/v1/public/ls`)
       .then((r) => r.json())
       .then((d) => setLoksabha(Array.isArray(d) ? d : []))
       .catch(() => setLoksabha([]));
@@ -31,7 +31,7 @@ export default function AssemblySelector({
   const loadByDistrict = async (code: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`${backend}/public/assemblies/by-district?districtCode=${code}`);
+      const res = await fetch(`${backend}/v1/public/assemblies/by-district?districtCode=${code}`);
       const data = await res.json();
       setAssemblies(Array.isArray(data) ? data : []);
     } finally {
@@ -42,7 +42,7 @@ export default function AssemblySelector({
   const loadByLs = async (lsCode: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`${backend}/public/assemblies/by-ls?lsCode=${encodeURIComponent(lsCode)}`);
+      const res = await fetch(`${backend}/v1/public/assemblies/by-ls?lsCode=${encodeURIComponent(lsCode)}`);
       const data = await res.json();
       setAssemblies(Array.isArray(data) ? data : []);
     } finally {
@@ -54,7 +54,7 @@ export default function AssemblySelector({
     if (!acCode) return;
     setLoading(true);
     try {
-      const res = await fetch(`${backend}/public/assembly/by-ac-code?acCode=${acCode}`);
+      const res = await fetch(`${backend}/v1/public/assembly/by-ac-code?acCode=${acCode}`);
       if (!res.ok) {
         setAssemblies([]);
         return;

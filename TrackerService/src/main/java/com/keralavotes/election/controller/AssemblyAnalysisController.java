@@ -18,32 +18,13 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api")
-@CrossOrigin(origins = "*")
+@RequestMapping("/v1")
 @RequiredArgsConstructor
 public class AssemblyAnalysisController {
 
     private final AssemblyAnalysisService assemblyAnalysisService;
     private final AssemblyConstituencyRepository assemblyRepository;
     private final AssemblyOverviewService assemblyOverviewService;
-
-    // Admin helper to list ACs by district or LS
-    @GetMapping("/public/assemblies/by-district")
-    public List<AssemblyConstituency> listByDistrict(@RequestParam Integer districtCode) {
-        return assemblyRepository.findByDistrict_DistrictCode(districtCode);
-    }
-
-    @GetMapping("/public/assemblies/by-ls")
-    public List<AssemblyConstituency> listByLs(@RequestParam String lsCode) {
-        return assemblyRepository.findByLs_LsCode(lsCode);
-    }
-
-    @GetMapping("/public/assembly/by-ac-code")
-    public AssemblyConstituency findByAcCode(@RequestParam int acCode) {
-        return assemblyRepository.findByAcCode(acCode)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "acCode not found"));
-    }
-
 
     /**
      * Analyze assembly by acCode for the included localbdy types of the assembly.

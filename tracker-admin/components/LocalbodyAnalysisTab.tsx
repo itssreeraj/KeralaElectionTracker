@@ -143,7 +143,7 @@ export default function LocalbodyAnalysisTab() {
   useEffect(() => {
     const loadDistricts = async () => {
       try {
-        const res = await fetch(`${backend}/admin/districts`);
+        const res = await fetch(`${backend}/v1/public/districts`);
         if (!res.ok) return;
         const data = await res.json();
         setDistricts(Array.isArray(data) ? data : []);
@@ -166,7 +166,7 @@ export default function LocalbodyAnalysisTab() {
       setLoadingLb(true);
       try {
         const res = await fetch(
-          `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+          `${backend}/v1/public/localbodies/by-district?name=${encodeURIComponent(
             selectedDistrict
           )}`
         );
@@ -218,7 +218,7 @@ export default function LocalbodyAnalysisTab() {
     try {
       const yearsParam = years.join(",");
       const res = await fetch(
-        `${backend}/admin/analysis/localbody/${lbId}/details?years=${yearsParam}`
+        `${backend}/v1/public/analysis/localbody/${lbId}/details?years=${yearsParam}`
       );
       if (!res.ok) {
         console.error("Failed to load detailed results");
@@ -249,7 +249,7 @@ export default function LocalbodyAnalysisTab() {
 
     try {
       const res = await fetch(
-        `${backend}/admin/analysis/localbody/${lbId}?years=${yearsParam}`
+        `${backend}/v1/public/analysis/localbody/${lbId}?years=${yearsParam}`
       );
       if (!res.ok) {
         setErrorMsg("Failed to load analysis");

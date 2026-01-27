@@ -18,9 +18,8 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/admin/analysis")
+@RequestMapping("/v1/public/analysis")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class AnalyticsController {
 
     private final BoothVotesRepository boothVotesRepo;
