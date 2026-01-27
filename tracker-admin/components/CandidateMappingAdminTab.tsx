@@ -35,7 +35,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
   }, [year, selectedLs]);
 
   const loadParties = async () => {
-    const r = await fetch(`${backend}/admin/parties`);
+    const r = await fetch(`${backend}/v1/public/parties`);
     if (r.ok) setParties(await r.json());
     else setParties([]);
   };
@@ -50,7 +50,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
   }, []);
 
   const loadLokSabhas = async () => {
-    const r = await fetch(`${backend}/public/ls`);
+    const r = await fetch(`${backend}/v1/public/ls`);
     if (!r.ok) return setLokSabhas([]);
 
     const data = await r.json();
@@ -84,7 +84,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
   }, [selectedLs]);
 
   const loadAssembliesByLs = async (lsCode: string) => {
-    const r = await fetch(`${backend}/public/assemblies/by-ls?lsCode=${lsCode}`);
+    const r = await fetch(`${backend}/v1/public/assemblies/by-ls?lsCode=${lsCode}`);
     if (!r.ok) return setAssemblies([]);
 
     const data = await r.json();
@@ -170,7 +170,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
       })),
     };
 
-    const res = await fetch(`${backend}/admin/candidates`, {
+    const res = await fetch(`${backend}/v1/admin/candidates`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -189,7 +189,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
 
 
   const loadCandidates = async () => {
-    let url = `${backend}/admin/candidates?year=${year}`;
+    let url = `${backend}/v1/public/candidates?year=${year}`;
     if (selectedLs) url += `&lsId=${selectedLs}`;
 
     const r = await fetch(url);
@@ -200,7 +200,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
   };
 
   const updateCandidateParty = async (candidateId: number, partyId: number) => {
-    const r = await fetch(`${backend}/admin/candidates/${candidateId}/party`, {
+    const r = await fetch(`${backend}/v1/admin/candidates/${candidateId}/party`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ partyId }),

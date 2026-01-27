@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/localbody")
+@RequestMapping("/v1/admin/localbody")
 @RequiredArgsConstructor
 public class LocalbodyInsertController {
     private final LocalbodyInsertService service;

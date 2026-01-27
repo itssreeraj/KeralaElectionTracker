@@ -233,14 +233,14 @@ export default function LocalbodySwingAnalysisTab() {
 
   /* Load districts */
   useEffect(() => {
-    fetch(`${backend}/admin/districts`)
+    fetch(`${backend}/v1/public/districts`)
       .then((r) => r.json())
       .then((data) => setDistricts(Array.isArray(data) ? data : []));
   }, [backend]);
 
   /* Load alliances */
   useEffect(() => {
-    fetch(`${backend}/public/alliances`)
+    fetch(`${backend}/v1/public/alliances`)
       .then((r) => r.json())
       .then((data) => setAlliances(Array.isArray(data) ? data : []));
   }, []);
@@ -256,7 +256,7 @@ export default function LocalbodySwingAnalysisTab() {
       setLoadingLB(true);
       try {
         const res = await fetch(
-          `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+          `${backend}/v1/public/localbodies/by-district?name=${encodeURIComponent(
             selectedDistrictName
           )}`
         );
@@ -301,7 +301,7 @@ export default function LocalbodySwingAnalysisTab() {
 
     if (selectedLocalbody) params.append("localbodyId", selectedLocalbody);
 
-    const url = `${backend}/localbody/analysis/alliance?${params.toString()}`;
+    const url = `${backend}/v1/public/localbody/analysis/alliance?${params.toString()}`;
     console.log("Calling:", url);
 
     setLoadingAnalysis(true);

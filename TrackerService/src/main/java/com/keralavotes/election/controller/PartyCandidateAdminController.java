@@ -22,9 +22,8 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/v1")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class PartyCandidateAdminController {
 
     private final AllianceRepository allianceRepo;
@@ -33,30 +32,16 @@ public class PartyCandidateAdminController {
     private final LoksabhaConstituencyRepository lsRepo;
     private final AssemblyConstituencyRepository assemblyConstituencyRepo;
 
-    /* ---------------- Alliances ---------------- */
 
-    @GetMapping("/alliances")
-    public List<Alliance> listAlliances() {
-        return allianceRepo.findAll();
-    }
-
-    @PostMapping("/alliances")
-    public Alliance createAlliance(@RequestBody Alliance req) {
-        Alliance a = Alliance.builder()
-                .name(req.getName())
-                .color(req.getColor())
-                .build();
-        return allianceRepo.save(a);
-    }
 
     /* ---------------- Parties ---------------- */
 
-    @GetMapping("/parties")
+    @GetMapping("/public/parties")
     public List<Party> listParties() {
         return partyRepo.findAllByOrderByNameAsc();
     }
 
-    @PostMapping("/parties")
+    @PostMapping("/admin/parties")
     public Party createParty(@RequestBody CreatePartyRequest req) {
         Party.PartyBuilder builder = Party.builder()
                 .name(req.getName())
@@ -71,7 +56,7 @@ public class PartyCandidateAdminController {
         return partyRepo.save(builder.build());
     }
 
-    @PutMapping("/parties/{id}/alliance")
+    @PutMapping("/admin/parties/{id}/alliance")
     public Party updatePartyAlliance(@PathVariable Long id,
                                      @RequestBody UpdatePartyAllianceRequest req) {
         Party party = partyRepo.findById(id)
@@ -89,7 +74,7 @@ public class PartyCandidateAdminController {
 
     /* ---------------- Candidates ---------------- */
 
-    @GetMapping("/candidates")
+    @GetMapping("/public/candidates")
     public List<CandidateDto> listCandidates(@RequestParam int year,
                                              @RequestParam(required = false) Long lsId) {
         List<Candidate> candidates = (lsId == null)
@@ -122,7 +107,7 @@ public class PartyCandidateAdminController {
                 .toList();
     }
 
-    @PostMapping("/candidates")
+    @PostMapping("/admin/candidates")
     public ResponseEntity<List<Candidate>> addCandidates(@RequestBody BatchCreateCandidateRequest req) {
         List<Candidate> candidates = new ArrayList<>();
 
@@ -197,7 +182,7 @@ public class PartyCandidateAdminController {
                 : ResponseEntity.ok(saved);
     }
 
-    @PutMapping("/candidates/{id}/party")
+    @PutMapping("/admin/candidates/{id}/party")
     public CandidateDto mapCandidateToParty(@PathVariable Long id,
                                             @RequestBody MapCandidatePartyRequest req) {
         Candidate c = candidateRepo.findById(id)

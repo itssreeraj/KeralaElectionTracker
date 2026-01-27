@@ -42,18 +42,18 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       INITIAL LOAD → Districts, ACs, Localbodies
   ----------------------------------------------------- */
   useEffect(() => {
-    fetch(`${backend}/public/districts`)
+    fetch(`${backend}/v1/public/districts`)
       .then((r) => r.json())
       .then(setDistricts);
 
-    fetch(`${backend}/public/assemblies`)
+    fetch(`${backend}/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
         setAssemblies(data);
         setFilteredAssemblies(data);
       });
 
-    fetch(`${backend}/admin/localbodies`)
+    fetch(`${backend}/v1/public/localbodies`)
       .then((r) => r.json())
       .then(setLocalbodies);
   }, [backend]);
@@ -91,7 +91,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     }
 
     fetch(
-      `${backend}/admin/localbodies/by-district?name=${encodeURIComponent(
+      `${backend}/v1/public/localbodies/by-district?name=${encodeURIComponent(
         form.district
       )}`
     )

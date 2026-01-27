@@ -22,8 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin")
-@CrossOrigin(origins = "*")
+@RequestMapping("/v1/admin")
 @RequiredArgsConstructor
 public class AdminController {
 

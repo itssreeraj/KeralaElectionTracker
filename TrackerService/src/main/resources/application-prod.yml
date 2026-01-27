@@ -6,11 +6,6 @@ spring:
   server:
     port: 8080
 
-  servlet:
-    multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
-
   datasource:
     url: jdbc:postgresql://host.docker.internal:5432/keralavotes_prod
     username: keralavotes_prod_user

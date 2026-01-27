@@ -22,7 +22,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/admin/wards")
+@RequestMapping("/v1")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class WardAdminController {
@@ -30,7 +30,7 @@ public class WardAdminController {
     private final WardAssemblyService wardAssemblyService;
     private final WardRepository wardRepository;
 
-    @GetMapping("/by-localbody")
+    @GetMapping("/public/wards/by-localbody")
     public List<Ward> listByLocalbody(
             @RequestParam Long localbodyId,
             @RequestParam Integer delimitationYear
@@ -38,7 +38,7 @@ public class WardAdminController {
         return wardRepository.findByLocalbody_IdAndDelimitationYear(localbodyId, delimitationYear);
     }
 
-    @PostMapping("/assign-assembly")
+    @PostMapping("/admin/wards/assign-assembly")
     public ResponseEntity<?> assignAssembly(@RequestBody WardAssemblyAssignRequest req) {
         if (req.getWardIds() == null || req.getWardIds().isEmpty()) {
             return ResponseEntity.badRequest().body("Ward IDs required");
@@ -55,7 +55,7 @@ public class WardAdminController {
      * Reverse lookup: wards that are assigned to a given assembly (acCode), for a delimitation year.
      * Optional query param types=grama_panchayath,Municipality etc to limit to certain localbody types.
      */
-    @GetMapping("/by-assembly")
+    @GetMapping("/public/wards/by-assembly")
     public List<WardDto> wardsByAssembly(
             @RequestParam Integer acCode,
             @RequestParam Integer delimitationYear,

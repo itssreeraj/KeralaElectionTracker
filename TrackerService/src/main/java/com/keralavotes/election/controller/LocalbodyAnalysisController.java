@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/localbody")
-@CrossOrigin(origins = "*")
+@RequestMapping("/v1/public/localbody")
 @RequiredArgsConstructor
 public class LocalbodyAnalysisController {
 

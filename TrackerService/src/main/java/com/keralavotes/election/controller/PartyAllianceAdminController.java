@@ -14,23 +14,21 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
-@CrossOrigin(origins = "*")
+@RequestMapping("/v1")
 @RequiredArgsConstructor
 public class PartyAllianceAdminController {
 
     private final PartyAllianceAdminService service;
 
-    @GetMapping("/party-alliance")
+    @GetMapping("/public/party-alliance")
     public List<PartyAllianceAdminRow> getMappings(
             @RequestParam int year,
             @RequestParam ElectionType type
     ) {
-        //return service.getMappings(year, type);
         return service.getAllMappings(year, type);
     }
 
-    @PostMapping("/party-alliance")
+    @PostMapping("/admin/party-alliance")
     public void saveMapping(
             @RequestParam Long partyId,
             @RequestParam Long allianceId,
