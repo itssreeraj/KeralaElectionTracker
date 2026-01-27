@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface BoothTotalsRepository extends JpaRepository<BoothTotals, Long> {
@@ -17,4 +18,5 @@ public interface BoothTotalsRepository extends JpaRepository<BoothTotals, Long> 
 
     List<BoothTotals> findByYearAndPollingStation_IdIn(int year, Set<Long> psIds);
 
+    Optional<BoothTotals> findByYearAndPollingStation_Id(int year, long pollingStationId);
 }

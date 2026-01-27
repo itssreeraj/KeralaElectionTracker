@@ -1,16 +1,18 @@
 package com.keralavotes.election.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class PollingStationResultInsertRequest {
-    private List<ConstituencyPollingStationResultRequest> results;
+@Builder
+public class CandidateVoteInputDto {
+    private Long candidateId;
+    private Integer votes;
 }

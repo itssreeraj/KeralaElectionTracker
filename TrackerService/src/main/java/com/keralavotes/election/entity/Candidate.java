@@ -1,7 +1,10 @@
 package com.keralavotes.election.entity;
 
+import com.keralavotes.election.dto.ElectionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,7 +20,8 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "candidate",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"name", "ls_id", "election_year"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"name", "ls_code", "ac_code", "election_year", "election_type"})
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,20 +36,21 @@ public class Candidate {
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "party_id")
+    @JoinColumn(name = "party_id", referencedColumnName = "id")
     private Party party;
 
-    @ManyToOne @JoinColumn(name = "ls_code")
+    @ManyToOne @JoinColumn(name = "ls_code", referencedColumnName = "ls_code")
     private LoksabhaConstituency ls;
 
-    @ManyToOne @JoinColumn(name = "ac_code")
+    @ManyToOne @JoinColumn(name = "ac_code", referencedColumnName = "ac_code")
     private AssemblyConstituency ac;
 
     @Column(name = "election_year", nullable = false)
     private Integer electionYear;
 
-    @Column(name = "election_type", nullable = false)
-    private String electionType;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ElectionType electionType;
 
     @ManyToOne
     @JoinColumn(name = "alliance_id")

@@ -1,4 +1,4 @@
-package com.keralavotes.election.dto;
+package com.keralavotes.election.model;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

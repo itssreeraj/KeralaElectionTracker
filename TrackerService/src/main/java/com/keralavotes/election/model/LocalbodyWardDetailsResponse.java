@@ -1,4 +1,4 @@
-package com.keralavotes.election.dto.details;
+package com.keralavotes.election.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

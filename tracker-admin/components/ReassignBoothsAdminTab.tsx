@@ -104,7 +104,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
     if (!selectedAc) 
       return;
     const r = await fetch(
-      `${backend}/admin/booths?acCode=${selectedAc}&year=${y}`
+      `${backend}/public/booths?acCode=${selectedAc}&year=${y}`
     );
     const data = await r.json();
 
@@ -132,7 +132,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
   useEffect(() => {
     const loadDistricts = async () => {
       try {
-        const res = await fetch(`${backend}/admin/districts`);
+        const res = await fetch(`${backend}/public/districts`);
         if (!res.ok) return;
         const data = await res.json();
         setDistricts(Array.isArray(data) ? data : []);

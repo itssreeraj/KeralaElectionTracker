@@ -6,14 +6,21 @@ import com.keralavotes.election.entity.AssemblyConstituency;
 import com.keralavotes.election.entity.Candidate;
 import com.keralavotes.election.entity.LoksabhaConstituency;
 import com.keralavotes.election.entity.Party;
+import com.keralavotes.election.model.BatchCreateCandidateRequest;
+import com.keralavotes.election.model.CreateCandidateRequest;
+import com.keralavotes.election.model.CreatePartyRequest;
+import com.keralavotes.election.model.MapCandidatePartyRequest;
+import com.keralavotes.election.model.UpdatePartyAllianceRequest;
 import com.keralavotes.election.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -106,7 +113,7 @@ public class PartyCandidateAdminController {
                             p != null ? p.getId() : null,
                             p != null ? p.getName() : null,
                             p != null ? p.getShortName() : null,
-                            c.getElectionType(),
+                            c.getElectionType().name(),
                             a != null ? a.getId() : null,
                             a != null ? a.getName() : null,
                             a != null ? a.getColor() : null
@@ -124,13 +131,13 @@ public class PartyCandidateAdminController {
                 throw new IllegalArgumentException("Election type is required");
             }
 
-            String electionType = cReq.getElectionType().toUpperCase();
+            ElectionType electionType = cReq.getElectionType();
 
             LoksabhaConstituency ls = null;
             AssemblyConstituency ac = null;
 
             switch (electionType) {
-                case "LS":
+                case LOKSABHA:
                     if (cReq.getLsCode() == null) {
                         throw new IllegalArgumentException("lsCode is required for LS candidate");
                     }
@@ -138,14 +145,14 @@ public class PartyCandidateAdminController {
                         throw new IllegalArgumentException("acCode must be null for LS candidate");
                     }
 
-                    ls = lsRepo.findById(cReq.getLsCode())
+                    ls = lsRepo.findByLsCode(cReq.getLsCode())
                             .orElseThrow(() ->
                                     new IllegalArgumentException(
                                             "LS Constituency not found: " + cReq.getLsCode()
                                     )
                             );
                     break;
-                case "AC":
+                case ASSEMBLY:
                     if (cReq.getAcCode() == null) {
                         throw new IllegalArgumentException("acCode is required for AC candidate");
                     }
@@ -153,12 +160,13 @@ public class PartyCandidateAdminController {
                         throw new IllegalArgumentException("lsCode must be null for AC candidate");
                     }
 
-                    ac = assemblyConstituencyRepo.findById(cReq.getAcCode())
+                    ac = assemblyConstituencyRepo.findByAcCode(cReq.getAcCode())
                             .orElseThrow(() ->
                                     new IllegalArgumentException(
                                             "AC Constituency not found: " + cReq.getAcCode()
                                     )
                             );
+                    ls = ac.getLs();
                     break;
                 default:
                     throw new IllegalArgumentException(
@@ -166,12 +174,18 @@ public class PartyCandidateAdminController {
                     );
             }
 
+            Party party = partyRepo.findById(cReq.getPartyId()).orElseGet(() -> {
+                log.info("PartyCandidateAdminController::addCandidates -> No party found for id : {}", cReq.getPartyId());
+                return null;
+            });
+
             Candidate candidate = Candidate.builder()
                     .name(cReq.getName())
                     .electionYear(cReq.getElectionYear())
                     .electionType(electionType)
                     .ls(ls)
                     .ac(ac)
+                    .party(party)
                     .build();
             candidates.add(candidate);
         }
@@ -213,7 +227,7 @@ public class PartyCandidateAdminController {
                 savedParty != null ? savedParty.getId() : null,
                 savedParty != null ? savedParty.getName() : null,
                 savedParty != null ? savedParty.getShortName() : null,
-                saved.getElectionType(),
+                saved.getElectionType().name(),
                 a != null ? a.getId() : null,
                 a != null ? a.getName() : null,
                 a != null ? a.getColor() : null

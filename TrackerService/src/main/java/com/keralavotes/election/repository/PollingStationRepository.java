@@ -36,17 +36,17 @@ public interface PollingStationRepository extends JpaRepository<PollingStation, 
             ps.name,
             null,
             new com.keralavotes.election.dto.details.BoothVoteTotalsDataDto(
-                bt.totalValid,
-                bt.rejected,
-                bt.nota
+                coalesce(bt.totalValid, 0),
+                   coalesce(bt.rejected, 0),
+                      coalesce(bt.nota, 0)
             )
         )
         from PollingStation ps
-        left join BoothTotals bt\s
+        left join BoothTotals bt
             on bt.pollingStation = ps and bt.year = ps.electionYear
         where ps.ac.acCode = :acCode and ps.electionYear = :year
         order by ps.psNumber
-   \s""")
+   """)
     List<BoothVoteDetailsRowDto> findBoothTotals(
             @Param("acCode") Integer acCode,
             @Param("year") Integer year

@@ -1,7 +1,7 @@
 package com.keralavotes.election.controller;
 
 import com.keralavotes.election.dto.LocalbodyAllianceVotesDto;
-import com.keralavotes.election.dto.LocalbodyAnalysisResponse;
+import com.keralavotes.election.model.LocalbodyAnalysisResponse;
 import com.keralavotes.election.dto.LocalbodyPartyVotesDto;
 import com.keralavotes.election.dto.details.LocalbodyDetailYearDataDto;
 import com.keralavotes.election.repository.BoothVotesRepository;

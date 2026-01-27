@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
@@ -145,21 +146,29 @@ public interface BoothVotesRepository extends JpaRepository<BoothVotes, Long> {
 
     @Query("""
         select new com.keralavotes.election.dto.details.CandidateVoteDataDto(
-            bv.pollingStation.id,
-            bv.candidate.id,
-            bv.candidate.name,
+            ps.id,
+            c.id,
+            c.name,
             p.shortName,
-            bv.votes
+            coalesce(bv.votes, 0)
         )
-        from BoothVotes bv
-            left join candidate c on c.id = bv.candidate.id
-            left join party p on p.id = c.party.id
-        where bv.year = :year
-          and bv.pollingStation.ac.acCode = :acCode
-        order by bv.candidate.id
+        from PollingStation ps
+            join Candidate c
+                on c.ac = ps.ac
+                    and c.electionYear = :year
+            left join BoothVotes bv
+                 on bv.pollingStation = ps
+                     and bv.candidate = c
+                         and bv.year = :year
+            left join c.party p
+        where ps.ac.acCode = :acCode
+            and ps.electionYear = :year
+        order by ps.psNumber, c.id
     """)
     List<CandidateVoteDataDto> findBoothVotes(
             @Param("acCode") Integer acCode,
             @Param("year") Integer year
     );
+
+    Optional<BoothVotes> findByPollingStation_IdAndCandidate_IdAndYear(long pollingStationId, long candidateId, Integer year);
 }

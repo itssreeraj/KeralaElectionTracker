@@ -3,7 +3,7 @@ package com.keralavotes.election.controller;
 import com.keralavotes.election.dto.AssemblyAnalysisResponseDto;
 import com.keralavotes.election.dto.AssemblyOverviewResponseDto;
 import com.keralavotes.election.entity.AssemblyConstituency;
-import com.keralavotes.election.model.AssemblyHistoricResultsResponseDto;
+import com.keralavotes.election.model.AssemblyHistoricResultsResponse;
 import com.keralavotes.election.repository.AssemblyConstituencyRepository;
 import com.keralavotes.election.service.AssemblyAnalysisService;
 import com.keralavotes.election.service.AssemblyOverviewService;
@@ -28,17 +28,17 @@ public class AssemblyAnalysisController {
     private final AssemblyOverviewService assemblyOverviewService;
 
     // Admin helper to list ACs by district or LS
-    @GetMapping("/admin/assemblies/by-district")
+    @GetMapping("/public/assemblies/by-district")
     public List<AssemblyConstituency> listByDistrict(@RequestParam Integer districtCode) {
         return assemblyRepository.findByDistrict_DistrictCode(districtCode);
     }
 
-    @GetMapping("/admin/assemblies/by-ls")
+    @GetMapping("/public/assemblies/by-ls")
     public List<AssemblyConstituency> listByLs(@RequestParam String lsCode) {
         return assemblyRepository.findByLs_LsCode(lsCode);
     }
 
-    @GetMapping("/admin/assembly/by-ac-code")
+    @GetMapping("/public/assembly/by-ac-code")
     public AssemblyConstituency findByAcCode(@RequestParam int acCode) {
         return assemblyRepository.findByAcCode(acCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "acCode not found"));
@@ -94,7 +94,7 @@ public class AssemblyAnalysisController {
     }
 
     @GetMapping("/analysis/historic/assembly")
-    public AssemblyHistoricResultsResponseDto assemblyHistoricAnalysis(
+    public AssemblyHistoricResultsResponse assemblyHistoricAnalysis(
             @RequestParam int acCode,
             @RequestParam String years,
             @RequestParam(required = false) String includeTypes

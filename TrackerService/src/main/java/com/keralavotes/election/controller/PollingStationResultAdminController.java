@@ -1,8 +1,9 @@
 package com.keralavotes.election.controller;
 
-import com.keralavotes.election.dto.PollingStationResultInsertRequest;
+import com.keralavotes.election.dto.CandidateVoteInputDto;
+import com.keralavotes.election.model.BoothResultSaveRequest;
+import com.keralavotes.election.model.PollingStationResultInsertRequest;
 import com.keralavotes.election.dto.details.BoothVoteDetailsRowDto;
-import com.keralavotes.election.entity.PollingStation;
 import com.keralavotes.election.service.BoothResultService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class PollingStationResultAdminController {
 
@@ -33,5 +33,36 @@ public class PollingStationResultAdminController {
     public ResponseEntity<String> bulkResultInsert(@RequestBody PollingStationResultInsertRequest resultInsertRequest) {
         String status = boothResultService.insertPollingStationResult(resultInsertRequest);
         return ResponseEntity.ok(status);
+    }
+
+    @PostMapping("/admin/booth/result")
+    public ResponseEntity<String> boothResultInsert(@RequestParam Long psId,
+                                                    @RequestParam Integer year,
+                                                    @RequestBody BoothResultSaveRequest boothResultSaveRequest) {
+
+        // Save candidate votes
+        if (boothResultSaveRequest.getVotes() != null) {
+            for (CandidateVoteInputDto v : boothResultSaveRequest.getVotes()) {
+                boothResultService.saveBoothVote(
+                        psId,
+                        v.getCandidateId(),
+                        year,
+                        v.getVotes() != null ? v.getVotes() : 0
+                );
+            }
+        }
+
+        // Save totals
+        if (boothResultSaveRequest.getTotals() != null) {
+            boothResultService.saveBoothTotals(
+                    psId,
+                    year,
+                    boothResultSaveRequest.getTotals().getTotalValid(),
+                    boothResultSaveRequest.getTotals().getRejected(),
+                    boothResultSaveRequest.getTotals().getNota()
+            );
+        }
+
+        return ResponseEntity.ok().build();
     }
 }

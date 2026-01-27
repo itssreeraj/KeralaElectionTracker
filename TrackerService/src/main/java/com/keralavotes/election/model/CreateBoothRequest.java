@@ -1,4 +1,4 @@
-package com.keralavotes.election.dto;
+package com.keralavotes.election.model;
 
 import lombok.Data;
 

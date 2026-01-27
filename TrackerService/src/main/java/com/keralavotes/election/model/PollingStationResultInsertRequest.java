@@ -1,4 +1,4 @@
-package com.keralavotes.election.dto;
+package com.keralavotes.election.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +11,6 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class BatchCreateCandidateRequest {
-
-    private List<CreateCandidateRequest> candidates;
+public class PollingStationResultInsertRequest {
+    private List<ConstituencyPollingStationResultRequest> results;
 }
