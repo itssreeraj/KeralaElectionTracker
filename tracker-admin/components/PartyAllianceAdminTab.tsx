@@ -28,7 +28,7 @@ type RowState = {
 const TYPES = ["LOCALBODY", "ASSEMBLY", "LOKSABHA"];
 
 const config = getConfig();
-const backend = `${config.apiBase}` || "http://localhost:8080/api";
+const backend = `${config.apiBase}` || "http://localhost:3000/api";
 
 
 /* ===================== BUTTON STYLE ===================== 

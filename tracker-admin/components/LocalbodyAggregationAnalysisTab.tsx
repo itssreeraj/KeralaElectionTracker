@@ -52,7 +52,7 @@ type AnalysisResponse = {
 
 const config = getConfig();
 const backend =
-  `${config.apiBase}` || "http://localhost:8080/api";
+  `${config.apiBase}` || "http://localhost:3000/api";
 
 
 /* ===================== CONSTANTS ===================== */

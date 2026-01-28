@@ -13,17 +13,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const token = jwt.sign({ role: "admin" }, process.env.JWT_SECRET!, {
+  const payload = {
+    sub: username,
+    role: "ADMIN",
+    iss: "next-admin-ui",
+    aud: "spring-api",
+  };
+
+  const token = jwt.sign(payload, process.env.JWT_SECRET!, {
+    algorithm: "HS256",
     expiresIn: "12h",
   });
 
   const res = NextResponse.json({ success: true });
+
   res.cookies.set("ADMIN_TOKEN", token, {
     httpOnly: true,
-    secure: false,
-    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     path: "/",
+    maxAge: 12 * 60 * 60, // 12 hours
   });
-
+  console.log("login route :" + res.body)
   return res;
 }
