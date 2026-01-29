@@ -18,7 +18,13 @@ export async function DELETE(req: Request, ctx: any) {
 }
 
 async function proxy(req: Request, ctx: any) {
-  const params = await ctx.params;   // ✅ Next.js 16 fix
+  const params = await ctx.params;
+  const incomingUrl = new URL(req.url);
+
+  const path = params.path.join("/");
+  const query = incomingUrl.search;
+
+  const backendUrl = `${BACKEND}/v1/admin/${path}${query}`;
 
   const cookieStore = await cookies();
   const token = cookieStore.get("ADMIN_TOKEN")?.value;
@@ -27,15 +33,14 @@ async function proxy(req: Request, ctx: any) {
   console.log("TOKEN =", token);
   console.log("PARAMS =", params);
 
-  const url = `${BACKEND}/v1/admin/${params.path.join("/")}`;
-  console.log("FORWARDING TO =", url);
+  console.log("ADMIN PROXY →", backendUrl);
 
-  return fetch(url, {
+  return fetch(backendUrl, {
     method: req.method,
     credentials: "include",
     body: req.method === "GET" ? undefined : await req.text(),
     headers: {
-      Authorization: token ? `Bearer ${token}` : "",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       "Content-Type": req.headers.get("content-type") || "application/json",
     },
   });

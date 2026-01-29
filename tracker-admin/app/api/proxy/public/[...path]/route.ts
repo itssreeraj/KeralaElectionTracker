@@ -11,11 +11,16 @@ export async function POST(req: Request, ctx: any) {
 
 async function proxy(req: Request, ctx: any) {
   const params = await ctx.params;
-  const url = `${BACKEND}/v1/public/${params.path.join("/")}`;
+  const incomingUrl = new URL(req.url);
 
-  console.log("PUBLIC PROXY →", url);
+  const path = params.path.join("/");
+  const query = incomingUrl.search;
 
-  return fetch(url, {
+  const backendUrl = `${BACKEND}/v1/public/${path}${query}`;
+
+  console.log("PUBLIC PROXY →", backendUrl);
+
+  return fetch(backendUrl, {
     method: req.method,
     credentials: "include",
     body: req.method === "GET" ? undefined : await req.text(),

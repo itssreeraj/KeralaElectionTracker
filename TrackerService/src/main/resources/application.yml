@@ -26,5 +26,5 @@ logging:
     name: logs/keralavotes.log
 
 jwt:
-  secret: "QkQPqCWV4BFURsDj6GsN5JS3YpSzW5jdh11a94RsYyQ7d99e96e3TxclxTzw9+dM
-qDA88PxbTXQ2ElFnVK7piw=="
+  secret: cbc4ea367dbbd0345e1bb5fb95de28955fd43e6a6e6508f7406b72114f50b199a852cdcb71e21c4145e6672f6fbc112be835f217629327b7cf3186713e1185ee
+  expiration: 43200

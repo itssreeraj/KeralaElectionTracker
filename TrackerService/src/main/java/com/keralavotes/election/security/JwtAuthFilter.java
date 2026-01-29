@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -40,8 +39,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             try {
                 Claims claims = jwtUtil.parseToken(token);
+                log.info("JwtAuthFilter::doFilterInternal -> claims : {}", claims);
 
                 String role = claims.get("role", String.class);
+                log.info("JwtAuthFilter::doFilterInternal -> role : {}", role);
 
                 List<GrantedAuthority> authorities =
                         List.of(new SimpleGrantedAuthority("ROLE_" + role));
@@ -50,7 +51,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         claims.getSubject(), null, authorities);
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
+                log.info("JwtAuthFilter::doFilterInternal -> SecurityContextHolder.getContext():setAuth : {}", auth);
             } catch (Exception e) {
+                log.error("JwtAuthFilter::doFilterInternal -> Exception:", e);
                 SecurityContextHolder.clearContext();
             }
         }
