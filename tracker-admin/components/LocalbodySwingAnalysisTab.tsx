@@ -210,7 +210,7 @@ function WardStatusBadge({ status }: { status: WardStatus }) {
 export default function LocalbodySwingAnalysisTab() {
   const config = getConfig();
   const backend =
-    `${config.apiBase}` || "http://localhost:8080/api";
+    `${config.apiBase}` || "http://localhost:3000/api";
 
   const [districts, setDistricts] = useState<any[]>([]);
   const [localbodies, setLocalbodies] = useState<any[]>([]);
@@ -560,7 +560,7 @@ function AllianceAnalysisResults({
       });
 
       const res = await fetch(
-        `${backend}/localbody/analysis/${lbId}/ward-details?${params.toString()}`
+        `${backend}/v1/public/localbody/analysis/${lbId}/ward-details?${params.toString()}`
       );
       const data = (await res.json()) as LocalbodyWardDetailsResponse;
       setWardDetails((prev) => ({ ...prev, [lbId]: data }));

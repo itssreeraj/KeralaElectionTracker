@@ -170,8 +170,9 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
       })),
     };
 
-    const res = await fetch(`${backend}/v1/admin/candidates`, {
+    const res = await fetch("/v1/admin/candidates", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });

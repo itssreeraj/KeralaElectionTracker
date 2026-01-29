@@ -104,7 +104,7 @@ const ALLIANCE_COLORS: Record<string, string> = {
 
 export default function LocalbodyAnalysisTab() {
   const config = getConfig();
-  const backend = config.apiBase ? config.apiBase : "http://localhost:8080/api";
+  const backend = config.apiBase ? config.apiBase : "http://localhost:3000/api";
   console.log("Using backend:", backend);
   const posterBase = config.posterBase ? config.posterBase.replace(/\/$/, "") : "";
   const profile = config.env || "";

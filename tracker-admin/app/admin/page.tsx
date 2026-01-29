@@ -17,7 +17,7 @@ import WardAssemblyMappingAdminTab from "@/components/WardAssemblyMappingAdminTa
 import PartyAllianceAdminTab from "@/components/PartyAllianceAdminTab";
 
 // backend URL
-const backend = `${getConfig().apiBase}` || "http://localhost:8080/api";
+const backend = getConfig().apiBase ?? "";
 
 const tabs: { key: string; label: string }[] = [
   { key: "upload", label: "CSV Upload" },
@@ -30,6 +30,9 @@ const tabs: { key: string; label: string }[] = [
   { key: "wardmap", label: "Ward Assembly Mapping" },
   { key: "partyalliance", label: "Party Alliance Mapping" },
 ];
+
+console.log("API BASE =", backend);
+console.log("FETCH URL =", `${backend}/v1/admin/test`);
 
 export default function AdminPage() {
   const [tab, setTab] = useState("upload");

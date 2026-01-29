@@ -14,10 +14,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         jdbc:
           batch_size: 1000
         order_inserts: true
@@ -39,7 +39,7 @@ logging:
   level:
     root: INFO
     com.keralavotes: DEBUG
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: INFO
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   file:
     name: logs/keralavotes.log
