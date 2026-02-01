@@ -7,7 +7,7 @@ spring:
     port: 8080
 
   datasource:
-    url: jdbc:postgresql://host.docker.internal:5432/keralavotes_prod
+    url: jdbc:postgresql://postgres:5432/keralavotes_prod
     username: keralavotes_prod_user
     password: keralavotes_prod_user
     driver-class-name: org.postgresql.Driver
@@ -17,6 +17,7 @@ spring:
     show-sql: false
     properties:
       hibernate.format_sql: true
+      dialect: org.hibernate.dialect.PostgreSQLDialect
   mongodb:
     uri: mongodb://appuser:apppassword@localhost:27017/keralavotes?authSource=keralavotes
     database: keralavotes

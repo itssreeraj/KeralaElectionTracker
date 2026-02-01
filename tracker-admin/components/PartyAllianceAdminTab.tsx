@@ -27,10 +27,6 @@ type RowState = {
 
 const TYPES = ["LOCALBODY", "ASSEMBLY", "LOKSABHA"];
 
-const config = getConfig();
-const backend = `${config.apiBase}` || "http://localhost:3000/api";
-
-
 /* ===================== BUTTON STYLE ===================== 
 const primaryBtn: React.CSSProperties = {
   padding: "6px 14px",
@@ -94,7 +90,7 @@ const secondaryBtn: React.CSSProperties = {
 };
 
 /* ===================== COMPONENT ===================== */
-export default function PartyAllianceAdminTab() {
+export default function PartyAllianceAdminTab({ backend }: { backend: string }) {
   const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
   const [type, setType] = useState<string>("");
 
@@ -122,7 +118,7 @@ export default function PartyAllianceAdminTab() {
 
   /* ===================== LOAD DATA ===================== */
   const loadAlliances = async () => {
-    const r = await fetch(`${backend}/public/alliances`);
+    const r = await fetch(`${backend}/v1/public/alliances`);
     const data = await r.json();
     const arr = Array.isArray(data) ? data : data?.alliances ?? [];
     setAlliances(normalizeAlliances(arr));
@@ -130,7 +126,7 @@ export default function PartyAllianceAdminTab() {
 
   const loadMappings = () => {
     setLoading(true);
-    fetch(`${backend}/admin/party-alliance?year=${year}&type=${type}`)
+    fetch(`${backend}/v1/public/party-alliance?year=${year}&type=${type}`)
       .then(r => r.json())
       .then((data: MappingRow[]) => {
         setRows(data);
@@ -176,8 +172,9 @@ export default function PartyAllianceAdminTab() {
 
     setSaving(partyId);
 
-    await fetch(`${backend}/admin/party-alliance`, {
+    await fetch(`${backend}/v1/admin/party-alliance`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         partyId: String(partyId),
@@ -195,8 +192,9 @@ export default function PartyAllianceAdminTab() {
   const addAlliance = async () => {
     if (!newAllianceName.trim()) return;
 
-    await fetch(`${backend}/admin/alliances`, {
+    await fetch(`${backend}/v1/admin/alliances`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: newAllianceName.trim(),
@@ -213,8 +211,9 @@ export default function PartyAllianceAdminTab() {
   const addParty = async () => {
     if (!newPartyName || !newPartyAlliance) return;
 
-    await fetch(`${backend}/admin/party-with-mapping`, {
+    await fetch(`${backend}/v1/admin/party-with-mapping`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         partyName: newPartyName.trim(),
