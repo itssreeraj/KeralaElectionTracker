@@ -7,7 +7,7 @@ spring:
     port: 8080
 
   datasource:
-    url: jdbc:postgresql://postgres:5432/keralavotes_prod
+    url: jdbc:postgresql://keralavotes_prod_user:JVoZl1sZHMLX8anovnjF2YXzwTftMz3J@dpg-d5vp04soud1c738omi6g-a/keralavotes_prod
     username: keralavotes_prod_user
     password: keralavotes_prod_user
     driver-class-name: org.postgresql.Driver
