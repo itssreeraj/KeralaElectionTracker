@@ -1,5 +1,6 @@
 package com.keralavotes.election.controller;
 
+import com.keralavotes.election.constants.ElectionYear;
 import com.keralavotes.election.dto.*;
 import com.keralavotes.election.entity.Alliance;
 import com.keralavotes.election.entity.AssemblyConstituency;
@@ -10,6 +11,7 @@ import com.keralavotes.election.model.BatchCreateCandidateRequest;
 import com.keralavotes.election.model.CreateCandidateRequest;
 import com.keralavotes.election.model.CreatePartyRequest;
 import com.keralavotes.election.model.MapCandidatePartyRequest;
+import com.keralavotes.election.model.PartyAllianceAdminRow;
 import com.keralavotes.election.model.UpdatePartyAllianceRequest;
 import com.keralavotes.election.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @RestController
@@ -31,7 +34,7 @@ public class PartyCandidateAdminController {
     private final CandidateRepository candidateRepo;
     private final LoksabhaConstituencyRepository lsRepo;
     private final AssemblyConstituencyRepository assemblyConstituencyRepo;
-
+    private final PartyAllianceMappingRepository mappingRepo;
 
 
     /* ---------------- Parties ---------------- */
@@ -87,6 +90,7 @@ public class PartyCandidateAdminController {
                     Alliance a = (p != null) ? p.getAlliance() : null;
                     LoksabhaConstituency ls = c.getLs();
                     AssemblyConstituency assemblyConstituency = c.getAc();
+
                     return new CandidateDto(
                             c.getId(),
                             c.getName(),

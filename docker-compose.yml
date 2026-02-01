@@ -1,13 +1,34 @@
-version: "3.9"
-
 services:
-
+  postgres:
+    image: postgres:18.1
+    container_name: keralavotes-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keralavotes_prod
+      POSTGRES_USER: keralavotes_prod_user
+      POSTGRES_PASSWORD: keralavotes_prod_user
+      PGDATA: /var/lib/postgresql/18/docker
+    volumes:
+      - keralavotes_pgdata:/var/lib/postgresql/18/docker
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keralavotes_prod_user -d keralavotes_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+      
   spring-api:
     build: ./TrackerService
     container_name: spring-api
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      
+      # DB connection (Docker-to-Docker)
       DB_HOST: host.docker.internal
+      DB_PORT: 5432
       DB_NAME: keralavotes_prod
       DB_USER: keralavotes_prod_user
       DB_PASS: keralavotes_prod_user
@@ -31,7 +52,8 @@ services:
       context: ./tracker-admin
       args:
         NEXT_PUBLIC_ENV: prod
-        NEXT_PUBLIC_API_BASE: http://localhost:8080/api
+        NEXT_PUBLIC_API_BASE: http://localhost:3333/
+        NEXT_BACKEND_API_BASE: http://localhost:8080/api
         NEXT_PUBLIC_POSTER_BASE: http://localhost:4000
     container_name: next-ui
     depends_on:
@@ -41,7 +63,9 @@ services:
     networks:
       - backend
       
+volumes:
+  keralavotes_pgdata:
+  
 networks:
   backend:
     driver: bridge
-

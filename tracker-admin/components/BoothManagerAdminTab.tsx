@@ -27,6 +27,12 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
   const [copyYear, setCopyYear] = useState<number | null>(null);
   const [copying, setCopying] = useState(false);
 
+  type LocalBody = {
+    id: number;
+    name: string;
+    type: string;
+  };
+
   // Form fields for create-booth
   const [form, setForm] = useState({
     district: "",
@@ -96,7 +102,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       )}`
     )
       .then((r) => r.json())
-      .then((data) => {
+      .then((data: LocalBody[]) => {
         setLocalbodies(data);
         setFilteredLocalbodies(data);
 

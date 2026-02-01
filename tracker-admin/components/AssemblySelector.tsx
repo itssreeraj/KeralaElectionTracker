@@ -68,31 +68,34 @@ export default function AssemblySelector({
 
   return (
     <div style={{ marginBottom: 12 }}>
+
       {/* AC lookup */}
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 13, opacity: 0.85 }}>AC code lookup</label>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, color: "#9ca3af" }}>AC code lookup</label>
         <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
           <input
             value={acCode}
             onChange={(e) => setAcCode(e.target.value)}
             placeholder="AC code (e.g. 90)"
             style={{
-              width: 200,
-              padding: "6px 8px",
+              flex: 1,
+              padding: "8px 10px",
               borderRadius: 6,
-              border: "1px solid #374151",
-              background: "#020617",
-              color: "#f9fafb",
+              border: acCode ? "1px solid #0d6efd" : "1px solid #333",
+              background: "#0b0b0b",
+              color: "white",
+              fontSize: 12,
             }}
           />
           <button
             onClick={lookupByAcCode}
             style={{
-              padding: "6px 10px",
+              padding: "8px 14px",
               borderRadius: 6,
               background: "#2563eb",
               color: "white",
               border: "none",
+              fontSize: 12,
               cursor: "pointer",
             }}
           >
@@ -102,8 +105,8 @@ export default function AssemblySelector({
       </div>
 
       {/* District selector */}
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 13, opacity: 0.85 }}>Or pick by District</label>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, color: "#9ca3af" }}>Or pick by District</label>
         <div style={{ marginTop: 6 }}>
           <select
             value={districtCode}
@@ -114,26 +117,29 @@ export default function AssemblySelector({
             }}
             style={{
               width: "100%",
-              padding: "6px 8px",
+              padding: "8px 10px",
               borderRadius: 6,
-              border: "1px solid #374151",
-              background: "#020617",
-              color: "#f9fafb",
+              border: districtCode ? "1px solid #0d6efd" : "1px solid #333",
+              background: "#0b0b0b",
+              color: "white",
+              fontSize: 12,
             }}
           >
-            <option value="">Select district</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.districtCode}>
-                {d.districtCode} - {d.name}
-              </option>
-            ))}
+            <option value="">All Districts</option>
+            {[...districts]
+              .sort((a, b) => Number(a.districtCode) - Number(b.districtCode))
+              .map((d) => (
+                <option key={d.districtCode} value={d.districtCode}>
+                  {d.districtCode} – {d.name}
+                </option>
+              ))}
           </select>
         </div>
       </div>
 
-      {/* LS Selector */}
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 13, opacity: 0.85 }}>Or pick by Loksabha</label>
+      {/* Lok Sabha selector */}
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, color: "#9ca3af" }}>Or pick by Lok Sabha</label>
         <div style={{ marginTop: 6 }}>
           <select
             value={lsCode}
@@ -144,29 +150,32 @@ export default function AssemblySelector({
             }}
             style={{
               width: "100%",
-              padding: "6px 8px",
+              padding: "8px 10px",
               borderRadius: 6,
-              border: "1px solid #374151",
-              background: "#020617",
-              color: "#f9fafb",
+              border: lsCode ? "1px solid #0d6efd" : "1px solid #333",
+              background: "#0b0b0b",
+              color: "white",
+              fontSize: 12,
             }}
           >
-            <option value="">Select Loksabha</option>
-            {loksabha.map((ls) => (
-              <option key={ls.lsCode} value={ls.lsCode}>
-                {ls.lsCode} - {ls.name}
-              </option>
-            ))}
+            <option value="">All Lok Sabhas</option>
+            {[...loksabha]
+              .sort((a, b) => Number(a.lsCode) - Number(b.lsCode))
+              .map((ls) => (
+                <option key={ls.lsCode} value={ls.lsCode}>
+                  {ls.lsCode} – {ls.name}
+                </option>
+              ))}
           </select>
         </div>
       </div>
 
       {/* Assemblies list */}
-      <div style={{ marginTop: 8 }}>
-        <label style={{ fontSize: 13, opacity: 0.85 }}>Assemblies</label>
+      <div style={{ marginTop: 12 }}>
+        <label style={{ fontSize: 12, color: "#9ca3af" }}>Assemblies</label>
         <div style={{ marginTop: 6 }}>
           {loading ? (
-            <div>Loading…</div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>Loading…</div>
           ) : (
             <select
               onChange={(e) => {
@@ -176,19 +185,22 @@ export default function AssemblySelector({
               }}
               style={{
                 width: "100%",
-                padding: "6px 8px",
+                padding: "8px 10px",
                 borderRadius: 6,
-                border: "1px solid #374151",
-                background: "#020617",
-                color: "#f9fafb",
+                border: "1px solid #333",
+                background: "#0b0b0b",
+                color: "white",
+                fontSize: 12,
               }}
             >
-              <option value="">Select assembly</option>
-              {assemblies.map((a) => (
-                <option key={a.acCode} value={a.acCode}>
-                  {a.name} ({a.acCode})
-                </option>
-              ))}
+              <option value="">Select Assembly</option>
+              {[...assemblies]
+                .sort((a, b) => Number(a.acCode) - Number(b.acCode))
+                .map((a) => (
+                  <option key={a.acCode} value={a.acCode}>
+                    {a.acCode} – {a.name}
+                  </option>
+                ))}
             </select>
           )}
         </div>

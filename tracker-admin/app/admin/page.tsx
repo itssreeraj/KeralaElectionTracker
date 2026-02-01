@@ -82,7 +82,7 @@ export default function AdminPage() {
         {tab === "boothvotes" && <BoothVotesDataAdminTab backend={backend} />}
         {tab === "candidate" && <CandidateMappingAdminTab backend={backend} />}
         {tab === "wardmap" && <WardAssemblyMappingAdminTab backend={backend} />}
-        {tab === "partyalliance" && <PartyAllianceAdminTab />}
+        {tab === "partyalliance" && <PartyAllianceAdminTab backend={backend} />}
       </div>
 
       {/* STYLES */}

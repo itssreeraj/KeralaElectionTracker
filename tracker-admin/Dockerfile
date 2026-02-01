@@ -21,7 +21,7 @@ ENV NEXT_PUBLIC_ENV=$NEXT_PUBLIC_ENV
 RUN npm run build
 
 # -------- Runtime stage --------
-FROM node:20-slim
+FROM node:25.2-slim
 
 WORKDIR /app
 
