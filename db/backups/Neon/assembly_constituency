@@ -1,0 +1,188 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 963UYXGwPGPCQibaqMcXdm5TZQWK2CkqYqRYaDHgD3quigpCTc0PlCBs10H75mG
+
+-- Dumped from database version 18.1 (Ubuntu 18.1-1.pgdg24.04+2)
+-- Dumped by pg_dump version 18.1
+
+-- Started on 2026-02-02 23:03:50 IST
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 3687 (class 0 OID 16616)
+-- Dependencies: 222
+-- Data for Name: assembly_constituency; Type: TABLE DATA; Schema: public; Owner: keralavotes
+--
+
+INSERT INTO public.assembly_constituency VALUES (23, 86, 'MUVATTUPUZHA', 13, 8);
+INSERT INTO public.assembly_constituency VALUES (101, 87, 'KOTHAMANGALAM', 13, 8);
+INSERT INTO public.assembly_constituency VALUES (83, 88, 'DEVIKULAM', 13, 9);
+INSERT INTO public.assembly_constituency VALUES (11, 89, 'UDUMBANCHOLA', 13, 9);
+INSERT INTO public.assembly_constituency VALUES (7, 90, 'THODUPUZHA', 13, 9);
+INSERT INTO public.assembly_constituency VALUES (8, 91, 'IDUKKI', 13, 9);
+INSERT INTO public.assembly_constituency VALUES (79, 92, 'PEERUMADE', 13, 9);
+INSERT INTO public.assembly_constituency VALUES (110, 95, 'VAIKOM', 14, 10);
+INSERT INTO public.assembly_constituency VALUES (2, 96, 'ETTUMANOOR', 14, 10);
+INSERT INTO public.assembly_constituency VALUES (25, 97, 'KOTTAYAM', 14, 10);
+INSERT INTO public.assembly_constituency VALUES (108, 98, 'PUTHUPPALLY', 14, 10);
+INSERT INTO public.assembly_constituency VALUES (107, 99, 'CHANGANASSERY', 16, 10);
+INSERT INTO public.assembly_constituency VALUES (97, 100, 'KANJIRAPPALLY', 17, 10);
+INSERT INTO public.assembly_constituency VALUES (91, 101, 'POONJAR', 17, 10);
+INSERT INTO public.assembly_constituency VALUES (37, 102, 'AROOR', 15, 11);
+INSERT INTO public.assembly_constituency VALUES (30, 104, 'ALAPPUZHA', 15, 11);
+INSERT INTO public.assembly_constituency VALUES (123, 105, 'AMBALAPUZHA', 15, 11);
+INSERT INTO public.assembly_constituency VALUES (1, 106, 'KUTTANAD', 16, 11);
+INSERT INTO public.assembly_constituency VALUES (94, 107, 'HARIPAD', 15, 11);
+INSERT INTO public.assembly_constituency VALUES (129, 108, 'KAYAMKULAM', 15, 11);
+INSERT INTO public.assembly_constituency VALUES (6, 109, 'MAVELIKARA', 16, 11);
+INSERT INTO public.assembly_constituency VALUES (128, 110, 'CHENGANNUR', 16, 11);
+INSERT INTO public.assembly_constituency VALUES (50, 112, 'RANNI', 17, 12);
+INSERT INTO public.assembly_constituency VALUES (38, 113, 'ARANMULA', 17, 12);
+INSERT INTO public.assembly_constituency VALUES (127, 115, 'ADOOR', 17, 12);
+INSERT INTO public.assembly_constituency VALUES (113, 116, 'KARUNAGAPPALLY', 15, 13);
+INSERT INTO public.assembly_constituency VALUES (48, 117, 'Chavara', 18, 13);
+INSERT INTO public.assembly_constituency VALUES (92, 118, 'KUNNATHUR', 16, 13);
+INSERT INTO public.assembly_constituency VALUES (65, 121, 'PUNALUR', 18, 13);
+INSERT INTO public.assembly_constituency VALUES (130, 122, 'CHADAYAMANGALAM', 18, 13);
+INSERT INTO public.assembly_constituency VALUES (17, 123, 'KUNDARA', 18, 13);
+INSERT INTO public.assembly_constituency VALUES (52, 124, 'KOLLAM', 18, 13);
+INSERT INTO public.assembly_constituency VALUES (69, 125, 'ERAVIPURAM', 18, 13);
+INSERT INTO public.assembly_constituency VALUES (13, 126, 'CHATHANNUR', 18, 13);
+INSERT INTO public.assembly_constituency VALUES (81, 127, 'VARKALA', 19, 14);
+INSERT INTO public.assembly_constituency VALUES (84, 128, 'ATTINGAL', 19, 14);
+INSERT INTO public.assembly_constituency VALUES (4, 130, 'NEDUMANGAD', 19, 14);
+INSERT INTO public.assembly_constituency VALUES (63, 131, 'VAMANAPURAM', 19, 14);
+INSERT INTO public.assembly_constituency VALUES (73, 132, 'KAZHAKOOTAM', 20, 14);
+INSERT INTO public.assembly_constituency VALUES (43, 133, 'VATTIYOORKAVU', 20, 14);
+INSERT INTO public.assembly_constituency VALUES (41, 134, 'THIRUVANTHAPURAM', 20, 14);
+INSERT INTO public.assembly_constituency VALUES (87, 135, 'NEMOM', 20, 14);
+INSERT INTO public.assembly_constituency VALUES (116, 136, 'ARUVIKKARA', 19, 14);
+INSERT INTO public.assembly_constituency VALUES (74, 137, 'PARASSALA', 20, 14);
+INSERT INTO public.assembly_constituency VALUES (27, 138, 'KATTAKKADA', 19, 14);
+INSERT INTO public.assembly_constituency VALUES (80, 140, 'NEYYANTINKARA', 20, 14);
+INSERT INTO public.assembly_constituency VALUES (44, 2, 'KASARAGOD', 1, 1);
+INSERT INTO public.assembly_constituency VALUES (88, 3, 'UDMA', 1, 1);
+INSERT INTO public.assembly_constituency VALUES (9, 4, 'KANHANGAD', 1, 1);
+INSERT INTO public.assembly_constituency VALUES (103, 5, 'TRIKARIPUR', 1, 1);
+INSERT INTO public.assembly_constituency VALUES (62, 7, 'KALLIASSERI', 1, 2);
+INSERT INTO public.assembly_constituency VALUES (66, 8, 'TALIPARAMBA', 2, 2);
+INSERT INTO public.assembly_constituency VALUES (46, 9, 'IRIKKUR', 2, 2);
+INSERT INTO public.assembly_constituency VALUES (28, 10, 'AZHIKODE', 2, 2);
+INSERT INTO public.assembly_constituency VALUES (21, 11, 'KANNUR', 2, 2);
+INSERT INTO public.assembly_constituency VALUES (64, 15, 'MATTANNUR', 2, 2);
+INSERT INTO public.assembly_constituency VALUES (16, 16, 'PERAVOOR', 2, 2);
+INSERT INTO public.assembly_constituency VALUES (40, 13, 'THALASSERY', 3, 2);
+INSERT INTO public.assembly_constituency VALUES (36, 14, 'KUTHUPARAMBA', 3, 2);
+INSERT INTO public.assembly_constituency VALUES (102, 21, 'KUTTIADI', 3, 4);
+INSERT INTO public.assembly_constituency VALUES (111, 23, 'QUILANDY', 3, 4);
+INSERT INTO public.assembly_constituency VALUES (32, 24, 'PERAMBRA', 3, 4);
+INSERT INTO public.assembly_constituency VALUES (125, 17, 'MANANTHAVADY', 4, 3);
+INSERT INTO public.assembly_constituency VALUES (98, 18, 'SULTHANBATHERY', 4, 3);
+INSERT INTO public.assembly_constituency VALUES (24, 32, 'THIRUVAMBADY', 4, 4);
+INSERT INTO public.assembly_constituency VALUES (76, 34, 'ERANAD', 4, 5);
+INSERT INTO public.assembly_constituency VALUES (93, 35, 'NILAMBUR', 4, 5);
+INSERT INTO public.assembly_constituency VALUES (118, 36, 'WANDOOR', 4, 5);
+INSERT INTO public.assembly_constituency VALUES (68, 33, 'KONDOTTY', 6, 5);
+INSERT INTO public.assembly_constituency VALUES (121, 38, 'PERINTHALMANNA', 6, 5);
+INSERT INTO public.assembly_constituency VALUES (112, 39, 'MANKADA', 6, 5);
+INSERT INTO public.assembly_constituency VALUES (132, 40, 'MALAPPURAM', 6, 5);
+INSERT INTO public.assembly_constituency VALUES (47, 41, 'VENGARA', 6, 5);
+INSERT INTO public.assembly_constituency VALUES (95, 42, 'VALLIKKUNNU', 6, 5);
+INSERT INTO public.assembly_constituency VALUES (56, 26, 'ELATHUR', 5, 4);
+INSERT INTO public.assembly_constituency VALUES (5, 27, 'KOZHIKODE NORTH', 5, 4);
+INSERT INTO public.assembly_constituency VALUES (89, 28, 'KOZHIKODE SOUTH', 5, 4);
+INSERT INTO public.assembly_constituency VALUES (35, 29, 'BEYPORE', 5, 4);
+INSERT INTO public.assembly_constituency VALUES (115, 43, 'TIRURANGADI', 7, 5);
+INSERT INTO public.assembly_constituency VALUES (75, 44, 'TANUR', 7, 5);
+INSERT INTO public.assembly_constituency VALUES (39, 45, 'TIRUR', 7, 5);
+INSERT INTO public.assembly_constituency VALUES (14, 46, 'KOTTAKKAL', 7, 5);
+INSERT INTO public.assembly_constituency VALUES (20, 47, 'THAVANUR', 7, 5);
+INSERT INTO public.assembly_constituency VALUES (29, 49, 'THRITHALA', 7, 6);
+INSERT INTO public.assembly_constituency VALUES (67, 50, 'PATTAMBI', 8, 6);
+INSERT INTO public.assembly_constituency VALUES (109, 51, 'SHORNUR', 8, 6);
+INSERT INTO public.assembly_constituency VALUES (19, 52, 'OTTAPALAM', 8, 6);
+INSERT INTO public.assembly_constituency VALUES (49, 53, 'KONGAD', 8, 6);
+INSERT INTO public.assembly_constituency VALUES (120, 55, 'MALAMPUZHA', 8, 6);
+INSERT INTO public.assembly_constituency VALUES (131, 56, 'PALAKKAD', 8, 6);
+INSERT INTO public.assembly_constituency VALUES (82, 57, 'TARUR', 9, 6);
+INSERT INTO public.assembly_constituency VALUES (86, 59, 'NENMARA', 9, 6);
+INSERT INTO public.assembly_constituency VALUES (42, 61, 'CHELAKKARA', 9, 7);
+INSERT INTO public.assembly_constituency VALUES (10, 62, 'KUNNAMKULAM', 9, 7);
+INSERT INTO public.assembly_constituency VALUES (126, 65, 'WADAKKANCHERY', 9, 7);
+INSERT INTO public.assembly_constituency VALUES (57, 63, 'GURUVAYOOR', 10, 7);
+INSERT INTO public.assembly_constituency VALUES (60, 64, 'MANALUR', 10, 7);
+INSERT INTO public.assembly_constituency VALUES (70, 68, 'NATTIKA', 10, 7);
+INSERT INTO public.assembly_constituency VALUES (117, 70, 'IRINJALAKKUDA', 10, 7);
+INSERT INTO public.assembly_constituency VALUES (119, 71, 'PUTHUKKAD', 10, 7);
+INSERT INTO public.assembly_constituency VALUES (78, 69, 'KAIPAMANGALAM', 11, 7);
+INSERT INTO public.assembly_constituency VALUES (124, 72, 'CHALAKKUDY', 11, 7);
+INSERT INTO public.assembly_constituency VALUES (61, 74, 'PERUMBAVOOR', 11, 8);
+INSERT INTO public.assembly_constituency VALUES (100, 75, 'ANGAMALY', 11, 8);
+INSERT INTO public.assembly_constituency VALUES (26, 76, 'ALUVA', 11, 8);
+INSERT INTO public.assembly_constituency VALUES (122, 84, 'KUNNATHUNAD', 11, 8);
+INSERT INTO public.assembly_constituency VALUES (53, 78, 'PARAVUR', 12, 8);
+INSERT INTO public.assembly_constituency VALUES (71, 80, 'KOCHI', 12, 8);
+INSERT INTO public.assembly_constituency VALUES (12, 81, 'TRIPUNITHURA', 12, 8);
+INSERT INTO public.assembly_constituency VALUES (15, 82, 'ERNAKULAM', 12, 8);
+INSERT INTO public.assembly_constituency VALUES (77, 83, 'THRIKKAKARA', 12, 8);
+INSERT INTO public.assembly_constituency VALUES (135, 93, 'PALA', 14, 10);
+INSERT INTO public.assembly_constituency VALUES (90, 94, 'KADUTHURUTHY', 14, 10);
+INSERT INTO public.assembly_constituency VALUES (114, 103, 'CHERTHALA', 15, 11);
+INSERT INTO public.assembly_constituency VALUES (99, 111, 'THIRUVALLA', 17, 12);
+INSERT INTO public.assembly_constituency VALUES (137, 114, 'KONNI', 17, 12);
+INSERT INTO public.assembly_constituency VALUES (96, 1, 'MANJESHWAR', 1, 1);
+INSERT INTO public.assembly_constituency VALUES (72, 6, 'PAYYANNUR', 1, 2);
+INSERT INTO public.assembly_constituency VALUES (18, 12, 'DHARMADAM', 2, 2);
+INSERT INTO public.assembly_constituency VALUES (134, 20, 'VADAKARA', 3, 4);
+INSERT INTO public.assembly_constituency VALUES (106, 22, 'NADAPURAM', 3, 4);
+INSERT INTO public.assembly_constituency VALUES (33, 19, 'KALPETTA', 4, 3);
+INSERT INTO public.assembly_constituency VALUES (54, 37, 'MANJERI', 6, 5);
+INSERT INTO public.assembly_constituency VALUES (85, 25, 'BALUSSERI', 5, 4);
+INSERT INTO public.assembly_constituency VALUES (140, 30, 'KUNNAMANGALAM', 5, 4);
+INSERT INTO public.assembly_constituency VALUES (55, 31, 'KODUVALLY', 5, 4);
+INSERT INTO public.assembly_constituency VALUES (105, 48, 'PONNANI', 7, 5);
+INSERT INTO public.assembly_constituency VALUES (31, 54, 'MANNARKAD', 8, 6);
+INSERT INTO public.assembly_constituency VALUES (138, 58, 'CHITTUR', 9, 6);
+INSERT INTO public.assembly_constituency VALUES (3, 60, 'ALATHUR', 9, 6);
+INSERT INTO public.assembly_constituency VALUES (133, 66, 'OLLUR', 10, 7);
+INSERT INTO public.assembly_constituency VALUES (58, 67, 'THRISSUR', 10, 7);
+INSERT INTO public.assembly_constituency VALUES (34, 73, 'KODUNGALLUR', 11, 7);
+INSERT INTO public.assembly_constituency VALUES (22, 77, 'KALAMASSERY', 12, 8);
+INSERT INTO public.assembly_constituency VALUES (139, 79, 'VYPEN', 12, 8);
+INSERT INTO public.assembly_constituency VALUES (59, 85, 'PIRAVOM', 14, 8);
+INSERT INTO public.assembly_constituency VALUES (136, 119, 'KOTTARAKKARA', 16, 13);
+INSERT INTO public.assembly_constituency VALUES (45, 120, 'PATHANAPURAM', 16, 13);
+INSERT INTO public.assembly_constituency VALUES (51, 129, 'CHIRAYINKEEZHU', 19, 14);
+INSERT INTO public.assembly_constituency VALUES (104, 139, 'KOVALAM', 20, 14);
+
+
+--
+-- TOC entry 3694 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: assembly_constituency_id_seq; Type: SEQUENCE SET; Schema: public; Owner: keralavotes
+--
+
+SELECT pg_catalog.setval('public.assembly_constituency_id_seq', 140, true);
+
+
+-- Completed on 2026-02-02 23:03:50 IST
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 963UYXGwPGPCQibaqMcXdm5TZQWK2CkqYqRYaDHgD3quigpCTc0PlCBs10H75mG
+
