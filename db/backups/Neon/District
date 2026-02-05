@@ -1,0 +1,62 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict uog2R1tUyb0z3pSYEVVhOZYC4XqU7tW7M12mdA4fmIhRmBJVYSsZFiuUCvE9RV0
+
+-- Dumped from database version 18.1 (Ubuntu 18.1-1.pgdg24.04+2)
+-- Dumped by pg_dump version 18.1
+
+-- Started on 2026-02-02 23:13:40 IST
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 3685 (class 0 OID 16649)
+-- Dependencies: 230
+-- Data for Name: district; Type: TABLE DATA; Schema: public; Owner: keralavotes
+--
+
+INSERT INTO public.district VALUES (1, 'ALAPPUZHA', 11);
+INSERT INTO public.district VALUES (2, 'KOTTAYAM', 10);
+INSERT INTO public.district VALUES (3, 'PALAKKAD', 6);
+INSERT INTO public.district VALUES (6, 'IDUKKI', 9);
+INSERT INTO public.district VALUES (8, 'THRISSUR', 7);
+INSERT INTO public.district VALUES (9, 'ERNAKULAM', 8);
+INSERT INTO public.district VALUES (10, 'KOLLAM', 13);
+INSERT INTO public.district VALUES (11, 'MALAPPURAM', 5);
+INSERT INTO public.district VALUES (12, 'KANNUR', 2);
+INSERT INTO public.district VALUES (13, 'WAYANAD', 3);
+INSERT INTO public.district VALUES (14, 'PATHANAMTHITTA', 12);
+INSERT INTO public.district VALUES (4, 'THIRUVANANTHAPURAM', 14);
+INSERT INTO public.district VALUES (7, 'KASARGOD', 1);
+INSERT INTO public.district VALUES (5, 'KOZHIKODE', 4);
+
+
+--
+-- TOC entry 3692 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: district_id_seq; Type: SEQUENCE SET; Schema: public; Owner: keralavotes
+--
+
+SELECT pg_catalog.setval('public.district_id_seq', 14, true);
+
+
+-- Completed on 2026-02-02 23:13:40 IST
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict uog2R1tUyb0z3pSYEVVhOZYC4XqU7tW7M12mdA4fmIhRmBJVYSsZFiuUCvE9RV0
+

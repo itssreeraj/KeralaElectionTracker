@@ -1,0 +1,68 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 1ekuH7479hERN2J9FSC9Pt7x5YInOp7f9aFrRlaKRzf9Kve5b8Jhc9ctg3kAUsm
+
+-- Dumped from database version 18.1 (Ubuntu 18.1-1.pgdg24.04+2)
+-- Dumped by pg_dump version 18.1
+
+-- Started on 2026-02-02 23:07:16 IST
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 3685 (class 0 OID 16686)
+-- Dependencies: 240
+-- Data for Name: loksabha_constituency; Type: TABLE DATA; Schema: public; Owner: keralavotes
+--
+
+INSERT INTO public.loksabha_constituency VALUES (2, 2, 'Kannur', NULL);
+INSERT INTO public.loksabha_constituency VALUES (4, 4, 'Wayanad', NULL);
+INSERT INTO public.loksabha_constituency VALUES (5, 5, 'Kozhikode', NULL);
+INSERT INTO public.loksabha_constituency VALUES (6, 6, 'Malappuram', NULL);
+INSERT INTO public.loksabha_constituency VALUES (7, 7, 'Ponnani', NULL);
+INSERT INTO public.loksabha_constituency VALUES (8, 8, 'Palakkad', NULL);
+INSERT INTO public.loksabha_constituency VALUES (9, 9, 'Alathur', NULL);
+INSERT INTO public.loksabha_constituency VALUES (10, 10, 'Thrissur', NULL);
+INSERT INTO public.loksabha_constituency VALUES (12, 12, 'Ernakulam', NULL);
+INSERT INTO public.loksabha_constituency VALUES (13, 13, 'Idukki', NULL);
+INSERT INTO public.loksabha_constituency VALUES (14, 14, 'Kottayam', NULL);
+INSERT INTO public.loksabha_constituency VALUES (15, 15, 'Alappuzha', NULL);
+INSERT INTO public.loksabha_constituency VALUES (16, 16, 'Mavelikkara', NULL);
+INSERT INTO public.loksabha_constituency VALUES (17, 17, 'Pathanamthitta', NULL);
+INSERT INTO public.loksabha_constituency VALUES (18, 18, 'Kollam', NULL);
+INSERT INTO public.loksabha_constituency VALUES (19, 19, 'Attingal', NULL);
+INSERT INTO public.loksabha_constituency VALUES (20, 20, 'Thiruvananthapuram', NULL);
+INSERT INTO public.loksabha_constituency VALUES (1, 1, 'Kasargode', NULL);
+INSERT INTO public.loksabha_constituency VALUES (11, 11, 'Chalakkudy', NULL);
+INSERT INTO public.loksabha_constituency VALUES (3, 3, 'Vadakara', NULL);
+
+
+--
+-- TOC entry 3692 (class 0 OID 0)
+-- Dependencies: 241
+-- Name: loksabha_constituency_id_seq; Type: SEQUENCE SET; Schema: public; Owner: keralavotes
+--
+
+SELECT pg_catalog.setval('public.loksabha_constituency_id_seq', 22, true);
+
+
+-- Completed on 2026-02-02 23:07:16 IST
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 1ekuH7479hERN2J9FSC9Pt7x5YInOp7f9aFrRlaKRzf9Kve5b8Jhc9ctg3kAUsm
+

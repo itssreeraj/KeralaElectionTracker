@@ -1,0 +1,1464 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict OEtzaac2Ud0ZFs2XId6sU6wK8QSDUyvJVeL0IZNcKtckLVddaxhjlbeeJeobLgf
+
+-- Dumped from database version 18.1 (Ubuntu 18.1-1.pgdg24.04+2)
+-- Dumped by pg_dump version 18.1
+
+-- Started on 2026-02-02 21:45:16 IST
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 2 (class 3079 OID 16529)
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- TOC entry 3825 (class 0 OID 0)
+-- Dependencies: 2
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 220 (class 1259 OID 16610)
+-- Name: alliance; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.alliance (
+    id bigint NOT NULL,
+    name character varying(20) NOT NULL,
+    color character varying(10)
+);
+
+
+ALTER TABLE public.alliance OWNER TO keralavotes;
+
+--
+-- TOC entry 221 (class 1259 OID 16615)
+-- Name: alliance_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.alliance_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.alliance_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3826 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: alliance_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.alliance_id_seq OWNED BY public.alliance.id;
+
+
+--
+-- TOC entry 222 (class 1259 OID 16616)
+-- Name: assembly_constituency; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.assembly_constituency (
+    id bigint NOT NULL,
+    ac_code integer NOT NULL,
+    name character varying(150) NOT NULL,
+    ls_code bigint,
+    district_code bigint
+);
+
+
+ALTER TABLE public.assembly_constituency OWNER TO keralavotes;
+
+--
+-- TOC entry 223 (class 1259 OID 16622)
+-- Name: assembly_constituency_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.assembly_constituency_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.assembly_constituency_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3827 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: assembly_constituency_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.assembly_constituency_id_seq OWNED BY public.assembly_constituency.id;
+
+
+--
+-- TOC entry 224 (class 1259 OID 16623)
+-- Name: booth_totals; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.booth_totals (
+    id bigint NOT NULL,
+    ps_id bigint NOT NULL,
+    total_valid integer NOT NULL,
+    rejected integer NOT NULL,
+    nota integer NOT NULL,
+    year integer NOT NULL
+);
+
+
+ALTER TABLE public.booth_totals OWNER TO keralavotes;
+
+--
+-- TOC entry 225 (class 1259 OID 16632)
+-- Name: booth_totals_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.booth_totals_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.booth_totals_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3828 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: booth_totals_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.booth_totals_id_seq OWNED BY public.booth_totals.id;
+
+
+--
+-- TOC entry 226 (class 1259 OID 16633)
+-- Name: booth_votes; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.booth_votes (
+    id bigint NOT NULL,
+    ps_id bigint NOT NULL,
+    candidate_id bigint NOT NULL,
+    votes integer NOT NULL,
+    year integer NOT NULL
+);
+
+
+ALTER TABLE public.booth_votes OWNER TO keralavotes;
+
+--
+-- TOC entry 227 (class 1259 OID 16641)
+-- Name: booth_votes_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.booth_votes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.booth_votes_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3829 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: booth_votes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.booth_votes_id_seq OWNED BY public.booth_votes.id;
+
+
+--
+-- TOC entry 228 (class 1259 OID 16642)
+-- Name: candidate; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.candidate (
+    id bigint NOT NULL,
+    name character varying(200) NOT NULL,
+    party_id bigint,
+    ls_code bigint,
+    election_year integer NOT NULL,
+    alliance_id bigint,
+    election_type character varying(10) DEFAULT 'LS'::character varying NOT NULL,
+    ac_code integer
+);
+
+
+ALTER TABLE public.candidate OWNER TO keralavotes;
+
+--
+-- TOC entry 229 (class 1259 OID 16648)
+-- Name: candidate_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.candidate_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.candidate_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3830 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: candidate_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.candidate_id_seq OWNED BY public.candidate.id;
+
+
+--
+-- TOC entry 230 (class 1259 OID 16649)
+-- Name: district; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.district (
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    district_code integer NOT NULL
+);
+
+
+ALTER TABLE public.district OWNER TO keralavotes;
+
+--
+-- TOC entry 231 (class 1259 OID 16655)
+-- Name: district_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.district_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.district_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3831 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: district_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.district_id_seq OWNED BY public.district.id;
+
+
+--
+-- TOC entry 232 (class 1259 OID 16656)
+-- Name: lb_candidate; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.lb_candidate (
+    id integer NOT NULL,
+    name character varying(200) NOT NULL,
+    party_id bigint,
+    localbody_id bigint,
+    election_year integer NOT NULL
+);
+
+
+ALTER TABLE public.lb_candidate OWNER TO keralavotes;
+
+--
+-- TOC entry 233 (class 1259 OID 16662)
+-- Name: lb_candidate_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.lb_candidate_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.lb_candidate_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3832 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: lb_candidate_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.lb_candidate_id_seq OWNED BY public.lb_candidate.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 16663)
+-- Name: lb_ward_results; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.lb_ward_results (
+    id integer NOT NULL,
+    ward_id integer NOT NULL,
+    candidate_id integer NOT NULL,
+    votes integer NOT NULL,
+    election_year integer NOT NULL
+);
+
+
+ALTER TABLE public.lb_ward_results OWNER TO keralavotes;
+
+--
+-- TOC entry 235 (class 1259 OID 16671)
+-- Name: lb_ward_results_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.lb_ward_results_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.lb_ward_results_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3833 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: lb_ward_results_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.lb_ward_results_id_seq OWNED BY public.lb_ward_results.id;
+
+
+--
+-- TOC entry 236 (class 1259 OID 16672)
+-- Name: localbody; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.localbody (
+    id bigint NOT NULL,
+    name character varying(150) NOT NULL,
+    type character varying(50) NOT NULL,
+    district_code bigint
+);
+
+
+ALTER TABLE public.localbody OWNER TO keralavotes;
+
+--
+-- TOC entry 237 (class 1259 OID 16678)
+-- Name: localbody_ac_mapping; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.localbody_ac_mapping (
+    id bigint NOT NULL,
+    localbody_id bigint NOT NULL,
+    ac_code bigint NOT NULL,
+    overlap_weight numeric(5,2)
+);
+
+
+ALTER TABLE public.localbody_ac_mapping OWNER TO keralavotes;
+
+--
+-- TOC entry 238 (class 1259 OID 16684)
+-- Name: localbody_ac_mapping_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.localbody_ac_mapping_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.localbody_ac_mapping_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3834 (class 0 OID 0)
+-- Dependencies: 238
+-- Name: localbody_ac_mapping_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.localbody_ac_mapping_id_seq OWNED BY public.localbody_ac_mapping.id;
+
+
+--
+-- TOC entry 239 (class 1259 OID 16685)
+-- Name: localbody_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.localbody_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.localbody_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3835 (class 0 OID 0)
+-- Dependencies: 239
+-- Name: localbody_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.localbody_id_seq OWNED BY public.localbody.id;
+
+
+--
+-- TOC entry 240 (class 1259 OID 16686)
+-- Name: loksabha_constituency; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.loksabha_constituency (
+    id bigint NOT NULL,
+    ls_code integer NOT NULL,
+    name character varying(150) NOT NULL,
+    state character varying(100) DEFAULT 'Kerala'::character varying
+);
+
+
+ALTER TABLE public.loksabha_constituency OWNER TO keralavotes;
+
+--
+-- TOC entry 241 (class 1259 OID 16693)
+-- Name: loksabha_constituency_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.loksabha_constituency_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.loksabha_constituency_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3836 (class 0 OID 0)
+-- Dependencies: 241
+-- Name: loksabha_constituency_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.loksabha_constituency_id_seq OWNED BY public.loksabha_constituency.id;
+
+
+--
+-- TOC entry 242 (class 1259 OID 16694)
+-- Name: party; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.party (
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    short_name character varying(20),
+    alliance_id bigint
+);
+
+
+ALTER TABLE public.party OWNER TO keralavotes;
+
+--
+-- TOC entry 243 (class 1259 OID 16699)
+-- Name: party_alliance_mapping; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.party_alliance_mapping (
+    id bigint NOT NULL,
+    party_id bigint NOT NULL,
+    alliance_id bigint NOT NULL,
+    election_year integer NOT NULL,
+    election_type character varying(30) NOT NULL,
+    valid_from date,
+    valid_to date
+);
+
+
+ALTER TABLE public.party_alliance_mapping OWNER TO keralavotes;
+
+--
+-- TOC entry 244 (class 1259 OID 16707)
+-- Name: party_alliance_mapping_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.party_alliance_mapping_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.party_alliance_mapping_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3837 (class 0 OID 0)
+-- Dependencies: 244
+-- Name: party_alliance_mapping_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.party_alliance_mapping_id_seq OWNED BY public.party_alliance_mapping.id;
+
+
+--
+-- TOC entry 245 (class 1259 OID 16708)
+-- Name: party_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.party_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.party_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3838 (class 0 OID 0)
+-- Dependencies: 245
+-- Name: party_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.party_id_seq OWNED BY public.party.id;
+
+
+--
+-- TOC entry 246 (class 1259 OID 16709)
+-- Name: polling_station; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.polling_station (
+    id bigint NOT NULL,
+    ls_code bigint,
+    ps_number integer NOT NULL,
+    ps_suffix character varying(5),
+    ps_number_raw character varying(20),
+    name text,
+    localbody_id bigint,
+    ward_id bigint,
+    ac_code integer NOT NULL,
+    election_year integer NOT NULL
+);
+
+
+ALTER TABLE public.polling_station OWNER TO keralavotes;
+
+--
+-- TOC entry 247 (class 1259 OID 16717)
+-- Name: polling_station_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.polling_station_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.polling_station_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3839 (class 0 OID 0)
+-- Dependencies: 247
+-- Name: polling_station_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.polling_station_id_seq OWNED BY public.polling_station.id;
+
+
+--
+-- TOC entry 248 (class 1259 OID 16718)
+-- Name: ward; Type: TABLE; Schema: public; Owner: keralavotes
+--
+
+CREATE TABLE public.ward (
+    id bigint NOT NULL,
+    localbody_id bigint NOT NULL,
+    ward_num bigint NOT NULL,
+    ward_name character varying(200),
+    ward_code character varying,
+    ward_details_id character varying(200),
+    delimitation_year integer,
+    ac_code integer
+);
+
+
+ALTER TABLE public.ward OWNER TO keralavotes;
+
+--
+-- TOC entry 249 (class 1259 OID 16726)
+-- Name: ward_id_seq; Type: SEQUENCE; Schema: public; Owner: keralavotes
+--
+
+CREATE SEQUENCE public.ward_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ward_id_seq OWNER TO keralavotes;
+
+--
+-- TOC entry 3840 (class 0 OID 0)
+-- Dependencies: 249
+-- Name: ward_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: keralavotes
+--
+
+ALTER SEQUENCE public.ward_id_seq OWNED BY public.ward.id;
+
+
+--
+-- TOC entry 3549 (class 2604 OID 16727)
+-- Name: alliance id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.alliance ALTER COLUMN id SET DEFAULT nextval('public.alliance_id_seq'::regclass);
+
+
+--
+-- TOC entry 3550 (class 2604 OID 16728)
+-- Name: assembly_constituency id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.assembly_constituency ALTER COLUMN id SET DEFAULT nextval('public.assembly_constituency_id_seq'::regclass);
+
+
+--
+-- TOC entry 3551 (class 2604 OID 16729)
+-- Name: booth_totals id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_totals ALTER COLUMN id SET DEFAULT nextval('public.booth_totals_id_seq'::regclass);
+
+
+--
+-- TOC entry 3552 (class 2604 OID 16730)
+-- Name: booth_votes id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_votes ALTER COLUMN id SET DEFAULT nextval('public.booth_votes_id_seq'::regclass);
+
+
+--
+-- TOC entry 3553 (class 2604 OID 16731)
+-- Name: candidate id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.candidate ALTER COLUMN id SET DEFAULT nextval('public.candidate_id_seq'::regclass);
+
+
+--
+-- TOC entry 3555 (class 2604 OID 16732)
+-- Name: district id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.district ALTER COLUMN id SET DEFAULT nextval('public.district_id_seq'::regclass);
+
+
+--
+-- TOC entry 3556 (class 2604 OID 16733)
+-- Name: lb_candidate id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_candidate ALTER COLUMN id SET DEFAULT nextval('public.lb_candidate_id_seq'::regclass);
+
+
+--
+-- TOC entry 3557 (class 2604 OID 16734)
+-- Name: lb_ward_results id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_ward_results ALTER COLUMN id SET DEFAULT nextval('public.lb_ward_results_id_seq'::regclass);
+
+
+--
+-- TOC entry 3558 (class 2604 OID 16735)
+-- Name: localbody id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody ALTER COLUMN id SET DEFAULT nextval('public.localbody_id_seq'::regclass);
+
+
+--
+-- TOC entry 3559 (class 2604 OID 16736)
+-- Name: localbody_ac_mapping id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody_ac_mapping ALTER COLUMN id SET DEFAULT nextval('public.localbody_ac_mapping_id_seq'::regclass);
+
+
+--
+-- TOC entry 3560 (class 2604 OID 16737)
+-- Name: loksabha_constituency id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.loksabha_constituency ALTER COLUMN id SET DEFAULT nextval('public.loksabha_constituency_id_seq'::regclass);
+
+
+--
+-- TOC entry 3562 (class 2604 OID 16738)
+-- Name: party id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party ALTER COLUMN id SET DEFAULT nextval('public.party_id_seq'::regclass);
+
+
+--
+-- TOC entry 3563 (class 2604 OID 16739)
+-- Name: party_alliance_mapping id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party_alliance_mapping ALTER COLUMN id SET DEFAULT nextval('public.party_alliance_mapping_id_seq'::regclass);
+
+
+--
+-- TOC entry 3564 (class 2604 OID 16740)
+-- Name: polling_station id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.polling_station ALTER COLUMN id SET DEFAULT nextval('public.polling_station_id_seq'::regclass);
+
+
+--
+-- TOC entry 3565 (class 2604 OID 16741)
+-- Name: ward id; Type: DEFAULT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.ward ALTER COLUMN id SET DEFAULT nextval('public.ward_id_seq'::regclass);
+
+
+--
+-- TOC entry 3567 (class 2606 OID 16743)
+-- Name: alliance alliance_name_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.alliance
+    ADD CONSTRAINT alliance_name_key UNIQUE (name);
+
+
+--
+-- TOC entry 3569 (class 2606 OID 16745)
+-- Name: alliance alliance_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.alliance
+    ADD CONSTRAINT alliance_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3571 (class 2606 OID 16747)
+-- Name: assembly_constituency assembly_constituency_ac_code_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.assembly_constituency
+    ADD CONSTRAINT assembly_constituency_ac_code_key UNIQUE (ac_code);
+
+
+--
+-- TOC entry 3573 (class 2606 OID 16749)
+-- Name: assembly_constituency assembly_constituency_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.assembly_constituency
+    ADD CONSTRAINT assembly_constituency_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3576 (class 2606 OID 16751)
+-- Name: booth_totals booth_totals_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_totals
+    ADD CONSTRAINT booth_totals_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3578 (class 2606 OID 16753)
+-- Name: booth_totals booth_totals_ps_id_year_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_totals
+    ADD CONSTRAINT booth_totals_ps_id_year_key UNIQUE (ps_id, year);
+
+
+--
+-- TOC entry 3583 (class 2606 OID 16755)
+-- Name: booth_votes booth_votes_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_votes
+    ADD CONSTRAINT booth_votes_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3585 (class 2606 OID 16757)
+-- Name: booth_votes booth_votes_ps_id_candidate_id_year_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_votes
+    ADD CONSTRAINT booth_votes_ps_id_candidate_id_year_key UNIQUE (ps_id, candidate_id, year);
+
+
+--
+-- TOC entry 3591 (class 2606 OID 17864)
+-- Name: candidate candidate_name_constituency_year_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_name_constituency_year_key UNIQUE (name, election_year, election_type, ls_code, ac_code);
+
+
+--
+-- TOC entry 3593 (class 2606 OID 16761)
+-- Name: candidate candidate_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3599 (class 2606 OID 16763)
+-- Name: district district_name_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.district
+    ADD CONSTRAINT district_name_key UNIQUE (name);
+
+
+--
+-- TOC entry 3601 (class 2606 OID 16765)
+-- Name: district district_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.district
+    ADD CONSTRAINT district_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3605 (class 2606 OID 16767)
+-- Name: lb_candidate lb_candidate_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_candidate
+    ADD CONSTRAINT lb_candidate_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3609 (class 2606 OID 16769)
+-- Name: lb_ward_results lb_ward_results_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_ward_results
+    ADD CONSTRAINT lb_ward_results_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3611 (class 2606 OID 16771)
+-- Name: lb_ward_results lb_ward_results_ward_id_candidate_id_election_year_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_ward_results
+    ADD CONSTRAINT lb_ward_results_ward_id_candidate_id_election_year_key UNIQUE (ward_id, candidate_id, election_year);
+
+
+--
+-- TOC entry 3618 (class 2606 OID 16773)
+-- Name: localbody_ac_mapping localbody_ac_mapping_localbody_id_ac_id_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody_ac_mapping
+    ADD CONSTRAINT localbody_ac_mapping_localbody_id_ac_id_key UNIQUE (localbody_id, ac_code);
+
+
+--
+-- TOC entry 3620 (class 2606 OID 16775)
+-- Name: localbody_ac_mapping localbody_ac_mapping_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody_ac_mapping
+    ADD CONSTRAINT localbody_ac_mapping_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3614 (class 2606 OID 16777)
+-- Name: localbody localbody_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody
+    ADD CONSTRAINT localbody_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3622 (class 2606 OID 16779)
+-- Name: loksabha_constituency loksabha_constituency_ls_code_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.loksabha_constituency
+    ADD CONSTRAINT loksabha_constituency_ls_code_key UNIQUE (ls_code);
+
+
+--
+-- TOC entry 3624 (class 2606 OID 16781)
+-- Name: loksabha_constituency loksabha_constituency_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.loksabha_constituency
+    ADD CONSTRAINT loksabha_constituency_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3633 (class 2606 OID 16783)
+-- Name: party_alliance_mapping party_alliance_mapping_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party_alliance_mapping
+    ADD CONSTRAINT party_alliance_mapping_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3627 (class 2606 OID 16785)
+-- Name: party party_name_key; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party
+    ADD CONSTRAINT party_name_key UNIQUE (name);
+
+
+--
+-- TOC entry 3629 (class 2606 OID 16787)
+-- Name: party party_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party
+    ADD CONSTRAINT party_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3640 (class 2606 OID 16789)
+-- Name: polling_station polling_station_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.polling_station
+    ADD CONSTRAINT polling_station_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3635 (class 2606 OID 16791)
+-- Name: party_alliance_mapping uq_party_alliance_period; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party_alliance_mapping
+    ADD CONSTRAINT uq_party_alliance_period UNIQUE (party_id, election_year, election_type);
+
+
+--
+-- TOC entry 3644 (class 2606 OID 16793)
+-- Name: ward ward_details_id_unique; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.ward
+    ADD CONSTRAINT ward_details_id_unique UNIQUE (ward_details_id);
+
+
+--
+-- TOC entry 3646 (class 2606 OID 16795)
+-- Name: ward ward_pkey; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.ward
+    ADD CONSTRAINT ward_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3648 (class 2606 OID 16797)
+-- Name: ward ward_unique_localbody_delim_ward; Type: CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.ward
+    ADD CONSTRAINT ward_unique_localbody_delim_ward UNIQUE (localbody_id, delimitation_year, ward_num);
+
+
+--
+-- TOC entry 3574 (class 1259 OID 16798)
+-- Name: idx_ac_ls; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_ac_ls ON public.assembly_constituency USING btree (ls_code);
+
+
+--
+-- TOC entry 3579 (class 1259 OID 16799)
+-- Name: idx_bt_ps; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_bt_ps ON public.booth_totals USING btree (ps_id);
+
+
+--
+-- TOC entry 3580 (class 1259 OID 16800)
+-- Name: idx_bt_year; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_bt_year ON public.booth_totals USING btree (year);
+
+
+--
+-- TOC entry 3586 (class 1259 OID 16801)
+-- Name: idx_bv_candidate; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_bv_candidate ON public.booth_votes USING btree (candidate_id);
+
+
+--
+-- TOC entry 3587 (class 1259 OID 16802)
+-- Name: idx_bv_ps; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_bv_ps ON public.booth_votes USING btree (ps_id);
+
+
+--
+-- TOC entry 3588 (class 1259 OID 16803)
+-- Name: idx_bv_year; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_bv_year ON public.booth_votes USING btree (year);
+
+
+--
+-- TOC entry 3594 (class 1259 OID 17866)
+-- Name: idx_candidate_ac; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_candidate_ac ON public.candidate USING btree (ac_code);
+
+
+--
+-- TOC entry 3595 (class 1259 OID 17865)
+-- Name: idx_candidate_election_type; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_candidate_election_type ON public.candidate USING btree (election_type);
+
+
+--
+-- TOC entry 3596 (class 1259 OID 16804)
+-- Name: idx_candidate_ls; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_candidate_ls ON public.candidate USING btree (ls_code);
+
+
+--
+-- TOC entry 3597 (class 1259 OID 16805)
+-- Name: idx_candidate_year; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_candidate_year ON public.candidate USING btree (election_year);
+
+
+--
+-- TOC entry 3615 (class 1259 OID 16806)
+-- Name: idx_lb_ac_ac; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_lb_ac_ac ON public.localbody_ac_mapping USING btree (ac_code);
+
+
+--
+-- TOC entry 3616 (class 1259 OID 16807)
+-- Name: idx_lb_ac_lb; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_lb_ac_lb ON public.localbody_ac_mapping USING btree (localbody_id);
+
+
+--
+-- TOC entry 3602 (class 1259 OID 16808)
+-- Name: idx_lb_candidate_lb; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_lb_candidate_lb ON public.lb_candidate USING btree (localbody_id);
+
+
+--
+-- TOC entry 3603 (class 1259 OID 16809)
+-- Name: idx_lb_candidate_year; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_lb_candidate_year ON public.lb_candidate USING btree (election_year);
+
+
+--
+-- TOC entry 3606 (class 1259 OID 16810)
+-- Name: idx_lb_wr_ward; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_lb_wr_ward ON public.lb_ward_results USING btree (ward_id);
+
+
+--
+-- TOC entry 3607 (class 1259 OID 16811)
+-- Name: idx_lb_wr_year; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_lb_wr_year ON public.lb_ward_results USING btree (election_year);
+
+
+--
+-- TOC entry 3612 (class 1259 OID 16812)
+-- Name: idx_localbody_district; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_localbody_district ON public.localbody USING btree (district_code);
+
+
+--
+-- TOC entry 3630 (class 1259 OID 16813)
+-- Name: idx_pam_party; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_pam_party ON public.party_alliance_mapping USING btree (party_id);
+
+
+--
+-- TOC entry 3631 (class 1259 OID 16814)
+-- Name: idx_pam_year_type; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_pam_year_type ON public.party_alliance_mapping USING btree (election_year, election_type);
+
+
+--
+-- TOC entry 3625 (class 1259 OID 16815)
+-- Name: idx_party_alliance; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_party_alliance ON public.party USING btree (alliance_id);
+
+
+--
+-- TOC entry 3636 (class 1259 OID 16816)
+-- Name: idx_ps_lb; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_ps_lb ON public.polling_station USING btree (localbody_id);
+
+
+--
+-- TOC entry 3637 (class 1259 OID 16817)
+-- Name: idx_ps_ls; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_ps_ls ON public.polling_station USING btree (ls_code);
+
+
+--
+-- TOC entry 3638 (class 1259 OID 16818)
+-- Name: idx_ps_ward; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_ps_ward ON public.polling_station USING btree (ward_id);
+
+
+--
+-- TOC entry 3642 (class 1259 OID 16819)
+-- Name: idx_ward_localbody; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE INDEX idx_ward_localbody ON public.ward USING btree (localbody_id);
+
+
+--
+-- TOC entry 3641 (class 1259 OID 17855)
+-- Name: uq_polling_station_year_ac_ps; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE UNIQUE INDEX uq_polling_station_year_ac_ps ON public.polling_station USING btree (election_year, ac_code, ps_number, COALESCE(ps_suffix, ''::character varying));
+
+
+--
+-- TOC entry 3581 (class 1259 OID 17871)
+-- Name: ux_booth_totals; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE UNIQUE INDEX ux_booth_totals ON public.booth_totals USING btree (ps_id, year);
+
+
+--
+-- TOC entry 3589 (class 1259 OID 17872)
+-- Name: ux_booth_votes; Type: INDEX; Schema: public; Owner: keralavotes
+--
+
+CREATE UNIQUE INDEX ux_booth_votes ON public.booth_votes USING btree (ps_id, candidate_id, year);
+
+
+--
+-- TOC entry 3649 (class 2606 OID 16820)
+-- Name: assembly_constituency assembly_constituency_ls_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.assembly_constituency
+    ADD CONSTRAINT assembly_constituency_ls_id_fkey FOREIGN KEY (ls_code) REFERENCES public.loksabha_constituency(id);
+
+
+--
+-- TOC entry 3650 (class 2606 OID 16825)
+-- Name: booth_totals booth_totals_ps_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_totals
+    ADD CONSTRAINT booth_totals_ps_id_fkey FOREIGN KEY (ps_id) REFERENCES public.polling_station(id);
+
+
+--
+-- TOC entry 3651 (class 2606 OID 16830)
+-- Name: booth_votes booth_votes_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_votes
+    ADD CONSTRAINT booth_votes_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.candidate(id);
+
+
+--
+-- TOC entry 3652 (class 2606 OID 16835)
+-- Name: booth_votes booth_votes_ps_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.booth_votes
+    ADD CONSTRAINT booth_votes_ps_id_fkey FOREIGN KEY (ps_id) REFERENCES public.polling_station(id);
+
+
+--
+-- TOC entry 3653 (class 2606 OID 17858)
+-- Name: candidate candidate_ac_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_ac_code_fkey FOREIGN KEY (ac_code) REFERENCES public.assembly_constituency(ac_code);
+
+
+--
+-- TOC entry 3654 (class 2606 OID 16840)
+-- Name: candidate candidate_ls_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_ls_id_fkey FOREIGN KEY (ls_code) REFERENCES public.loksabha_constituency(id);
+
+
+--
+-- TOC entry 3655 (class 2606 OID 16845)
+-- Name: candidate candidate_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id);
+
+
+--
+-- TOC entry 3656 (class 2606 OID 16850)
+-- Name: lb_candidate lb_candidate_localbody_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_candidate
+    ADD CONSTRAINT lb_candidate_localbody_id_fkey FOREIGN KEY (localbody_id) REFERENCES public.localbody(id);
+
+
+--
+-- TOC entry 3657 (class 2606 OID 16855)
+-- Name: lb_candidate lb_candidate_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_candidate
+    ADD CONSTRAINT lb_candidate_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id);
+
+
+--
+-- TOC entry 3658 (class 2606 OID 16860)
+-- Name: lb_ward_results lb_ward_results_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_ward_results
+    ADD CONSTRAINT lb_ward_results_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.lb_candidate(id);
+
+
+--
+-- TOC entry 3659 (class 2606 OID 16865)
+-- Name: lb_ward_results lb_ward_results_ward_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.lb_ward_results
+    ADD CONSTRAINT lb_ward_results_ward_id_fkey FOREIGN KEY (ward_id) REFERENCES public.ward(id);
+
+
+--
+-- TOC entry 3661 (class 2606 OID 16870)
+-- Name: localbody_ac_mapping localbody_ac_mapping_ac_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody_ac_mapping
+    ADD CONSTRAINT localbody_ac_mapping_ac_id_fkey FOREIGN KEY (ac_code) REFERENCES public.assembly_constituency(id);
+
+
+--
+-- TOC entry 3662 (class 2606 OID 16875)
+-- Name: localbody_ac_mapping localbody_ac_mapping_localbody_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody_ac_mapping
+    ADD CONSTRAINT localbody_ac_mapping_localbody_id_fkey FOREIGN KEY (localbody_id) REFERENCES public.localbody(id);
+
+
+--
+-- TOC entry 3660 (class 2606 OID 16880)
+-- Name: localbody localbody_district_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.localbody
+    ADD CONSTRAINT localbody_district_id_fkey FOREIGN KEY (district_code) REFERENCES public.district(id);
+
+
+--
+-- TOC entry 3663 (class 2606 OID 16885)
+-- Name: party party_alliance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party
+    ADD CONSTRAINT party_alliance_id_fkey FOREIGN KEY (alliance_id) REFERENCES public.alliance(id);
+
+
+--
+-- TOC entry 3664 (class 2606 OID 16890)
+-- Name: party_alliance_mapping party_alliance_mapping_alliance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party_alliance_mapping
+    ADD CONSTRAINT party_alliance_mapping_alliance_id_fkey FOREIGN KEY (alliance_id) REFERENCES public.alliance(id);
+
+
+--
+-- TOC entry 3665 (class 2606 OID 16895)
+-- Name: party_alliance_mapping party_alliance_mapping_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.party_alliance_mapping
+    ADD CONSTRAINT party_alliance_mapping_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id);
+
+
+--
+-- TOC entry 3666 (class 2606 OID 16900)
+-- Name: polling_station polling_station_ac_fk; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.polling_station
+    ADD CONSTRAINT polling_station_ac_fk FOREIGN KEY (ac_code) REFERENCES public.assembly_constituency(ac_code);
+
+
+--
+-- TOC entry 3667 (class 2606 OID 16905)
+-- Name: polling_station polling_station_localbody_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.polling_station
+    ADD CONSTRAINT polling_station_localbody_id_fkey FOREIGN KEY (localbody_id) REFERENCES public.localbody(id);
+
+
+--
+-- TOC entry 3668 (class 2606 OID 16910)
+-- Name: polling_station polling_station_ls_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.polling_station
+    ADD CONSTRAINT polling_station_ls_id_fkey FOREIGN KEY (ls_code) REFERENCES public.loksabha_constituency(id);
+
+
+--
+-- TOC entry 3669 (class 2606 OID 16915)
+-- Name: polling_station polling_station_ward_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.polling_station
+    ADD CONSTRAINT polling_station_ward_id_fkey FOREIGN KEY (ward_id) REFERENCES public.ward(id);
+
+
+--
+-- TOC entry 3670 (class 2606 OID 16920)
+-- Name: ward ward_ac_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.ward
+    ADD CONSTRAINT ward_ac_code_fkey FOREIGN KEY (ac_code) REFERENCES public.assembly_constituency(ac_code);
+
+
+--
+-- TOC entry 3671 (class 2606 OID 16925)
+-- Name: ward ward_ac_fk; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.ward
+    ADD CONSTRAINT ward_ac_fk FOREIGN KEY (ac_code) REFERENCES public.assembly_constituency(ac_code);
+
+
+--
+-- TOC entry 3672 (class 2606 OID 16930)
+-- Name: ward ward_localbody_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: keralavotes
+--
+
+ALTER TABLE ONLY public.ward
+    ADD CONSTRAINT ward_localbody_id_fkey FOREIGN KEY (localbody_id) REFERENCES public.localbody(id);
+
+
+-- Completed on 2026-02-02 21:45:16 IST
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict OEtzaac2Ud0ZFs2XId6sU6wK8QSDUyvJVeL0IZNcKtckLVddaxhjlbeeJeobLgf
+

@@ -1,5 +1,5 @@
 # -------- Build stage --------
-FROM node:20 AS builder
+FROM node:25.2-slim AS builder
 
 WORKDIR /app
 
@@ -28,6 +28,7 @@ WORKDIR /app
 COPY --from=builder /app/.next .next
 COPY --from=builder /app/public public
 COPY --from=builder /app/package.json .
+COPY --from=builder /app/next.config.* ./
 COPY --from=builder /app/node_modules node_modules
 
 EXPOSE 3333
