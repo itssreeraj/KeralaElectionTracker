@@ -28,6 +28,20 @@ export async function DELETE(req: Request, ctx: any) {
   return proxy(req, ctx);
 }
 
+function cleanResponseHeaders(original: Headers) {
+  const h = new Headers(original);
+
+  // These cause "content decoding error" when proxying
+  h.delete("content-encoding");
+  h.delete("content-length");
+  h.delete("transfer-encoding");
+
+  // Optional: avoid caching issues
+  h.delete("cache-control");
+
+  return h;
+}
+
 async function proxy(req: Request, ctx: any) {
   const startTime = Date.now();
   
@@ -76,6 +90,8 @@ async function proxy(req: Request, ctx: any) {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         "Content-Type": req.headers.get("content-type") || "application/json",
+
+        "Accept-Encoding": "identity",
       },
     });
 
@@ -89,7 +105,14 @@ async function proxy(req: Request, ctx: any) {
       size: response.headers.get('content-length') || 'unknown',
     });
 
-    return response;
+    const body = await response.arrayBuffer();
+
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: cleanResponseHeaders(response.headers),
+    });
+    
   } catch (error) {
     const duration = Date.now() - startTime;
     logger.error('Proxy request failed', {
