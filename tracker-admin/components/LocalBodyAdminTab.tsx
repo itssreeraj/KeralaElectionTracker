@@ -26,11 +26,11 @@ export default function LocalbodyAdminTab({ backend }: { backend: string }) {
      INITIAL LOAD → Districts + Assemblies
   ----------------------------------------------------- */
   useEffect(() => {
-    fetch(`${backend}/v1/public/districts`)
+    fetch(`/v1/public/districts`)
       .then((r) => r.json())
       .then(setDistricts);
 
-    fetch(`${backend}/v1/public/assemblies`)
+    fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
         setAssemblies(data);
@@ -58,7 +58,7 @@ export default function LocalbodyAdminTab({ backend }: { backend: string }) {
   const loadBooths = () => {
     if (!selectedAc) return;
 
-    fetch(`${backend}/v1/public/booths?acCode=${selectedAc}`)
+    fetch(`/v1/public/booths?acCode=${selectedAc}`)
       .then((r) => r.json())
       .then((data) => {
         setBooths(data);
@@ -116,7 +116,7 @@ export default function LocalbodyAdminTab({ backend }: { backend: string }) {
 
     try {
       // 1. Create or fetch the localbody
-      const res = await fetch(`${backend}/v1/admin/localbody`, {
+      const res = await fetch(`/v1/admin/localbody`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,7 +149,7 @@ export default function LocalbodyAdminTab({ backend }: { backend: string }) {
       }
 
       // 2. Map booths
-      const mapRes = await fetch(`${backend}/v1/admin/localbody/${lb.id}/map-booths`, {
+      const mapRes = await fetch(`/v1/admin/localbody/${lb.id}/map-booths`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ boothIds: Array.from(selectedBooths) }),

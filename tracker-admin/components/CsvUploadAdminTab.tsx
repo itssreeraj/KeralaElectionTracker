@@ -16,7 +16,7 @@ export default function CsvUploadAdminTab({ backend }: { backend: string }) {
     log(`Uploading ${file.name} → ${endpoint}`);
 
     try {
-      const res = await fetch(`${backend}${endpoint}`, {
+      const res = await fetch(`${endpoint}`, {
         method: "POST",
         body: form,
       });

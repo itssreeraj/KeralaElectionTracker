@@ -177,12 +177,12 @@ export default function LocalbodyAggregationAnalysisTab() {
     let url = "";
     if (mode === "assembly") {
       params.append("acCode", String(selectedAc!.acCode));
-      url = `${backend}/v1/public/analysis/assembly-by-id`;
+      url = `v1/public/analysis/assembly-by-id`;
     } else if (mode === "district") {
       params.append("districtCode", String(selectedDistrict!.districtCode));
-      url = `${backend}/v1/public/analysis/district`;
+      url = `v1/public/analysis/district`;
     } else {
-      url = `${backend}/v1/public/analysis/state`;
+      url = `v1/public/analysis/state`;
     }
 
     setLoading(true);
@@ -205,7 +205,7 @@ export default function LocalbodyAggregationAnalysisTab() {
     }
 
     const overviewRes = await fetch(
-      `${backend}/v1/public/analysis/assembly-overview?${overviewParams.toString()}`
+      `v1/public/analysis/assembly-overview?${overviewParams.toString()}`
     );
 
     setAssemblyOverview(await overviewRes.json());

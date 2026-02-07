@@ -45,18 +45,18 @@ export default function ConstituencyMappingAdminTab({ backend }: { backend: stri
 
   // Load all data
   useEffect(() => {
-    fetch(`${backend}/v1/public/assemblies`)
+    fetch(`/v1/public/assemblies`)
       .then(r => r.json())
       .then(setAssemblies);
 
-    fetch(`${backend}/v1/public/ls`)
+    fetch(`/v1/public/ls`)
       .then(r => r.json())
       .then(data => {
         data.sort((a: any, b: any) => a.lsCode - b.lsCode);
         setLsList(data);
       });
 
-    fetch(`${backend}/v1/public/districts`)
+    fetch(`/v1/public/districts`)
       .then(r => r.json())
       .then(data => {
         data.sort((a: any, b: any) => a.districtCode - b.districtCode);
@@ -65,7 +65,7 @@ export default function ConstituencyMappingAdminTab({ backend }: { backend: stri
   }, [backend]);
 
   const updateAssembly = async (id: number, lsCode?: number, districtCode?: number) => {
-    await fetch(`${backend}/v1/admin/assemblies/${id}`, {
+    await fetch(`/v1/admin/assemblies/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lsCode, districtCode }),

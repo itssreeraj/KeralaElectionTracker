@@ -100,7 +100,7 @@ const tdStyleRight: React.CSSProperties = {
 
 export default function AssemblyOverviewTab() {
   const config = getConfig();
-  const backend = config.apiBase || "http://localhost:3000/api";
+  const backend = config.apiBase ? config.apiBase : "http://localhost:3000/api";
 
   const [selectedAc, setSelectedAc] = useState<any | null>(null);
   const [selectedYears, setSelectedYears] = useState<number[]>([2021, 2026]);
@@ -145,7 +145,7 @@ export default function AssemblyOverviewTab() {
 
     try {
       const res = await fetch(
-        `${backend}/v1/public/analysis/historic/assembly?${params.toString()}`
+        `v1/public/analysis/historic/assembly?${params.toString()}`
       );
       if (!res.ok) throw new Error("Failed");
       setData(await res.json());

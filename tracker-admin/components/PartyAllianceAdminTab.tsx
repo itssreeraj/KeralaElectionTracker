@@ -118,7 +118,7 @@ export default function PartyAllianceAdminTab({ backend }: { backend: string }) 
 
   /* ===================== LOAD DATA ===================== */
   const loadAlliances = async () => {
-    const r = await fetch(`${backend}/v1/public/alliances`);
+    const r = await fetch(`/v1/public/alliances`);
     const data = await r.json();
     const arr = Array.isArray(data) ? data : data?.alliances ?? [];
     setAlliances(normalizeAlliances(arr));
@@ -126,7 +126,7 @@ export default function PartyAllianceAdminTab({ backend }: { backend: string }) 
 
   const loadMappings = () => {
     setLoading(true);
-    fetch(`${backend}/v1/public/party-alliance?year=${year}&type=${type}`)
+    fetch(`/v1/public/party-alliance?year=${year}&type=${type}`)
       .then(r => r.json())
       .then((data: MappingRow[]) => {
         setRows(data);
@@ -172,7 +172,7 @@ export default function PartyAllianceAdminTab({ backend }: { backend: string }) 
 
     setSaving(partyId);
 
-    await fetch(`${backend}/v1/admin/party-alliance`, {
+    await fetch(`/v1/admin/party-alliance`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -192,7 +192,7 @@ export default function PartyAllianceAdminTab({ backend }: { backend: string }) 
   const addAlliance = async () => {
     if (!newAllianceName.trim()) return;
 
-    await fetch(`${backend}/v1/admin/alliances`, {
+    await fetch(`/v1/admin/alliances`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -211,7 +211,7 @@ export default function PartyAllianceAdminTab({ backend }: { backend: string }) 
   const addParty = async () => {
     if (!newPartyName || !newPartyAlliance) return;
 
-    await fetch(`${backend}/v1/admin/party-with-mapping`, {
+    await fetch(`/v1/admin/party-with-mapping`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
