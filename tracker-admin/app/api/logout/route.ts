@@ -23,6 +23,8 @@ export async function POST(req: Request) {
     const res = NextResponse.json({ success: true });
     res.cookies.set("ADMIN_TOKEN", "", {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       expires: new Date(0),
       path: "/",
     });

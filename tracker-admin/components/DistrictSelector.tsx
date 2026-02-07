@@ -18,7 +18,7 @@ export default function DistrictSelector({
   const [selectedCode, setSelectedCode] = useState<number | "">("");
 
   useEffect(() => {
-    fetch(`${backend}/v1/public/districts`)
+    fetch(`/v1/public/districts`)
       .then((r) => r.json())
       .then(setDistricts)
       .catch(console.error);

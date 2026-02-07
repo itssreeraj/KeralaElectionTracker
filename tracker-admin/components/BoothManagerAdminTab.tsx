@@ -48,18 +48,18 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       INITIAL LOAD → Districts, ACs, Localbodies
   ----------------------------------------------------- */
   useEffect(() => {
-    fetch(`${backend}/v1/public/districts`)
+    fetch(`/v1/public/districts`)
       .then((r) => r.json())
       .then(setDistricts);
 
-    fetch(`${backend}/v1/public/assemblies`)
+    fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
         setAssemblies(data);
         setFilteredAssemblies(data);
       });
 
-    fetch(`${backend}/v1/public/localbodies`)
+    fetch(`/v1/public/localbodies`)
       .then((r) => r.json())
       .then(setLocalbodies);
   }, [backend]);
@@ -97,7 +97,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     }
 
     fetch(
-      `${backend}/v1/public/localbodies/by-district?name=${encodeURIComponent(
+      `/v1/public/localbodies/by-district?name=${encodeURIComponent(
         form.district
       )}`
     )
@@ -169,7 +169,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     setLoadingBooths(true);
     try {
       const res = await fetch(
-        `${backend}/public/booths?acCode=${acCode}&year=${y}`
+        `/v1/public/booths?acCode=${acCode}&year=${y}`
       );
       setBooths(await res.json());
     } finally {
@@ -186,7 +186,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       return;
     }
 
-    const res = await fetch(`${backend}/admin/wards?localbodyId=${lbId}`);
+    const res = await fetch(`/v1/admin/wards?localbodyId=${lbId}`);
     if (res.ok) setWards(await res.json());
     else setWards([]);
   };
@@ -213,7 +213,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       name: form.name,
     };
 
-    const res = await fetch(`${backend}/admin/booth/create`, {
+    const res = await fetch(`/v1/admin/booth/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -266,7 +266,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
     setCopying(true);
     try {
-      const res = await fetch(`${backend}/admin/booth/bulk-create`, {
+      const res = await fetch(`/v1/admin/booth/bulk-create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

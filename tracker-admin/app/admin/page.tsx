@@ -32,7 +32,7 @@ const tabs: { key: string; label: string }[] = [
 ];
 
 console.log("API BASE =", backend);
-console.log("FETCH URL =", `${backend}/v1/admin/test`);
+console.log("FETCH URL =", `/v1/admin/test`);
 
 export default function AdminPage() {
   const [tab, setTab] = useState("upload");

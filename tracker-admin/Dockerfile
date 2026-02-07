@@ -8,16 +8,6 @@ RUN npm install
 
 COPY . .
 
-ARG NEXT_PUBLIC_API_BASE
-ARG NEXT_BACKEND_API_BASE
-ARG NEXT_PUBLIC_POSTER_BASE
-ARG NEXT_PUBLIC_ENV
-
-ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
-ENV NEXT_BACKEND_API_BASE=$NEXT_BACKEND_API_BASE
-ENV NEXT_PUBLIC_POSTER_BASE=$NEXT_PUBLIC_POSTER_BASE
-ENV NEXT_PUBLIC_ENV=$NEXT_PUBLIC_ENV
-
 RUN npm run build
 
 # -------- Runtime stage --------
@@ -25,20 +15,18 @@ FROM node:25.2-slim
 
 WORKDIR /app
 
+# IMPORTANT: Secrets (ADMIN_USER, ADMIN_PASS, JWT_SECRET) should NOT be passed as build ARG
+# They will be injected at runtime via environment variables
+# Only NEXT_PUBLIC_* variables can be build-time args (they are embedded in the frontend bundle)
+
+ARG NEXT_PUBLIC_ENV=production
 ARG NEXT_PUBLIC_API_BASE
-ARG NEXT_BACKEND_API_BASE
 ARG NEXT_PUBLIC_POSTER_BASE
-ARG NEXT_PUBLIC_ENV
 
-# Set environment variables for runtime - Next.js config
-ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
-ENV NEXT_BACKEND_API_BASE=${NEXT_BACKEND_API_BASE}
-ENV NEXT_PUBLIC_POSTER_BASE=${NEXT_PUBLIC_POSTER_BASE}
+# Set only public environment variables for Next.js build output
 ENV NEXT_PUBLIC_ENV=${NEXT_PUBLIC_ENV}
-ENV NODE_ENV=production
-
-# Runtime credentials & secrets will be loaded from .env.production by Node.js
-# (ADMIN_USER, ADMIN_PASS, JWT_SECRET, JWT_EXP_SECONDS)
+ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+ENV NEXT_PUBLIC_POSTER_BASE=${NEXT_PUBLIC_POSTER_BASE}
 
 COPY --from=builder /app/.next .next
 COPY --from=builder /app/public public
@@ -46,12 +34,6 @@ COPY --from=builder /app/package.json .
 COPY --from=builder /app/next.config.* ./
 COPY --from=builder /app/node_modules node_modules
 
-# Copy environment files so Node.js can read them at runtime
-COPY .env.production .env.production
-COPY .env.local .env.local
-COPY .env.staging .env.staging
-COPY .env.development .env.development
-
 EXPOSE 3333
 
-CMD ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3333"]
+CMD ["npm", "run", "start", "--", "--port", "3333", "--hostname", "0.0.0.0"]

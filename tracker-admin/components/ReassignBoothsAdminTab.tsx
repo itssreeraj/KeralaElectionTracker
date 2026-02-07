@@ -43,14 +43,14 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
        LOAD ASSEMBLIES + LOCALBODIES
   ---------------------------------------------- */
   useEffect(() => {
-    fetch(`${backend}/v1/public/assemblies`)
+    fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
         setAssemblies(data);
         setFilteredAssemblies(data);
       });
 
-    fetch(`${backend}/v1/public/localbodies`)
+    fetch(`/v1/public/localbodies`)
       .then((r) => r.json())
       .then(setLocalbodies);
   }, [backend]);
@@ -104,7 +104,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
     if (!selectedAc) 
       return;
     const r = await fetch(
-      `${backend}/v1/public/booths?acCode=${selectedAc}&year=${y}`
+      `v1/public/booths?acCode=${selectedAc}&year=${y}`
     );
     const data = await r.json();
 
@@ -132,7 +132,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
   useEffect(() => {
     const loadDistricts = async () => {
       try {
-        const res = await fetch(`${backend}/v1/public/districts`);
+        const res = await fetch(`/v1/public/districts`);
         if (!res.ok) return;
         const data = await res.json();
         setDistricts(Array.isArray(data) ? data : []);
@@ -156,7 +156,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
 
       try {
         const res = await fetch(
-          `${backend}/v1/public/localbodies/by-district?name=${encodeURIComponent(
+          `v1/public/localbodies/by-district?name=${encodeURIComponent(
             selectedDistrict
           )}`
         );
@@ -295,7 +295,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       localbodyId: Number(selectedLocalbody),
     };
 
-    const res = await fetch(`${backend}/admin/booths/reassign`, {
+    const res = await fetch(`/v1/admin/booths/reassign`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -303,7 +303,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
 
     const text = await res.text();
     if (res.ok) alert("✔ Booths reassigned successfully");
-    else alert("❌ Error: " + text);
+    else alert("Error: " + text);
 
     loadBooths();
   };
@@ -322,15 +322,15 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       localbodyId: null,
     };
 
-    const res = await fetch(`${backend}/admin/booths/reassign`, {
+    const res = await fetch(`/v1/admin/booths/reassign`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
     const text = await res.text();
-    if (res.ok) alert("✔ Booths unassigned successfully");
-    else alert("❌ Error: " + text);
+    if (res.ok) alert("Booths unassigned successfully");
+    else alert("Error: " + text);
 
     loadBooths();
   };

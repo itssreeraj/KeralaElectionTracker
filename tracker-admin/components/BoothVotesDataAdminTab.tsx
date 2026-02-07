@@ -79,7 +79,7 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
     if (!selectedAc) return;
     setLoading(true);
     const res = await fetch(
-      `${backend}/v1/public/boothvotes?acCode=${selectedAc.acCode}&year=${year}`
+      `/v1/public/boothvotes?acCode=${selectedAc.acCode}&year=${year}`
     );
     const json = await res.json();
     setData(json);
@@ -143,7 +143,7 @@ export default function BoothVotesDataAdminTab({ backend }: { backend: string })
   };
 
   const saveBooth = async (booth: BoothRow) => {
-    await fetch(`${backend}/v1/admin/booth/result?psId=${booth.psId}&year=${year}`, {
+    await fetch(`/v1/admin/booth/result?psId=${booth.psId}&year=${year}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
