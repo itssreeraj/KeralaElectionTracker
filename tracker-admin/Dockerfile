@@ -38,4 +38,4 @@ EXPOSE 3333
 
 # Use sh -c to allow environment variable expansion
 # PORT defaults to 3333, but can be overridden (e.g., by Render)
-CMD ["sh", "-c", "next start -p ${PORT:-3333} -H 0.0.0.0"]
+CMD ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3333"]
