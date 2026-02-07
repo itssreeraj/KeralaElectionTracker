@@ -36,4 +36,6 @@ COPY --from=builder /app/node_modules node_modules
 
 EXPOSE 3333
 
-CMD ["npm", "run", "start", "--", "--port", "3333", "--hostname", "0.0.0.0"]
+# Use sh -c to allow environment variable expansion
+# PORT defaults to 3333, but can be overridden (e.g., by Render)
+CMD ["sh", "-c", "next start -p ${PORT:-3333} -H 0.0.0.0"]
