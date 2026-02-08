@@ -15,6 +15,8 @@
   --control-focus: #0d6efd;
   --label-font-size: 13px;
   --label-color: #9ca3af;
+  --h2-shadow: 0 1px 0 rgba(255, 255, 255, 0.55), 0 6px 18px rgba(23, 23, 23, 0.18);
+  --p-shadow: 0 1px 0 rgba(255, 255, 255, 0.45), 0 3px 10px rgba(23, 23, 23, 0.12);
 }
 
 @theme inline {
@@ -28,6 +30,8 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --h2-shadow: 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 20px rgba(0, 0, 0, 0.45), 0 0 14px rgba(13, 110, 253, 0.2);
+    --p-shadow: 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 10px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -40,6 +44,15 @@ body {
 label {
   font-size: var(--label-font-size);
   color: var(--label-color);
+}
+
+h2 {
+  text-shadow: var(--h2-shadow);
+  letter-spacing: 0.01em;
+}
+
+p {
+  text-shadow: var(--p-shadow);
 }
 
 /* Unified form controls: dropdowns, search/text/number inputs, textareas */
