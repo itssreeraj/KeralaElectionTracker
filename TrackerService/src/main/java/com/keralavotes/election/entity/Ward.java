@@ -37,6 +37,6 @@ public class Ward {
     private Integer delimitationYear;
 
     @ManyToOne(optional = true)
-    @JoinColumn(name = "ac_code")
+    @JoinColumn(name = "ac_code", referencedColumnName = "ac_code")
     private AssemblyConstituency ac;
 }
