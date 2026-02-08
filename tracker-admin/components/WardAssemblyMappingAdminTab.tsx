@@ -30,12 +30,16 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
   const [loadingMapped, setLoadingMapped] = useState(false);
   const [expandedLbs, setExpandedLbs] = useState<Record<string, boolean>>({});
 
+  const sortAssembliesByCode = (list: any[]) =>
+    [...list].sort((a, b) => Number(a.acCode) - Number(b.acCode));
+
   /* =============================================================
       LOAD ASSEMBLIES
      ============================================================= */
   const loadAssemblies = async (code: number) => {
     const res = await fetch(`/v1/public/assemblies/by-district?districtCode=${code}`);
-    setAssemblies(await res.json());
+    const data = await res.json();
+    setAssemblies(sortAssembliesByCode(Array.isArray(data) ? data : []));
   };
 
   /* =============================================================
