@@ -11,6 +11,15 @@ spring:
     username: keralavotes
     password: keralavotes
     driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: DevHikariPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      max-lifetime: 2400000
+      connection-timeout: 100000
+      validation-timeout: 50000
+      keepalive-time: 1000
   jpa:
     hibernate:
       ddl-auto: validate
