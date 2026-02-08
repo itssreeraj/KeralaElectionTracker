@@ -513,6 +513,7 @@ export default function LocalbodyAnalysisTab() {
         <DistrictSelector
           backend={backend}
           emptyLabel="Select District"
+          labelStyle={labelStyle}
           onSelectDistrict={(district) => {
             setSelectedDistrict(district);
             setSelectedLocalbody("");

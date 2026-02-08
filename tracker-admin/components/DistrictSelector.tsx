@@ -14,6 +14,9 @@ export default function DistrictSelector({
   label = "District",
   emptyLabel = "All Districts",
   style,
+  labelStyle,
+  selectWrapperStyle,
+  selectStyle,
 }: {
   backend: string;
   onSelectDistrict: (d: District | null) => void;
@@ -21,6 +24,9 @@ export default function DistrictSelector({
   label?: string;
   emptyLabel?: string;
   style?: React.CSSProperties;
+  labelStyle?: React.CSSProperties;
+  selectWrapperStyle?: React.CSSProperties;
+  selectStyle?: React.CSSProperties;
 }) {
   const [districts, setDistricts] = useState<District[]>([]);
   const [internalSelectedCode, setInternalSelectedCode] = useState<number | "">("");
@@ -55,9 +61,11 @@ export default function DistrictSelector({
 
   return (
     <div style={style}>
-      <label style={{ fontSize: 12, color: "#9ca3af" }}>{label}</label>
+      <label style={{ fontSize: 12, color: "#9ca3af", ...labelStyle }}>
+        {label}
+      </label>
 
-      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+      <div style={{ display: "flex", gap: 6, marginTop: 4, ...selectWrapperStyle }}>
         <select
           value={currentCode}
           onChange={onChange}
@@ -69,6 +77,7 @@ export default function DistrictSelector({
             borderRadius: 6,
             color: "white",
             fontSize: 12,
+            ...selectStyle,
           }}
         >
           <option value="">{emptyLabel}</option>

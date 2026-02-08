@@ -3,11 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --dropdown-font-size: 14px;
-  --dropdown-pad-y: 6px;
-  --dropdown-pad-x: 8px;
-  --dropdown-radius: 6px;
-  --dropdown-min-height: 36px;
+  --control-font-size: 14px;
+  --control-pad-y: 6px;
+  --control-pad-x: 8px;
+  --control-radius: 6px;
+  --control-min-height: 36px;
+  --control-bg: #020617;
+  --control-border: #374151;
+  --control-text: #f9fafb;
+  --control-placeholder: #9ca3af;
+  --control-focus: #0d6efd;
 }
 
 @theme inline {
@@ -30,15 +35,50 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Unify dropdown sizing/typography across admin pages */
-select {
-  min-height: var(--dropdown-min-height);
-  padding: var(--dropdown-pad-y) var(--dropdown-pad-x) !important;
-  font-size: var(--dropdown-font-size) !important;
-  border-radius: var(--dropdown-radius) !important;
+/* Unified form controls: dropdowns, search/text/number inputs, textareas */
+select,
+textarea,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) {
+  box-sizing: border-box;
+  min-height: var(--control-min-height);
+  padding: var(--control-pad-y) var(--control-pad-x) !important;
+  font-size: var(--control-font-size) !important;
+  border-radius: var(--control-radius) !important;
+  border: 1px solid var(--control-border) !important;
+  background: var(--control-bg) !important;
+  color: var(--control-text) !important;
   line-height: 1.2;
+  vertical-align: middle;
+  font-family: inherit;
+}
+
+select {
+  cursor: pointer;
+}
+
+select:disabled,
+textarea:disabled,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+select:focus-visible,
+textarea:focus-visible,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus-visible {
+  outline: none;
+  border-color: var(--control-focus) !important;
+  box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.35);
+}
+
+textarea::placeholder,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"])::placeholder {
+  color: var(--control-placeholder) !important;
+  opacity: 1;
 }
 
 option {
-  font-size: var(--dropdown-font-size);
+  font-size: var(--control-font-size);
+  color: var(--control-text);
+  background: var(--control-bg);
 }

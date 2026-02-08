@@ -400,7 +400,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
 
         {/* AC Search */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Search AC</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Search AC</label>
           <input
             value={assemblySearch}
             onChange={(e) => setAssemblySearch(e.target.value)}
@@ -418,7 +418,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
 
         {/* AC Select */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Assembly</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Assembly</label>
           <select
             value={selectedAc}
             onChange={(e) => setSelectedAc(e.target.value)}
@@ -563,14 +563,14 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
                       <span style={{ fontWeight: 600 }}>
                         {groupName}
                         {lb && (
-                          <span style={{ color: "#aaa", marginLeft: 6 }}>
+                          <span style={{ color: "#9ca3af", marginLeft: 6 }}>
                             ({type})
                           </span>
                         )}
                       </span>
                     </label>
 
-                    <span style={{ fontSize: 12, color: "#aaa" }}>
+                    <span style={{ fontSize: 12, color: "#9ca3af" }}>
                       {list.length} booths
                     </span>
                   </div>

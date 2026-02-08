@@ -294,7 +294,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
       {/* Year */}
       <div>
-        <label style={{ fontSize: 12, color: "#aaa" }}>Year</label>
+        <label style={{ fontSize: 12, color: "#9ca3af" }}>Year</label>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {ANALYSIS_YEARS.map((y) => (
             <button
@@ -345,7 +345,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
         {/* AC Search */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Search Assembly</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Search Assembly</label>
           <input
             value={assemblySearch}
             onChange={(e) => setAssemblySearch(e.target.value)}
@@ -363,7 +363,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
         {/* AC Select */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Assembly</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Assembly</label>
           <select
             value={form.ac}
             onChange={(e) => {
