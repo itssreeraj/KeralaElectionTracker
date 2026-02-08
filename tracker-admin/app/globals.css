@@ -13,6 +13,8 @@
   --control-text: #f9fafb;
   --control-placeholder: #9ca3af;
   --control-focus: #0d6efd;
+  --label-font-size: 13px;
+  --label-color: #9ca3af;
 }
 
 @theme inline {
@@ -35,6 +37,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+label {
+  font-size: var(--label-font-size);
+  color: var(--label-color);
+}
+
 /* Unified form controls: dropdowns, search/text/number inputs, textareas */
 select,
 textarea,
@@ -47,7 +54,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
   border: 1px solid var(--control-border) !important;
   background: var(--control-bg) !important;
   color: var(--control-text) !important;
-  line-height: 1.2;
+  line-height: normal;
   vertical-align: middle;
   font-family: inherit;
 }

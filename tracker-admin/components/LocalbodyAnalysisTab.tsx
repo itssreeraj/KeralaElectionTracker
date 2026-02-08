@@ -514,6 +514,8 @@ export default function LocalbodyAnalysisTab() {
           backend={backend}
           emptyLabel="Select District"
           labelStyle={labelStyle}
+          selectWrapperStyle={{ marginTop: 0 }}
+          selectStyle={selectStyle}
           onSelectDistrict={(district) => {
             setSelectedDistrict(district);
             setSelectedLocalbody("");
@@ -553,7 +555,7 @@ export default function LocalbodyAnalysisTab() {
           {/* SEARCH BOX */}
           <input
             type="text"
-            placeholder="Search localbody\u2026"
+            placeholder="Search Localbody..."
             value={lbSearch}
             onChange={(e) => {
               setLbSearch(e.target.value);
@@ -1090,6 +1092,7 @@ function DetailedResultsTabs({
 
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
+  color: "#9ca3af",
   opacity: 0.85,
   marginBottom: 10,
   display: "block",
