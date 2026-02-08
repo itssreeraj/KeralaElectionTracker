@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import DistrictSelector from "./DistrictSelector";
 
 export default function AssemblySelector({
   backend,
@@ -9,7 +10,6 @@ export default function AssemblySelector({
   backend: string;
   onSelectAc: (ac: { acCode: number; name: string }) => void;
 }) {
-  const [districts, setDistricts] = useState<any[]>([]);
   const [districtCode, setDistrictCode] = useState<number | "">("");
   const [loksabha, setLoksabha] = useState<any[]>([]);
   const [lsCode, setLsCode] = useState<number | "">("");
@@ -18,10 +18,6 @@ export default function AssemblySelector({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`/v1/public/districts`)
-      .then((r) => r.json())
-      .then((d) => setDistricts(Array.isArray(d) ? d : []))
-      .catch(() => setDistricts([]));
     fetch(`/v1/public/ls`)
       .then((r) => r.json())
       .then((d) => setLoksabha(Array.isArray(d) ? d : []))
@@ -106,35 +102,18 @@ export default function AssemblySelector({
 
       {/* District selector */}
       <div style={{ marginBottom: 12 }}>
-        <label style={{ fontSize: 12, color: "#9ca3af" }}>Or pick by District</label>
-        <div style={{ marginTop: 6 }}>
-          <select
-            value={districtCode}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setDistrictCode(v || "");
-              if (v) loadByDistrict(v);
-            }}
-            style={{
-              width: "100%",
-              padding: "8px 10px",
-              borderRadius: 6,
-              border: districtCode ? "1px solid #0d6efd" : "1px solid #333",
-              background: "#0b0b0b",
-              color: "white",
-              fontSize: 12,
-            }}
-          >
-            <option value="">All Districts</option>
-            {[...districts]
-              .sort((a, b) => Number(a.districtCode) - Number(b.districtCode))
-              .map((d) => (
-                <option key={d.districtCode} value={d.districtCode}>
-                  {d.districtCode} – {d.name}
-                </option>
-              ))}
-          </select>
-        </div>
+        <DistrictSelector
+          backend={backend}
+          label="Or pick by District"
+          emptyLabel="All Districts"
+          selectedCode={districtCode}
+          onSelectDistrict={(district) => {
+            setDistrictCode(district ? district.districtCode : "");
+            if (district) {
+              loadByDistrict(district.districtCode);
+            }
+          }}
+        />
       </div>
 
       {/* Lok Sabha selector */}

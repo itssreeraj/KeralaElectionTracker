@@ -3,7 +3,11 @@
 import { getConfig } from "@/config/env";
 
 import React, { useEffect, useState } from "react";
-import { LOCALBODY_ELECTION_YEARS as ANALYSIS_YEARS } from "../lib/constants";
+import {
+  LOCALBODY_ELECTION_YEARS as ANALYSIS_YEARS,
+  LOCALBODY_TYPE_OPTIONS,
+} from "../lib/constants";
+import DistrictSelector, { type District } from "./DistrictSelector";
 
 /* ======= Shared Styles ======= */
 
@@ -22,15 +26,6 @@ const selectStyle: React.CSSProperties = {
   color: "#f9fafb",
   fontSize: 14,
 };
-
-const LOCALBODY_TYPES = [
-  { value: "", label: "All Types" },
-  { value: "Municipality", label: "Municipality" },
-  { value: "Corporation", label: "Corporation" },
-  { value: "grama_panchayath", label: "Grama Panchayath" },
-  { value: "block_panchayath", label: "Block Panchayath" },
-  { value: "district_panchayath", label: "District Panchayath" },
-];
 
 /* ======= TYPES ======= */
 
@@ -212,12 +207,10 @@ export default function LocalbodySwingAnalysisTab() {
   const backend =
     `${config.apiBase}` || "http://localhost:3000/api";
 
-  const [districts, setDistricts] = useState<any[]>([]);
   const [localbodies, setLocalbodies] = useState<any[]>([]);
   const [alliances, setAlliances] = useState<any[]>([]);
 
-  const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | null>(null);
-  const [selectedDistrictName, setSelectedDistrictName] = useState<string>("");
+  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
 
   const [selectedType, setSelectedType] = useState("");
   const [selectedLocalbody, setSelectedLocalbody] = useState("");
@@ -231,13 +224,6 @@ export default function LocalbodySwingAnalysisTab() {
 
   const [analysis, setAnalysis] = useState<AllianceAnalysisResponse | null>(null);
 
-  /* Load districts */
-  useEffect(() => {
-    fetch(`/v1/public/districts`)
-      .then((r) => r.json())
-      .then((data) => setDistricts(Array.isArray(data) ? data : []));
-  }, [backend]);
-
   /* Load alliances */
   useEffect(() => {
     fetch(`/v1/public/alliances`)
@@ -247,7 +233,7 @@ export default function LocalbodySwingAnalysisTab() {
 
   /* Load localbodies on district/type change */
   useEffect(() => {
-    if (!selectedDistrictCode || !selectedDistrictName) {
+    if (!selectedDistrict) {
       setLocalbodies([]);
       return;
     }
@@ -257,7 +243,7 @@ export default function LocalbodySwingAnalysisTab() {
       try {
         const res = await fetch(
           `v1/public/localbodies/by-district?name=${encodeURIComponent(
-            selectedDistrictName
+            selectedDistrict.name
           )}`
         );
         const list = await res.json();
@@ -276,7 +262,7 @@ export default function LocalbodySwingAnalysisTab() {
     };
 
     load();
-  }, [backend, selectedDistrictCode, selectedDistrictName, selectedType]);
+  }, [backend, selectedDistrict, selectedType]);
 
   /* Year toggle */
   const toggleYear = (year: number) => {
@@ -286,13 +272,13 @@ export default function LocalbodySwingAnalysisTab() {
 
   /* Run Alliance Analysis */
   const runAnalysis = async () => {
-    if (!selectedDistrictCode || !selectedAlliance || !selectedYear) {
+    if (!selectedDistrict || !selectedAlliance || !selectedYear) {
       alert("Please fill all required fields");
       return;
     }
 
     const params = new URLSearchParams({
-      district: String(selectedDistrictCode),
+      district: String(selectedDistrict.districtCode),
       type: selectedType || "",
       alliance: selectedAlliance,
       year: String(selectedYear),
@@ -338,35 +324,15 @@ export default function LocalbodySwingAnalysisTab() {
         }}
       >
         {/* District */}
-        <div>
-          <label style={labelStyle}>District</label>
-          <select
-            value={selectedDistrictCode ?? ""}
-            onChange={(e) => {
-              const code = Number(e.target.value || "0");
-              if (!code) {
-                setSelectedDistrictCode(null);
-                setSelectedDistrictName("");
-                setSelectedLocalbody("");
-                setAnalysis(null);
-                return;
-              }
-              setSelectedDistrictCode(code);
-              const dist = districts.find((d) => d.districtCode === code);
-              setSelectedDistrictName(dist?.name || "");
-              setSelectedLocalbody("");
-              setAnalysis(null);
-            }}
-            style={selectStyle}
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.districtCode}>
-                {d.districtCode} - {d.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <DistrictSelector
+          backend={backend}
+          emptyLabel="Select District"
+          onSelectDistrict={(district) => {
+            setSelectedDistrict(district);
+            setSelectedLocalbody("");
+            setAnalysis(null);
+          }}
+        />
 
         {/* Localbody Type */}
         <div>
@@ -380,7 +346,7 @@ export default function LocalbodySwingAnalysisTab() {
             }}
             style={selectStyle}
           >
-            {LOCALBODY_TYPES.map((t) => (
+            {LOCALBODY_TYPE_OPTIONS.map((t) => (
               <option key={t.value} value={t.value}>
                 {t.label}
               </option>

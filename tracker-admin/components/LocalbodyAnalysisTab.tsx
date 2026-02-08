@@ -3,14 +3,10 @@
 import { getConfig } from "@/config/env";
 
 import React, { useEffect, useState } from "react";
-import { AVAILABLE_YEARS } from "../lib/constants";
+import { AVAILABLE_YEARS, LOCALBODY_TYPE_OPTIONS } from "../lib/constants";
+import DistrictSelector, { type District } from "./DistrictSelector";
 
 /* ========= TYPES ========= */
-
-type District = {
-  districtCode: number;
-  name: string;
-};
 
 type Localbody = {
   id: number;
@@ -109,8 +105,7 @@ export default function LocalbodyAnalysisTab() {
   const posterBase = config.posterBase ? config.posterBase.replace(/\/$/, "") : "";
   const profile = config.env || "";
 
-  const [districts, setDistricts] = useState<District[]>([]);
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
 
   const [localbodies, setLocalbodies] = useState<Localbody[]>([]);
   const [selectedLocalbody, setSelectedLocalbody] = useState<string>("");
@@ -138,22 +133,6 @@ export default function LocalbodyAnalysisTab() {
   const [lbSearch, setLbSearch] = useState<string>(""); // localbody text search
 
 
-  /* -------- LOAD DISTRICTS -------- */
-
-  useEffect(() => {
-    const loadDistricts = async () => {
-      try {
-        const res = await fetch(`/v1/public/districts`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setDistricts(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error("Error loading districts", e);
-      }
-    };
-    loadDistricts();
-  }, [backend]);
-
   /* -------- LOAD LOCALBODIES WHEN DISTRICT CHANGES -------- */
 
   useEffect(() => {
@@ -167,7 +146,7 @@ export default function LocalbodyAnalysisTab() {
       try {
         const res = await fetch(
           `v1/public/localbodies/by-district?name=${encodeURIComponent(
-            selectedDistrict
+            selectedDistrict.name
           )}`
         );
         const data = await res.json();
@@ -531,27 +510,17 @@ export default function LocalbodyAnalysisTab() {
         }}
       >
         {/* DISTRICT */}
-        <div>
-          <label style={labelStyle}>District</label>
-          <select
-            value={selectedDistrict}
-            onChange={(e) => {
-              setSelectedDistrict(e.target.value);
-              setSelectedLocalbody("");
-              setAnalysis(null);
-              setDetailed(null);
-              setPosterImage(null);
-            }}
-            style={selectStyle}
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.name}>
-                {d.districtCode} - {d.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <DistrictSelector
+          backend={backend}
+          emptyLabel="Select District"
+          onSelectDistrict={(district) => {
+            setSelectedDistrict(district);
+            setSelectedLocalbody("");
+            setAnalysis(null);
+            setDetailed(null);
+            setPosterImage(null);
+          }}
+        />
 
         {/* LOCALBODY TYPE */}
         <div>
@@ -567,12 +536,11 @@ export default function LocalbodyAnalysisTab() {
             }}
             style={selectStyle}
           >
-            <option value="">All Types</option>
-            <option value="Municipality">Municipality</option>
-            <option value="Corporation">Corporation</option>
-            <option value="grama_panchayath">Gramapanchayath</option>
-            <option value="block_panchayath">Block Panchayath</option>
-            <option value="district_panchayath">District Panchayath</option>
+            {LOCALBODY_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 

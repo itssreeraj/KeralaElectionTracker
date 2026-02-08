@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
+import DistrictSelector from "./DistrictSelector";
 
 export default function BoothManagerAdminTab({ backend }: { backend: string }) {
-  const [districts, setDistricts] = useState<any[]>([]);
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [filteredAssemblies, setFilteredAssemblies] = useState<any[]>([]);
   const [assemblySearch, setAssemblySearch] = useState("");
@@ -26,6 +26,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
   const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
   const [copyYear, setCopyYear] = useState<number | null>(null);
   const [copying, setCopying] = useState(false);
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | "">("");
 
   type LocalBody = {
     id: number;
@@ -45,13 +46,9 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
   });
 
   /* ---------------------------------------------------
-      INITIAL LOAD → Districts, ACs, Localbodies
+      INITIAL LOAD → ACs, Localbodies
   ----------------------------------------------------- */
   useEffect(() => {
-    fetch(`/v1/public/districts`)
-      .then((r) => r.json())
-      .then(setDistricts);
-
     fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
@@ -330,26 +327,16 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
         {/* District */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>District</label>
-          <select
-            value={form.district}
-            onChange={(e) => updateForm("district", e.target.value)}
-            style={{
-              width: "100%",
-              padding: 10,
-              background: "#0b0b0b",
-              border: "1px solid #333",
-              borderRadius: 6,
-              color: "white",
+          <DistrictSelector
+            backend={backend}
+            label="District"
+            emptyLabel="Select District"
+            selectedCode={selectedDistrictCode}
+            onSelectDistrict={(district) => {
+              setSelectedDistrictCode(district ? district.districtCode : "");
+              updateForm("district", district?.name ?? "");
             }}
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.name}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* AC Search */}

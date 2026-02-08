@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import DistrictSelector from "./DistrictSelector";
 
 const DELIM_YEARS = [2009, 2010, 2025];
 
 export default function WardAssemblyMappingAdminTab({ backend }: { backend: string }) {
   /* --------------------- STATE --------------------- */
-  const [districts, setDistricts] = useState<any[]>([]);
   const [districtCode, setDistrictCode] = useState<number | "">("");
 
   const [assemblies, setAssemblies] = useState<any[]>([]);
@@ -31,15 +31,6 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
   const [expandedLbs, setExpandedLbs] = useState<Record<string, boolean>>({});
 
   /* =============================================================
-      LOAD DISTRICTS
-     ============================================================= */
-  useEffect(() => {
-    fetch(`/v1/public/districts`)
-      .then((r) => r.json())
-      .then((d) => setDistricts(Array.isArray(d) ? d : []));
-  }, [backend]);
-
-  /* =============================================================
       LOAD ASSEMBLIES
      ============================================================= */
   const loadAssemblies = async (code: number) => {
@@ -50,9 +41,9 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
   /* =============================================================
       LOAD LOCALBODIES
      ============================================================= */
-  const loadLocalbodies = async (dist: any) => {
+  const loadLocalbodies = async (districtName: string) => {
     const res = await fetch(
-      `v1/public/localbodies/by-district?name=${encodeURIComponent(dist.name)}`
+      `v1/public/localbodies/by-district?name=${encodeURIComponent(districtName)}`
     );
     setLocalbodies(await res.json());
   };
@@ -211,32 +202,23 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
       >
         {/* DISTRICT */}
         <div>
-          <label>District</label>
-          <select
-            value={districtCode}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setDistrictCode(val);
+          <DistrictSelector
+            backend={backend}
+            emptyLabel="Select District"
+            selectedCode={districtCode}
+            onSelectDistrict={(district) => {
+              setDistrictCode(district ? district.districtCode : "");
               setSelectedAcCode(null);
               setLocalbodies([]);
               setAssemblies([]);
               setSelectedLocalbody(null);
               setMappedWards([]); // reset
-              const d = districts.find((x) => x.districtCode === val);
-              if (d) {
-                loadAssemblies(val);
-                loadLocalbodies(d);
+              if (district) {
+                loadAssemblies(district.districtCode);
+                loadLocalbodies(district.name);
               }
             }}
-            style={selectStyle}
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.districtCode}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* ASSEMBLY */}

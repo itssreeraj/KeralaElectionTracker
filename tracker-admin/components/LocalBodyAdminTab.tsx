@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import AssemblySelector from "./AssemblySelector";
+import DistrictSelector from "./DistrictSelector";
 
 type SelectedAc = { acCode: number; name: string };
 
 export default function LocalbodyAdminTab({ backend }: { backend: string }) {
-  const [districts, setDistricts] = useState<any[]>([]);
-
   const [selectedAc, setSelectedAc] = useState<SelectedAc | null>(null);
   const [booths, setBooths] = useState<any[]>([]);
   const [filteredBooths, setFilteredBooths] = useState<any[]>([]);
@@ -38,15 +37,6 @@ export default function LocalbodyAdminTab({ backend }: { backend: string }) {
       setLoadingLocalbodies(false);
     }
   };
-
-  /* ---------------------------------------------------
-     INITIAL LOAD → Districts
-  ----------------------------------------------------- */
-  useEffect(() => {
-    fetch(`/v1/public/districts`)
-      .then((r) => r.json())
-      .then(setDistricts);
-  }, [backend]);
 
   /* ---------------------------------------------------
      LOAD LOCALBODIES BY ASSEMBLY
@@ -280,19 +270,14 @@ export default function LocalbodyAdminTab({ backend }: { backend: string }) {
         >
           <h3 style={{ marginTop: 0 }}>Create New Localbody</h3>
 
-          <label>District</label>
-          <select
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-            style={{ width: "100%", padding: 8, marginBottom: 12 }}
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.districtCode}>
-                {d.districtCode} - {d.name}
-              </option>
-            ))}
-          </select>
+          <DistrictSelector
+            backend={backend}
+            label="District"
+            emptyLabel="Select District"
+            selectedCode={district ? Number(district) : ""}
+            onSelectDistrict={(d) => setDistrict(d ? String(d.districtCode) : "")}
+            style={{ marginBottom: 12 }}
+          />
 
           <label>Name</label>
           <input

@@ -2,11 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
-
-type District = {
-  districtCode: number;
-  name: string;
-};
+import DistrictSelector from "./DistrictSelector";
 
 export default function ReassignBoothsAdminTab({ backend }: { backend: string }) {
   const [assemblies, setAssemblies] = useState<any[]>([]);
@@ -33,9 +29,9 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
 
-  const [districts, setDistricts] = useState<District[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | "">("");
 
   const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
 
@@ -127,21 +123,6 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       )
     );
   }, [boothFilter, booths]);
-
-  /* -------- LOAD DISTRICTS -------- */
-  useEffect(() => {
-    const loadDistricts = async () => {
-      try {
-        const res = await fetch(`/v1/public/districts`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setDistricts(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error("Error loading districts", e);
-      }
-    };
-    loadDistricts();
-  }, [backend]);
 
   /* -------- LOAD LOCALBODIES WHEN DISTRICT CHANGES -------- */
   useEffect(() => {
@@ -397,30 +378,18 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       >
         {/* District */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>District</label>
-          <select
-            value={selectedDistrict}
-            onChange={(e) => {
-              setSelectedDistrict(e.target.value);
+          <DistrictSelector
+            backend={backend}
+            label="District"
+            emptyLabel="All Districts"
+            selectedCode={selectedDistrictCode}
+            onSelectDistrict={(district) => {
+              setSelectedDistrictCode(district ? district.districtCode : "");
+              setSelectedDistrict(district?.name ?? "");
               setSelectedAc("");
               setBooths([]);
             }}
-            style={{
-              width: "100%",
-              padding: 10,
-              background: "#0b0b0b",
-              border: "1px solid #333",
-              borderRadius: 6,
-              color: "white",
-            }}
-          >
-            <option value="">All Districts</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.name}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* AC Search */}

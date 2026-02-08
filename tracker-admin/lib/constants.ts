@@ -18,3 +18,12 @@ export const GENERAL_ELECTION_YEARS = [
   ...NATIONAL_ELECTION_YEARS,
   ...KERALA_ASSEMBLY_ELECTION_YEARS,
 ].sort((a, b) => a - b);
+
+export const LOCALBODY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "", label: "All Types" },
+  { value: "Municipality", label: "Municipality" },
+  { value: "Corporation", label: "Corporation" },
+  { value: "grama_panchayath", label: "Grama Panchayath" },
+  { value: "block_panchayath", label: "Block Panchayath" },
+  { value: "district_panchayath", label: "District Panchayath" },
+];
