@@ -235,7 +235,7 @@ export default function WardAssemblyMappingAdminTab({ backend }: { backend: stri
             <option value="">Select Assembly</option>
             {assemblies.map((a) => (
               <option key={a.acCode} value={a.acCode}>
-                {a.name}
+                {a.acCode} - {a.name}
               </option>
             ))}
           </select>

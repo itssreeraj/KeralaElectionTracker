@@ -428,7 +428,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
             <option value="">Select AC</option>
             {filteredAssemblies.map((ac) => (
               <option key={ac.acCode} value={ac.acCode}>
-                {ac.acCode} – {ac.name}
+                {ac.acCode} - {ac.name}
               </option>
             ))}
           </select>

@@ -177,7 +177,7 @@ export default function AssemblySelector({
                 .sort((a, b) => Number(a.acCode) - Number(b.acCode))
                 .map((a) => (
                   <option key={a.acCode} value={a.acCode}>
-                    {a.acCode} – {a.name}
+                    {a.acCode} - {a.name}
                   </option>
                 ))}
             </select>

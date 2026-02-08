@@ -318,7 +318,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
                 <option value="">All Assemblies</option>
                 {assemblies.map(ac => (
                   <option key={ac.acCode} value={ac.acCode}>
-                    {ac.acCode} – {ac.acName}
+                    {ac.acCode} - {ac.acName}
                   </option>
                 ))}
               </select>
@@ -557,7 +557,7 @@ export default function CandidateMappingAdminTab({ backend }: { backend: string 
                             <option value="">Select AC</option>
                             {assemblies.map((ac) => (
                               <option key={ac.acCode} value={ac.acCode}>
-                                {ac.acCode} – {ac.acName}
+                                {ac.acCode} - {ac.acName}
                               </option>
                             ))}
                           </select>
