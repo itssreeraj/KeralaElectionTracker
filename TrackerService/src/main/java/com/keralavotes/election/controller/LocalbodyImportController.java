@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/v1/admin/import")
-@CrossOrigin(origins = "*")
 public class LocalbodyImportController {
 
 

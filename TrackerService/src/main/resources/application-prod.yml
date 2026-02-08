@@ -23,12 +23,12 @@ spring:
     database: keralavotes
     authentication-database: keralavotes
 
-  web:
-    cors:
-      allowed-origins: "http://localhost:3333, https://kerala-votes.vercel.app, https://keralaelects.onrender.com"
-      allowed-methods: "*"
-      allowed-headers: "*"
-      allow-credentials: true
+#  web:
+#    cors:
+#      allowed-origins: "http://localhost:3333, https://kerala-votes.vercel.app, https://keralaelects.onrender.com"
+#      allowed-methods: "*"
+#      allowed-headers: "*"
+#      allow-credentials: true
 
 logging:
   level:

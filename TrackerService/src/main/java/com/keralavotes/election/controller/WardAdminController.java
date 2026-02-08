@@ -24,7 +24,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class WardAdminController {
 
     private final WardAssemblyService wardAssemblyService;

@@ -14,7 +14,9 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/v1/**")
-                        .allowedOrigins("https://keralaelects.onrender.com", "http://localhost:3000")
+                        .allowedOriginPatterns("https://keralaelects.onrender.com",
+                                "http://localhost:*",
+                                "https://kerala-votes.vercel.app")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true)

@@ -1,0 +1,133 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict P1kqBvgJCBFlboaqsHCAP95xJWlgn65mFGBUTK5eELbYB6wDt0gjgl5akekytiv
+
+-- Dumped from database version 18.1 (Ubuntu 18.1-1.pgdg24.04+2)
+-- Dumped by pg_dump version 18.1
+
+-- Started on 2026-02-08 07:56:46 IST
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 3687 (class 0 OID 16694)
+-- Dependencies: 242
+-- Data for Name: party; Type: TABLE DATA; Schema: public; Owner: keralavotes
+--
+
+INSERT INTO public.party VALUES (2, 'CPI', 'CPI', 1);
+INSERT INTO public.party VALUES (3, 'BJP', 'BJP', 3);
+INSERT INTO public.party VALUES (4, 'BDJS', 'BDJS', 3);
+INSERT INTO public.party VALUES (5, 'Congress', 'INC', 2);
+INSERT INTO public.party VALUES (6, 'Muslim League', 'IUML', 2);
+INSERT INTO public.party VALUES (7, 'INDEPENDENT', 'IND', 4);
+INSERT INTO public.party VALUES (9, 'RSP', 'RSP', 2);
+INSERT INTO public.party VALUES (11, 'BSP', 'BSP', NULL);
+INSERT INTO public.party VALUES (12, 'Kerala Congress (Joseph)', 'KCJ', 2);
+INSERT INTO public.party VALUES (1, 'CPI(M)', 'CPI(M)', 1);
+INSERT INTO public.party VALUES (13, 'LJD', 'LJD', 1);
+INSERT INTO public.party VALUES (14, 'JD(S)', 'JD(S)', 1);
+INSERT INTO public.party VALUES (15, 'NCP', 'NCP', 1);
+INSERT INTO public.party VALUES (16, 'INL', 'INL', 1);
+INSERT INTO public.party VALUES (17, 'KC(B)', 'KC(B)', 1);
+INSERT INTO public.party VALUES (18, 'JKC', 'JKC', 1);
+INSERT INTO public.party VALUES (19, 'CON(S)', 'CON(S)', 1);
+INSERT INTO public.party VALUES (20, 'KC(ST)', 'KC(ST)', 1);
+INSERT INTO public.party VALUES (22, 'LJP', 'LJP', 3);
+INSERT INTO public.party VALUES (23, 'SS', 'SS', 3);
+INSERT INTO public.party VALUES (24, 'KKC', 'KKC', 3);
+INSERT INTO public.party VALUES (25, 'SDPI', 'SDPI', NULL);
+INSERT INTO public.party VALUES (10, '20-20', 'TT', NULL);
+INSERT INTO public.party VALUES (26, 'WPI', 'WPI', NULL);
+INSERT INTO public.party VALUES (27, 'RMPI', 'RMPI', NULL);
+INSERT INTO public.party VALUES (28, 'KJ(Secular', 'KJ(Secular', NULL);
+INSERT INTO public.party VALUES (29, 'CMPCC(CPJ)', 'CMPCC(CPJ)', NULL);
+INSERT INTO public.party VALUES (30, 'PDP', 'PDP', NULL);
+INSERT INTO public.party VALUES (31, 'NSC', 'NSC', NULL);
+INSERT INTO public.party VALUES (32, 'RSP(LM)', 'RSP(LM)', NULL);
+INSERT INTO public.party VALUES (33, 'MLPI[RF]', 'MLPI[RF]', NULL);
+INSERT INTO public.party VALUES (35, 'JSS', 'JSS', NULL);
+INSERT INTO public.party VALUES (37, 'SP', 'SP', NULL);
+INSERT INTO public.party VALUES (38, 'KC(M)PJJ', 'KC(M)PJJ', 2);
+INSERT INTO public.party VALUES (39, 'KC(Jacob)', 'KC(Jacob)', 2);
+INSERT INTO public.party VALUES (40, 'BNJD', 'BNJD', 2);
+INSERT INTO public.party VALUES (41, 'CMP', 'CMP', 2);
+INSERT INTO public.party VALUES (42, 'AIFB', 'AIFB', 2);
+INSERT INTO public.party VALUES (21, 'KC', 'KC', 2);
+INSERT INTO public.party VALUES (8, 'KC(M)', 'KC(M)', 1);
+INSERT INTO public.party VALUES (43, 'RJD', 'RJD', 1);
+INSERT INTO public.party VALUES (44, 'IND(LDF)', 'IND(LDF)', 1);
+INSERT INTO public.party VALUES (45, 'KCS', 'KCS', NULL);
+INSERT INTO public.party VALUES (46, 'CMPKSC(A)', 'CMPKSC(A)', NULL);
+INSERT INTO public.party VALUES (47, 'KCM', 'KCM', NULL);
+INSERT INTO public.party VALUES (48, 'IND(UDF)', 'IND(UDF)', NULL);
+INSERT INTO public.party VALUES (49, 'JD(U)', 'JD(U)', NULL);
+INSERT INTO public.party VALUES (50, 'KC(J)', 'KC(J)', NULL);
+INSERT INTO public.party VALUES (51, 'JSS( R )', 'JSS( R )', NULL);
+INSERT INTO public.party VALUES (52, 'IND(BJP)', 'IND(BJP)', NULL);
+INSERT INTO public.party VALUES (56, 'AIADMK', 'AIADMK', 5);
+INSERT INTO public.party VALUES (58, 'CPI(ML)', 'CPI(ML)', 5);
+INSERT INTO public.party VALUES (59, 'MCPI(U)', 'MCPI(U)', 5);
+INSERT INTO public.party VALUES (61, 'RSP(M)', 'RSP(M)', 5);
+INSERT INTO public.party VALUES (62, 'AITC', 'AITC', 5);
+INSERT INTO public.party VALUES (63, 'AAP', 'AAP', 5);
+INSERT INTO public.party VALUES (64, 'PNP', 'PNP', 5);
+INSERT INTO public.party VALUES (65, 'KVC', 'KVC', 5);
+INSERT INTO public.party VALUES (66, 'DPSP', 'DPSP', 5);
+INSERT INTO public.party VALUES (67, 'AKTP', 'AKTP', 5);
+INSERT INTO public.party VALUES (68, 'RLSP', 'RLSP', 5);
+INSERT INTO public.party VALUES (69, 'AISMK', 'AISMK', 5);
+INSERT INTO public.party VALUES (71, 'RPI', 'RPI', 5);
+INSERT INTO public.party VALUES (73, 'KDP', 'KDP', NULL);
+INSERT INTO public.party VALUES (74, 'KPA', 'KPA', NULL);
+INSERT INTO public.party VALUES (75, 'NPP', 'NPP', NULL);
+INSERT INTO public.party VALUES (76, 'SOCIALIST UNITY CENTRE OF INDIA (COMMUNIST)', 'SUCI(C)', NULL);
+INSERT INTO public.party VALUES (53, 'RSP(Bol)', 'RSP(Bol)', 3);
+INSERT INTO public.party VALUES (77, 'SHIVSENA', 'SHIVSENA', NULL);
+INSERT INTO public.party VALUES (78, 'Socialist Republican Party', 'SRP', NULL);
+INSERT INTO public.party VALUES (79, 'KERALA CONGRESS (M)', 'KC(M)', NULL);
+INSERT INTO public.party VALUES (80, 'SOCIALIST JANATA (DEMOCRATIC)', 'SJD', NULL);
+INSERT INTO public.party VALUES (81, 'REPUBLICAN PARTY OF INDIA (A)', 'RPI(A)', NULL);
+INSERT INTO public.party VALUES (82, 'Secular Democratic Congress', 'SDC', NULL);
+INSERT INTO public.party VALUES (83, 'National Labour Party', 'NLP', NULL);
+INSERT INTO public.party VALUES (84, 'Indian Gandhiyan Party', 'IGP', NULL);
+INSERT INTO public.party VALUES (85, 'Agila India Makkal Kazhagam', 'AIMK', NULL);
+INSERT INTO public.party VALUES (86, 'Marxist Communist Party of India (United)', 'MCI(UNITED)', NULL);
+INSERT INTO public.party VALUES (87, 'Peoples Democratic Party', 'PDP', NULL);
+INSERT INTO public.party VALUES (88, 'Samajwadi Forward Bloc', 'SFB', NULL);
+INSERT INTO public.party VALUES (89, 'Ambedkarite Party of India', 'API', NULL);
+INSERT INTO public.party VALUES (90, 'Bahujan Dravida Party', 'BDP', NULL);
+INSERT INTO public.party VALUES (91, 'ADHRMPI', 'ADHRMPI', NULL);
+INSERT INTO public.party VALUES (92, 'APOI', 'APOI', NULL);
+INSERT INTO public.party VALUES (93, 'NWLBRP', 'NWLBRP', NULL);
+
+
+--
+-- TOC entry 3694 (class 0 OID 0)
+-- Dependencies: 245
+-- Name: party_id_seq; Type: SEQUENCE SET; Schema: public; Owner: keralavotes
+--
+
+SELECT pg_catalog.setval('public.party_id_seq', 93, true);
+
+
+-- Completed on 2026-02-08 07:56:46 IST
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict P1kqBvgJCBFlboaqsHCAP95xJWlgn65mFGBUTK5eELbYB6wDt0gjgl5akekytiv
+
