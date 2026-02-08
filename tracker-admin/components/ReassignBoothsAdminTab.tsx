@@ -35,6 +35,9 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
 
   const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
 
+  const sortAssembliesByCode = (list: any[]) =>
+    [...list].sort((a, b) => Number(a.acCode) - Number(b.acCode));
+
   /* ---------------------------------------------
        LOAD ASSEMBLIES + LOCALBODIES
   ---------------------------------------------- */
@@ -42,8 +45,9 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
     fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
-        setAssemblies(data);
-        setFilteredAssemblies(data);
+        const sorted = sortAssembliesByCode(Array.isArray(data) ? data : []);
+        setAssemblies(sorted);
+        setFilteredAssemblies(sorted);
       });
 
     fetch(`/v1/public/localbodies`)
@@ -57,10 +61,12 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
   useEffect(() => {
     const q = assemblySearch.toLowerCase();
     setFilteredAssemblies(
-      assemblies.filter(
-        (ac) =>
-          String(ac.acCode).toLowerCase().includes(q) ||
-          ac.name.toLowerCase().includes(q)
+      sortAssembliesByCode(
+        assemblies.filter(
+          (ac) =>
+            String(ac.acCode).toLowerCase().includes(q) ||
+            ac.name.toLowerCase().includes(q)
+        )
       )
     );
   }, [assemblySearch, assemblies]);
@@ -89,7 +95,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       );
     }
 
-    setFilteredAssemblies(list);
+    setFilteredAssemblies(sortAssembliesByCode(list));
   }, [assemblies, selectedDistrict, assemblySearch]);
 
 

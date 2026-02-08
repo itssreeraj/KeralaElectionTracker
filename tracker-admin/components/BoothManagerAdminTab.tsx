@@ -45,6 +45,9 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     name: "",
   });
 
+  const sortAssembliesByCode = (list: any[]) =>
+    [...list].sort((a, b) => Number(a.acCode) - Number(b.acCode));
+
   /* ---------------------------------------------------
       INITIAL LOAD → ACs, Localbodies
   ----------------------------------------------------- */
@@ -52,8 +55,9 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
-        setAssemblies(data);
-        setFilteredAssemblies(data);
+        const sorted = sortAssembliesByCode(Array.isArray(data) ? data : []);
+        setAssemblies(sorted);
+        setFilteredAssemblies(sorted);
       });
 
     fetch(`/v1/public/localbodies`)
@@ -82,7 +86,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       );
     }
 
-    setFilteredAssemblies(list);
+    setFilteredAssemblies(sortAssembliesByCode(list));
   }, [assemblies, form.district, assemblySearch]);
 
   // Load localbodies based on selected district
