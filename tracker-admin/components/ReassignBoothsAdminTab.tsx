@@ -2,11 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
-
-type District = {
-  districtCode: number;
-  name: string;
-};
+import DistrictSelector from "./DistrictSelector";
 
 export default function ReassignBoothsAdminTab({ backend }: { backend: string }) {
   const [assemblies, setAssemblies] = useState<any[]>([]);
@@ -33,11 +29,14 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
 
-  const [districts, setDistricts] = useState<District[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | "">("");
 
   const [year, setYear] = useState<number>(ANALYSIS_YEARS[0] ?? 2024);
+
+  const sortAssembliesByCode = (list: any[]) =>
+    [...list].sort((a, b) => Number(a.acCode) - Number(b.acCode));
 
   /* ---------------------------------------------
        LOAD ASSEMBLIES + LOCALBODIES
@@ -46,8 +45,9 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
     fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
-        setAssemblies(data);
-        setFilteredAssemblies(data);
+        const sorted = sortAssembliesByCode(Array.isArray(data) ? data : []);
+        setAssemblies(sorted);
+        setFilteredAssemblies(sorted);
       });
 
     fetch(`/v1/public/localbodies`)
@@ -61,10 +61,12 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
   useEffect(() => {
     const q = assemblySearch.toLowerCase();
     setFilteredAssemblies(
-      assemblies.filter(
-        (ac) =>
-          String(ac.acCode).toLowerCase().includes(q) ||
-          ac.name.toLowerCase().includes(q)
+      sortAssembliesByCode(
+        assemblies.filter(
+          (ac) =>
+            String(ac.acCode).toLowerCase().includes(q) ||
+            ac.name.toLowerCase().includes(q)
+        )
       )
     );
   }, [assemblySearch, assemblies]);
@@ -93,7 +95,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       );
     }
 
-    setFilteredAssemblies(list);
+    setFilteredAssemblies(sortAssembliesByCode(list));
   }, [assemblies, selectedDistrict, assemblySearch]);
 
 
@@ -127,21 +129,6 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       )
     );
   }, [boothFilter, booths]);
-
-  /* -------- LOAD DISTRICTS -------- */
-  useEffect(() => {
-    const loadDistricts = async () => {
-      try {
-        const res = await fetch(`/v1/public/districts`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setDistricts(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error("Error loading districts", e);
-      }
-    };
-    loadDistricts();
-  }, [backend]);
 
   /* -------- LOAD LOCALBODIES WHEN DISTRICT CHANGES -------- */
   useEffect(() => {
@@ -397,35 +384,23 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
       >
         {/* District */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>District</label>
-          <select
-            value={selectedDistrict}
-            onChange={(e) => {
-              setSelectedDistrict(e.target.value);
+          <DistrictSelector
+            backend={backend}
+            label="District"
+            emptyLabel="All Districts"
+            selectedCode={selectedDistrictCode}
+            onSelectDistrict={(district) => {
+              setSelectedDistrictCode(district ? district.districtCode : "");
+              setSelectedDistrict(district?.name ?? "");
               setSelectedAc("");
               setBooths([]);
             }}
-            style={{
-              width: "100%",
-              padding: 10,
-              background: "#0b0b0b",
-              border: "1px solid #333",
-              borderRadius: 6,
-              color: "white",
-            }}
-          >
-            <option value="">All Districts</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.name}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* AC Search */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Search AC</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Search AC</label>
           <input
             value={assemblySearch}
             onChange={(e) => setAssemblySearch(e.target.value)}
@@ -443,7 +418,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
 
         {/* AC Select */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Assembly</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Assembly</label>
           <select
             value={selectedAc}
             onChange={(e) => setSelectedAc(e.target.value)}
@@ -459,7 +434,7 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
             <option value="">Select AC</option>
             {filteredAssemblies.map((ac) => (
               <option key={ac.acCode} value={ac.acCode}>
-                {ac.acCode} – {ac.name}
+                {ac.acCode} - {ac.name}
               </option>
             ))}
           </select>
@@ -588,14 +563,14 @@ export default function ReassignBoothsAdminTab({ backend }: { backend: string })
                       <span style={{ fontWeight: 600 }}>
                         {groupName}
                         {lb && (
-                          <span style={{ color: "#aaa", marginLeft: 6 }}>
+                          <span style={{ color: "#9ca3af", marginLeft: 6 }}>
                             ({type})
                           </span>
                         )}
                       </span>
                     </label>
 
-                    <span style={{ fontSize: 12, color: "#aaa" }}>
+                    <span style={{ fontSize: 12, color: "#9ca3af" }}>
                       {list.length} booths
                     </span>
                   </div>

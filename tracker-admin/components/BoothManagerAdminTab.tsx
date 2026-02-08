@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { AVAILABLE_YEARS as ANALYSIS_YEARS } from "../lib/constants";
+import DistrictSelector from "./DistrictSelector";
 
 export default function BoothManagerAdminTab({ backend }: { backend: string }) {
-  const [districts, setDistricts] = useState<any[]>([]);
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [filteredAssemblies, setFilteredAssemblies] = useState<any[]>([]);
   const [assemblySearch, setAssemblySearch] = useState("");
@@ -26,6 +26,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
   const [selectedBooths, setSelectedBooths] = useState<Set<number>>(new Set());
   const [copyYear, setCopyYear] = useState<number | null>(null);
   const [copying, setCopying] = useState(false);
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | "">("");
 
   type LocalBody = {
     id: number;
@@ -44,19 +45,19 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
     name: "",
   });
 
+  const sortAssembliesByCode = (list: any[]) =>
+    [...list].sort((a, b) => Number(a.acCode) - Number(b.acCode));
+
   /* ---------------------------------------------------
-      INITIAL LOAD → Districts, ACs, Localbodies
+      INITIAL LOAD → ACs, Localbodies
   ----------------------------------------------------- */
   useEffect(() => {
-    fetch(`/v1/public/districts`)
-      .then((r) => r.json())
-      .then(setDistricts);
-
     fetch(`/v1/public/assemblies`)
       .then((r) => r.json())
       .then((data) => {
-        setAssemblies(data);
-        setFilteredAssemblies(data);
+        const sorted = sortAssembliesByCode(Array.isArray(data) ? data : []);
+        setAssemblies(sorted);
+        setFilteredAssemblies(sorted);
       });
 
     fetch(`/v1/public/localbodies`)
@@ -85,7 +86,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
       );
     }
 
-    setFilteredAssemblies(list);
+    setFilteredAssemblies(sortAssembliesByCode(list));
   }, [assemblies, form.district, assemblySearch]);
 
   // Load localbodies based on selected district
@@ -293,7 +294,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
       {/* Year */}
       <div>
-        <label style={{ fontSize: 12, color: "#aaa" }}>Year</label>
+        <label style={{ fontSize: 12, color: "#9ca3af" }}>Year</label>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {ANALYSIS_YEARS.map((y) => (
             <button
@@ -330,31 +331,21 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
         {/* District */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>District</label>
-          <select
-            value={form.district}
-            onChange={(e) => updateForm("district", e.target.value)}
-            style={{
-              width: "100%",
-              padding: 10,
-              background: "#0b0b0b",
-              border: "1px solid #333",
-              borderRadius: 6,
-              color: "white",
+          <DistrictSelector
+            backend={backend}
+            label="District"
+            emptyLabel="Select District"
+            selectedCode={selectedDistrictCode}
+            onSelectDistrict={(district) => {
+              setSelectedDistrictCode(district ? district.districtCode : "");
+              updateForm("district", district?.name ?? "");
             }}
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.districtCode} value={d.name}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* AC Search */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Search Assembly</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Search Assembly</label>
           <input
             value={assemblySearch}
             onChange={(e) => setAssemblySearch(e.target.value)}
@@ -372,7 +363,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
 
         {/* AC Select */}
         <div>
-          <label style={{ fontSize: 12, color: "#aaa" }}>Assembly</label>
+          <label style={{ fontSize: 12, color: "#9ca3af" }}>Assembly</label>
           <select
             value={form.ac}
             onChange={(e) => {
@@ -391,7 +382,7 @@ export default function BoothManagerAdminTab({ backend }: { backend: string }) {
             <option value="">Select AC</option>
             {filteredAssemblies.map((ac) => (
               <option key={ac.acCode} value={ac.acCode}>
-                {ac.acCode} – {ac.name}
+                {ac.acCode} - {ac.name}
               </option>
             ))}
           </select>
